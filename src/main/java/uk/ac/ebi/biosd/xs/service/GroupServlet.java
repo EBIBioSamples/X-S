@@ -13,20 +13,20 @@ import javax.servlet.http.HttpServletResponse;
 
 import uk.ac.ebi.biosd.export.STM2XMLconverter;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
-import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
+import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.core_model.dao.hibernate.toplevel.AccessibleDAO;
 
 
 
-@WebServlet("/SampleServlet")
-public class SampleServlet extends HttpServlet
+@WebServlet("/GroupServlet")
+public class GroupServlet extends HttpServlet
 {
  private static final long serialVersionUID = 1L;
 
  static final String ProfileParameter = "server";
- static final String SampleParameter = "sample";
+ static final String GroupParameter = "group";
  
- public SampleServlet()
+ public GroupServlet()
  {
   super();
   // TODO Auto-generated constructor stub
@@ -39,12 +39,12 @@ public class SampleServlet extends HttpServlet
  @Override
  protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
  {
-  String sample = request.getParameter(SampleParameter);
+  String group = request.getParameter(GroupParameter);
   
-  if( sample == null )
+  if( group == null )
   {
    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-   response.getWriter().append("<html><body><span color='red'>No sample ID provided</span></body></html>");
+   response.getWriter().append("<html><body><span color='red'>No group ID provided</span></body></html>");
    return;
   }
   
@@ -73,20 +73,20 @@ public class SampleServlet extends HttpServlet
   
   ts.begin ();
   
-  AccessibleDAO<BioSample> smpDAO = new AccessibleDAO<>(BioSample.class, em);
+  AccessibleDAO<BioSampleGroup> smpDAO = new AccessibleDAO<>(BioSampleGroup.class, em);
   
-  BioSample smp = smpDAO.find(sample);
+  BioSampleGroup smp = smpDAO.find(group);
 
   if( smp == null )
   {
    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-   response.getWriter().append("<html><body><span color='red'>Sample with ID: "+sample+" not found</span></body></html>");
+   response.getWriter().append("<html><body><span color='red'>Group with ID: "+group+" not found</span></body></html>");
    return;
   }
   
   response.setContentType("text/xml");
   
-  STM2XMLconverter.exportSample(smp, response.getWriter());
+  STM2XMLconverter.exportGroup(smp, response.getWriter());
   
   ts.commit();
   

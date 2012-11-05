@@ -14,16 +14,17 @@ import javax.servlet.ServletContextListener;
 
 public class Init implements ServletContextListener
 {
- static String DefaultProfileParam = "hibernate.defaultProfile";
+ static String PersistParamPrefix = "persist";
+ static String DefaultProfileParam = PersistParamPrefix+".defaultProfile";
 
  @Override
- public void contextDestroyed(ServletContextEvent ctx)
+ public void contextInitialized(ServletContextEvent ctx)
  {
   Map<String, Map<String,Object>> profMap = new HashMap<>();
   Map<String,Object> defaultProfile=null;
   String defProfName = null;
   
-  Matcher mtch = Pattern.compile("^hibernate([\\s*(\\S+)\\s*])?\\.(\\S+)$").matcher("");
+  Matcher mtch = Pattern.compile("^"+PersistParamPrefix+"([\\s*(\\S+)\\s*])?\\.(\\S+)$").matcher("");
   
   ServletContext servletContext = ctx.getServletContext();
   
@@ -44,9 +45,19 @@ public class Init implements ServletContextListener
    
    if( ! mtch.matches() )
     continue;
+
+   String profile = null;
+   String param = null;
+
+   if( mtch.groupCount() == 3 )
+   {
+    profile = mtch.group(2);
+    param = mtch.group(3);
+   }
+   else
+    param = mtch.group(mtch.groupCount());
    
-   String profile = mtch.group(2);
-   String param = mtch.group(3);
+
    
    Map<String,Object> cm = profMap.get(profile);
    
@@ -76,15 +87,15 @@ public class Init implements ServletContextListener
    if( me.getKey() == null )
     continue;
    
-   EMFManager.addFactory( me.getKey(), Persistence.createEntityManagerFactory ( "defaultPersistenceUnit", me.getValue() )  );
+   EMFManager.addFactory( me.getKey(), Persistence.createEntityManagerFactory ( "X-S", me.getValue() )  );
   }
   
   if( defaultProfile != null )
-   EMFManager.setDefaultFactory( Persistence.createEntityManagerFactory ( "defaultPersistenceUnit", defaultProfile ) );
+   EMFManager.setDefaultFactory( Persistence.createEntityManagerFactory ( "X-S", defaultProfile ) );
  }
 
  @Override
- public void contextInitialized(ServletContextEvent arg0)
+ public void contextDestroyed(ServletContextEvent arg0)
  {
   // TODO Auto-generated method stub
   

@@ -3,6 +3,8 @@
 	<name>X-S</name>
 	<comment></comment>
 	<projects>
+		<project>core_model</project>
+		<project>biosd_model</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

@@ -12,19 +12,15 @@
   <listener>
     <listener-class>uk.ac.ebi.biosd.xs.init.Init</listener-class>
   </listener>
-  
-    <servlet>
+  <servlet>
     <description>
   	</description>
     <display-name>Sample</display-name>
     <servlet-name>Sample</servlet-name>
-    <servlet-class>
-  	uk.ac.ebi.biosd.xs.service.SampleServlet</servlet-class>
+    <servlet-class>uk.ac.ebi.biosd.xs.service.SampleServlet</servlet-class>
   </servlet>
-  
   <servlet-mapping>
     <servlet-name>Sample</servlet-name>
     <url-pattern>/sample</url-pattern>
   </servlet-mapping>
-  
 </web-app>
