@@ -6,9 +6,7 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
-import javax.persistence.Query;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -16,11 +14,8 @@ import javax.servlet.http.HttpServletResponse;
 import uk.ac.ebi.biosd.export.STM2XMLconverter;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
+import uk.ac.ebi.fg.core_model.dao.hibernate.toplevel.AccessibleDAO;
 
-/**
- * Servlet implementation class ExportAll
- */
-@WebServlet("/ExportAll")
 public class ExportAll extends HttpServlet
 {
  static final String ProfileParameter = "server";
@@ -83,20 +78,16 @@ public class ExportAll extends HttpServlet
   long startID = Long.MIN_VALUE;
   long count = 0;
   
+  AccessibleDAO<BioSampleGroup> dao = new AccessibleDAO<>(BioSampleGroup.class, em);
+  
   try
   {
-   String queryStr = "SELECT a FROM " + BioSampleGroup.class.getCanonicalName() + " a ";//WHERE a.Id>=:id ORDER BY a.Id";
-   Query query = em.createQuery(queryStr);
 
    blockLoop: while(true)
    {
 
-    query.setParameter("id", startID);
-
-    query.setMaxResults(blockSize);
-
     @SuppressWarnings("unchecked")
-    List<BioSampleGroup> result = query.getResultList();
+    List<BioSampleGroup> result = dao.getList(startID, blockSize, BioSampleGroup.class);
 
     int i=0;
     
@@ -105,8 +96,8 @@ public class ExportAll extends HttpServlet
      count++;
      i++;
      
-     g.getId();
-     System.out.println(g.getAcc() + " : " + g.getSamples().size());
+//     g.getId();
+//     System.out.println(g.getAcc() + " : " + g.getSamples().size());
 
      STM2XMLconverter.exportGroup(g, System.out);
 

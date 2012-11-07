@@ -9,12 +9,14 @@
     <welcome-file>default.htm</welcome-file>
     <welcome-file>default.jsp</welcome-file>
   </welcome-file-list>
+
   <listener>
     <listener-class>uk.ac.ebi.biosd.xs.init.Init</listener-class>
   </listener>
+
   <servlet>
     <description>
-  	</description>
+   </description>
     <display-name>Sample</display-name>
     <servlet-name>Sample</servlet-name>
     <servlet-class>uk.ac.ebi.biosd.xs.service.SampleServlet</servlet-class>
@@ -23,4 +25,30 @@
     <servlet-name>Sample</servlet-name>
     <url-pattern>/sample</url-pattern>
   </servlet-mapping>
+
+  <servlet>
+    <description>
+   </description>
+    <display-name>Group</display-name>
+    <servlet-name>Group</servlet-name>
+    <servlet-class>uk.ac.ebi.biosd.xs.service.GroupServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Group</servlet-name>
+    <url-pattern>/group</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <description>
+   </description>
+    <display-name>Export</display-name>
+    <servlet-name>Export</servlet-name>
+    <servlet-class>uk.ac.ebi.biosd.xs.service.ExportAll</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Export</servlet-name>
+    <url-pattern>/export</url-pattern>
+  </servlet-mapping>
+
+
 </web-app>

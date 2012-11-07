@@ -6,7 +6,6 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -17,14 +16,12 @@ import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.core_model.dao.hibernate.toplevel.AccessibleDAO;
 
 
-
-@WebServlet("/GroupServlet")
 public class GroupServlet extends HttpServlet
 {
  private static final long serialVersionUID = 1L;
 
  static final String ProfileParameter = "server";
- static final String GroupParameter = "group";
+ static final String IdParameter = "id";
  
  public GroupServlet()
  {
@@ -39,7 +36,7 @@ public class GroupServlet extends HttpServlet
  @Override
  protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
  {
-  String group = request.getParameter(GroupParameter);
+  String group = request.getParameter(IdParameter);
   
   if( group == null )
   {

@@ -6,7 +6,6 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -18,13 +17,12 @@ import uk.ac.ebi.fg.core_model.dao.hibernate.toplevel.AccessibleDAO;
 
 
 
-@WebServlet("/SampleServlet")
 public class SampleServlet extends HttpServlet
 {
  private static final long serialVersionUID = 1L;
 
  static final String ProfileParameter = "server";
- static final String SampleParameter = "sample";
+ static final String IdParameter = "id";
  
  public SampleServlet()
  {
@@ -39,7 +37,7 @@ public class SampleServlet extends HttpServlet
  @Override
  protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
  {
-  String sample = request.getParameter(SampleParameter);
+  String sample = request.getParameter(IdParameter);
   
   if( sample == null )
   {

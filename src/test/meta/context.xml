@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Context>
 <Parameter name='persist.hibernate.connection.driver_class' value='oracle.jdbc.driver.OracleDriver'/>
-<Parameter name='persist.hibernate.connection.username' value='biosddev'/>
-<Parameter name='persist.hibernate.connection.password' value='biosddev'/>
+<Parameter name='persist.hibernate.connection.username' value='biosdtst'/>
+<Parameter name='persist.hibernate.connection.password' value='biosdtst'/>
 <Parameter name='persist.hibernate.connection.url' value='jdbc:oracle:thin:@bart.ebi.ac.uk:1521:biosdtst'/>
 <Parameter name='persist.hibernate.dialect' value='org.hibernate.dialect.Oracle10gDialect'/>
 <Parameter name='persist.hibernate.hbm2ddl.auto' value='update'/>
