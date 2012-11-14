@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="X-S" basedir="." xmlns:maven="antlib:org.apache.maven.artifact.ant" >
+
+	<target name="deps" description="download dependences jars" >
+
+		<maven:dependencies verbose="true" pathId="maven.classpath">
+			<maven:pom id="maven.pom" file="pom.xml" />
+		</maven:dependencies>
+
+		<copy todir="mvn-lib">
+			<fileset refid="maven.classpath" />
+			<!-- This mapper strips off all leading directory information -->
+			<mapper type="flatten" />
+		</copy>
+	</target>
+</project>

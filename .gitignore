@@ -6,3 +6,5 @@
 *.ear
 /.settings
 /lib
+/target
+/war

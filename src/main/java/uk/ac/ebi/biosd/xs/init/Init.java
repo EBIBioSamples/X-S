@@ -24,7 +24,7 @@ public class Init implements ServletContextListener
   Map<String,Object> defaultProfile=null;
   String defProfName = null;
   
-  Matcher mtch = Pattern.compile("^"+PersistParamPrefix+"([\\s*(\\S+)\\s*])?\\.(\\S+)$").matcher("");
+  Matcher mtch = Pattern.compile("^"+PersistParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
   
   ServletContext servletContext = ctx.getServletContext();
   
@@ -87,11 +87,11 @@ public class Init implements ServletContextListener
    if( me.getKey() == null )
     continue;
    
-   EMFManager.addFactory( me.getKey(), Persistence.createEntityManagerFactory ( "defaultPersistenceUnit", me.getValue() )  );
+   EMFManager.addFactory( me.getKey(), Persistence.createEntityManagerFactory ( "X-S", me.getValue() )  );
   }
   
   if( defaultProfile != null )
-   EMFManager.setDefaultFactory( Persistence.createEntityManagerFactory ( "defaultPersistenceUnit", defaultProfile ) );
+   EMFManager.setDefaultFactory( Persistence.createEntityManagerFactory ( "X-S", defaultProfile ) );
  }
 
  @Override

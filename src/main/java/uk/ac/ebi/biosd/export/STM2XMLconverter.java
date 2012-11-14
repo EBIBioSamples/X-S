@@ -25,7 +25,14 @@ import uk.ac.ebi.fg.core_model.xref.ReferenceSource;
 
 public class STM2XMLconverter
 {
- public static final String nameSpace = "http://www.ebi.ac.uk/biosamples/SampleGroupExportV2";
+ public enum Samples
+ {
+  NONE,
+  LIST,
+  EMBED
+ }
+ 
+ public static final String nameSpace = "http://www.ebi.ac.uk/biosamples/BioSDExportV1";
 
  
  private static void exportOntologyEntry( OntologyEntry val,  Appendable out) throws IOException
@@ -126,7 +133,7 @@ public class STM2XMLconverter
   {
    out.append("<Annotation type=\"");
    xmlEscaped(annt.getType().getName(), out);
-   out.append("\">\n");
+   out.append("\">");
    xmlEscaped(annt.getText(), out);
    out.append("\n</Annotation>\n");
   }
@@ -147,15 +154,15 @@ public class STM2XMLconverter
   out.append("type=\"");
   xmlEscaped(val.getType().getTermText(),out);
   out.append("\">\n");
-  out.append("<Value>\n");
+  out.append("<Value>");
   xmlEscaped(val.getTermText(),out);
-  out.append("\n</Value>\n");
+  out.append("</Value>\n");
 
   if( val.getUnit() != null )
   {
-   out.append("<Unit>\n");
+   out.append("<Unit>");
    xmlEscaped(val.getUnit().getTermText(),out);
-   out.append("\n</Unit>\n");
+   out.append("</Unit>\n");
   }
   
   if( val.getOntologyTerms() != null )
@@ -169,7 +176,7 @@ public class STM2XMLconverter
  
  public static void exportGroup( BioSampleGroup ao, Appendable out ) throws IOException
  {
-  exportGroup(ao, out, true);
+  exportGroup(ao, out, true, Samples.LIST );
  }
  
  private static void exportPerson( Contact cnt, Appendable out ) throws IOException
@@ -374,7 +381,7 @@ public class STM2XMLconverter
 
  }
  
- public static void exportGroup( BioSampleGroup ao, Appendable out, boolean showNS ) throws IOException
+ public static void exportGroup( BioSampleGroup ao, Appendable out, boolean showNS, Samples smpSts ) throws IOException
  {
   out.append("<BioSampleGroup ");
   
@@ -439,13 +446,15 @@ public class STM2XMLconverter
    msi.getReferenceSources();
   }
   
-  if( ao.getSamples() != null )
+  if( smpSts != Samples.NONE && ao.getSamples() != null )
   {
-   for( BioSample smp : ao.getSamples() )
-   {
-    exportSample(smp, out, false, false);
-   }
+    for( BioSample smp : ao.getSamples() )
+    {
+     exportSample(smp, out, false, smpSts == Samples.EMBED);
+    }
+   
   }
+  
   
   out.append("</BioSampleGroup>\n");
  }
