@@ -10,6 +10,10 @@
 		<xs:restriction base="xs:string" />
 	</xs:simpleType>
 
+	<xs:simpleType name="uriValueType">
+		<xs:restriction base="xs:anyURI" />
+	</xs:simpleType>
+
 	<xs:complexType name="annotationType">
 		<xs:simpleContent>
 			<xs:extension base="tns:stringValueType">
@@ -23,7 +27,7 @@
 		<xs:sequence>
 
 			<xs:element name="Name" type="tns:stringValueType" minOccurs="1" maxOccurs="1" />
-			<xs:element name="URI" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
+			<xs:element name="URI" type="tns:uriValueType" minOccurs="0" maxOccurs="1" />
 			<xs:element name="Version" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
 			<xs:element name="TermSourceID" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
 
@@ -36,7 +40,7 @@
 		<xs:sequence>
 
 			<xs:element name="Name" type="tns:stringValueType" minOccurs="1" maxOccurs="1" />
-			<xs:element name="URI" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
+			<xs:element name="URI" type="tns:uriValueType" minOccurs="0" maxOccurs="1" />
 			<xs:element name="Version" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
 
 		</xs:sequence>
@@ -49,8 +53,8 @@
 
 			<xs:element name="Name" type="tns:stringValueType" minOccurs="1" maxOccurs="1" />
 			<xs:element name="Address" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
-			<xs:element name="URI" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
-			<xs:element name="Email" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
+			<xs:element name="URI" type="tns:uriValueType" minOccurs="0" maxOccurs="1" />
+			<xs:element name="Email" type="tns:uriValueType" minOccurs="0" maxOccurs="1" />
 			<xs:element name="Role" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
 
 		</xs:sequence>
@@ -64,7 +68,7 @@
 
 			<xs:element name="Name" type="tns:stringValueType" minOccurs="1" maxOccurs="1" />
 			<xs:element name="ID" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
-			<xs:element name="URI" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
+			<xs:element name="URI" type="tns:uriValueType" minOccurs="0" maxOccurs="1" />
 
 		</xs:sequence>
 		
@@ -76,8 +80,8 @@
 
 			<xs:element name="FirstName" type="tns:stringValueType" minOccurs="1" maxOccurs="1" />
 			<xs:element name="LastName" type="tns:stringValueType" minOccurs="1" maxOccurs="1" />
-			<xs:element name="MidInitials" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
-			<xs:element name="Email" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
+			<xs:element name="Initials" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
+			<xs:element name="Email" type="tns:uriValueType" minOccurs="0" maxOccurs="1" />
 			<xs:element name="Role" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
 
 		</xs:sequence>
@@ -100,21 +104,35 @@
 
 		<xs:sequence>
 
-			<xs:element name="Value" type="tns:stringValueType" minOccurs="1" maxOccurs="1" />
+			<xs:element name="Value" type="tns:stringValueType"	minOccurs="1" maxOccurs="1" />
 
-			<xs:element name="Unit" type="tns:stringValueType" minOccurs="0" maxOccurs="1" />
-
-			<xs:element name="TermSourceREF" type="tns:termSourceREFType" minOccurs="0" maxOccurs="1" />
-
+			<xs:choice minOccurs="0" maxOccurs="1">
+				<xs:element name="Unit" type="tns:unitType" minOccurs="0" maxOccurs="1" />
+				<xs:element name="TermSourceREF" type="tns:termSourceREFType" minOccurs="0" maxOccurs="1" />
+			</xs:choice>
 		</xs:sequence>
 
 
-		<xs:attribute name="class" type="xs:string" use="required" />
-
-		<xs:attribute name="characteristic" type="xs:boolean" use="optional"/>
-		<xs:attribute name="comment" type="xs:boolean" use="optional"/>
+		<xs:attribute name="characteristic" type="xs:boolean"
+			use="optional" />
+		<xs:attribute name="comment" type="xs:boolean" use="optional" />
 
 		<xs:attribute name="type" type="xs:string" use="optional" />
+
+	</xs:complexType>
+
+
+	<xs:complexType name="unitType">
+
+		<xs:sequence>
+
+			<xs:element name="Value" type="tns:stringValueType"
+				minOccurs="1" maxOccurs="1" />
+
+			<xs:element name="TermSourceREF" type="tns:termSourceREFType"
+				minOccurs="0" maxOccurs="1" />
+
+		</xs:sequence>
 
 	</xs:complexType>
 

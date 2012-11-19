@@ -1,6 +1,7 @@
 package uk.ac.ebi.biosd.export;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
@@ -161,7 +162,19 @@ public class STM2XMLconverter
   if( val.getUnit() != null )
   {
    out.append("<Unit>");
+   out.append("<Value>");
    xmlEscaped(val.getUnit().getTermText(),out);
+   out.append("</Value>\n");  
+   
+   Collection<OntologyEntry> unitont = val.getUnit().getOntologyTerms();
+   
+   if( unitont != null )
+   {
+    for( OntologyEntry oe: unitont )
+     exportOntologyEntry( oe, out );
+   }
+   
+
    out.append("</Unit>\n");
   }
   
@@ -196,9 +209,9 @@ public class STM2XMLconverter
   s = cnt.getMidInitials();
   if( s != null && s.length() > 0 )
   {
-   out.append("<MidInitials>");
+   out.append("<Initials>");
    xmlEscaped(s, out);
-   out.append("</MidInitials>\n");
+   out.append("</Initials>\n");
   }
   
   s = cnt.getLastName();
