@@ -41,7 +41,7 @@ public class LoadTest
   conf.put("hibernate.connection.driver_class", "org.h2.Driver");
   conf.put("hibernate.connection.username", "sa");
   conf.put("hibernate.connection.password", "");
-  conf.put("hibernate.connection.url", "jdbc:h2:tcp://cocoa.ebi.ac.uk/XStest");
+  conf.put("hibernate.connection.url", "jdbc:h2:tcp://localhost/XStest");
   conf.put("hibernate.dialect", "org.hibernate.dialect.H2Dialect");
   conf.put("hibernate.hbm2ddl.auto", "update");
   

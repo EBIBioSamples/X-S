@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.IllegalFormatException;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.TimeZone;
 
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
@@ -91,10 +92,10 @@ public class STM2XMLconverter
  
  public static void exportSample(BioSample smp,  Appendable out) throws IOException
  {
-  exportSample(smp, out, true, true);
+  exportSample(smp, out, true, true, null);
  }
 
- private static void exportSample(BioSample smp,  Appendable out, boolean showNS, boolean showAnnt) throws IOException
+ private static void exportSample(BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId) throws IOException
  {
   out.append("<BioSample ");
   
@@ -104,6 +105,12 @@ public class STM2XMLconverter
   out.append("id=\"");
   xmlEscaped(smp.getAcc(), out);
  
+  if( grpId != null )
+  {
+   out.append("\" groupId=\"");
+   xmlEscaped(grpId, out);
+  }
+  
   if( ! showAnnt )
   {
    out.append("\"/>\n");
@@ -131,6 +138,21 @@ public class STM2XMLconverter
    
    
   }
+  
+  Set<BioSampleGroup> grps = smp.getGroups();
+  
+  if( grps != null )
+  {
+   out.append("\n");
+   for( BioSampleGroup grp : grps )
+   {
+    out.append("<GroupRef>");
+    xmlEscaped(grp.getAcc(), out);
+    out.append("</GroupRef>\n");
+   }
+  }
+  
+  if( smp.getGroups() != null)
   
   out.append("</BioSample>\n");
 
@@ -496,7 +518,7 @@ public class STM2XMLconverter
   {
     for( BioSample smp : ao.getSamples() )
     {
-     exportSample(smp, out, false, smpSts == Samples.EMBED);
+     exportSample(smp, out, false, smpSts == Samples.EMBED, ao.getAcc());
     }
    
   }
