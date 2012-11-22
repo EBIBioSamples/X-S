@@ -5,6 +5,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.Set;
@@ -52,12 +53,6 @@ public class STM2XMLconverter
  {
   out.append("<TermSourceREF>\n");
   
-  if( val.getAcc() != null )
-  {
-   out.append("<TermSourceID>");
-   xmlEscaped(val.getAcc(), out);
-   out.append("</TermSourceID>\n");
-  }
   
   ReferenceSource src = val.getSource();
   if( src != null )
@@ -86,16 +81,27 @@ public class STM2XMLconverter
 
   }
   
+  if( val.getAcc() != null )
+  {
+   out.append("<TermSourceID>");
+   xmlEscaped(val.getAcc(), out);
+   out.append("</TermSourceID>\n");
+  }
+  
   out.append("</TermSourceREF>\n");
 
  }
  
  public static void exportSample(BioSample smp,  Appendable out) throws IOException
  {
-  exportSample(smp, out, true, true, null);
+  exportSample(smp, out, true, true, null, null);
  }
+// <xs:element name="Annotation" type="tns:annotationType" minOccurs="0" maxOccurs="unbounded" />
+// <xs:element name="Property" type="tns:propertyType" minOccurs="0" maxOccurs="unbounded" />
+// <xs:element name="derivedFrom" type="tns:stringValueType" minOccurs="0" maxOccurs="unbounded" />
+// <xs:element name="GroupRef" type="tns:stringValueType" minOccurs="1" maxOccurs="unbounded" />
 
- private static void exportSample(BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId) throws IOException
+ private static void exportSample(BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset) throws IOException
  {
   out.append("<BioSample ");
   
@@ -124,7 +130,12 @@ public class STM2XMLconverter
   if( smp.getPropertyValues() != null )
   {
    for( ExperimentalPropertyValue<ExperimentalPropertyType> pval : smp.getPropertyValues() )
+   {
     exportPropertyValue(pval,out);
+    
+    if( attrset != null )
+     attrset.add(pval.getType().getTermText());
+   }
   }
   
   if( smp.getAllDerivedFrom() != null )
@@ -222,7 +233,7 @@ public class STM2XMLconverter
  
  public static void exportGroup( BioSampleGroup ao, Appendable out ) throws IOException
  {
-  exportGroup(ao, out, true, Samples.LIST );
+  exportGroup(ao, out, true, Samples.LIST, false );
  }
  
  private static void exportPerson( Contact cnt, Appendable out ) throws IOException
@@ -239,14 +250,6 @@ public class STM2XMLconverter
    out.append("</FirstName>\n");
   }
   
-  s = cnt.getMidInitials();
-  if( s != null && s.length() > 0 )
-  {
-   out.append("<Initials>");
-   xmlEscaped(s, out);
-   out.append("</Initials>\n");
-  }
-  
   s = cnt.getLastName();
   if( s != null && s.length() > 0 )
   {
@@ -255,6 +258,13 @@ public class STM2XMLconverter
    out.append("</LastName>\n");
   }
   
+  s = cnt.getMidInitials();
+  if( s != null && s.length() > 0 )
+  {
+   out.append("<Initials>");
+   xmlEscaped(s, out);
+   out.append("</Initials>\n");
+  }
  
   s = cnt.getEmail();
   if( s != null && s.length() > 0 )
@@ -274,7 +284,7 @@ public class STM2XMLconverter
    }
   }
   
-  out.append("</Person>");
+  out.append("</Person>\n");
 
  }
  
@@ -295,9 +305,9 @@ public class STM2XMLconverter
   s = cnt.getUrl();
   if( s != null && s.length() > 0 )
   {
-   out.append("<URL>");
+   out.append("<URI>");
    xmlEscaped(s, out);
-   out.append("</URL>\n");
+   out.append("</URI>\n");
   }
 
   s = cnt.getAcc();
@@ -327,6 +337,13 @@ public class STM2XMLconverter
    out.append("</Name>\n");
   }
 
+  s = org.getAddress();
+  if( s != null && s.length() > 0 )
+  {
+   out.append("<Address>");
+   xmlEscaped(s, out);
+   out.append("</Address>\n");
+  }
   
   s = org.getUrl();
   if( s != null && s.length() > 0 )
@@ -334,14 +351,6 @@ public class STM2XMLconverter
    out.append("<URI>");
    xmlEscaped(s, out);
    out.append("</URI>\n");
-  }
-  
-  s = org.getAddress();
-  if( s != null && s.length() > 0 )
-  {
-   out.append("<Address>");
-   xmlEscaped(s, out);
-   out.append("</Address>\n");
   }
   
   s = org.getEmail();
@@ -427,8 +436,13 @@ public class STM2XMLconverter
 
  }
  
- public static void exportGroup( BioSampleGroup ao, Appendable out, boolean showNS, Samples smpSts ) throws IOException
+ public static void exportGroup( BioSampleGroup ao, Appendable out, boolean showNS, Samples smpSts, boolean showAttributes ) throws IOException
  {
+  Set<String> attrset = null;
+  
+  if( showAttributes )
+   attrset = new HashSet<>();
+  
   out.append("<BioSampleGroup ");
   
   if( showNS )
@@ -438,14 +452,7 @@ public class STM2XMLconverter
   xmlEscaped(ao.getAcc(), out);
   out.append("\">\n");
 
-  exportAnnotations(ao, out);
-  
-  if( ao.getPropertyValues() != null )
-  {
-   for( ExperimentalPropertyValue<ExperimentalPropertyType> pval : ao.getPropertyValues() )
-    exportPropertyValue(pval,out);
-  }
-  
+
   MSI msi = null;
   
   if( ao.getMSIs() != null )
@@ -455,9 +462,16 @@ public class STM2XMLconverter
    if( it.hasNext() )
     msi = it.next();
   }
-  
+
+
   if( msi != null )
   {
+   if( msi.getSubmissionDate() != null )
+   {
+    out.append("<SubmissionDate>");
+    out.append( dateTimeFmt.format(msi.getSubmissionDate() ) );
+    out.append("</SubmissionDate>\n");
+   }
    
    if( msi.getReleaseDate() != null )
    {
@@ -472,15 +486,19 @@ public class STM2XMLconverter
     out.append( dateTimeFmt.format(msi.getUpdateDate() ) );
     out.append("</UpdateDate>\n");
    }
-
-   if( msi.getSubmissionDate() != null )
+   
+   if( msi.getReferenceSources() != null )
    {
-    out.append("<SubmissionDate>");
-    out.append( dateTimeFmt.format(msi.getSubmissionDate() ) );
-    out.append("</SubmissionDate>\n");
+    for( ReferenceSource c : msi.getReferenceSources() )
+     exportReferenceSources(c, out);
+   }
+   
+   if( msi.getOrganizations() != null )
+   {
+    for( Organization c : msi.getOrganizations() )
+     exportOrganization(c, out);
    }
 
-   
    if( msi.getContacts() != null )
    {
     for( Contact c : msi.getContacts() )
@@ -493,34 +511,45 @@ public class STM2XMLconverter
      exportDatabase(c, out);
    }
    
-   if( msi.getOrganizations() != null )
-   {
-    for( Organization c : msi.getOrganizations() )
-     exportOrganization(c, out);
-   }
-
    if( msi.getPublications() != null )
    {
     for( Publication c : msi.getPublications() )
      exportPublication(c, out);
    }
- 
-   if( msi.getReferenceSources() != null )
-   {
-    for( ReferenceSource c : msi.getReferenceSources() )
-     exportReferenceSources(c, out);
-   }
 
-   msi.getReferenceSources();
   }
+
+  
+  if( ao.getPropertyValues() != null )
+  {
+   for( ExperimentalPropertyValue<ExperimentalPropertyType> pval : ao.getPropertyValues() )
+    exportPropertyValue(pval,out);
+  }
+  
+  exportAnnotations(ao, out);
+
   
   if( smpSts != Samples.NONE && ao.getSamples() != null )
   {
     for( BioSample smp : ao.getSamples() )
     {
-     exportSample(smp, out, false, smpSts == Samples.EMBED, ao.getAcc());
+     exportSample(smp, out, false, smpSts == Samples.EMBED, ao.getAcc(), attrset);
     }
    
+  }
+  
+  if( showAttributes )
+  {
+   out.append("<SampleAttributes>\n");
+
+   for(String attNm : attrset)
+   {
+    out.append("<attribute>");
+    xmlEscaped(attNm, out);
+    out.append("</attribute>\n");
+   }
+
+   out.append("</SampleAttributes>\n");
   }
   
   

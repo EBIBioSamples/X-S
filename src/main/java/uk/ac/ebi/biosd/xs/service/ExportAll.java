@@ -25,6 +25,7 @@ public class ExportAll extends HttpServlet
  static final String LimitParameter = "limit";
  static final String SamplesParameter = "samples";
  static final String SinceParameter = "since";
+ static final String AttributesParameter = "showAttributes";
 
  private static final long serialVersionUID = 1L;
  
@@ -162,7 +163,7 @@ public class ExportAll extends HttpServlet
 //     g.getId();
 //     System.out.println(g.getAcc() + " : " + g.getSamples().size());
 
-     STM2XMLconverter.exportGroup( g, out, false, samples );
+     STM2XMLconverter.exportGroup( g, out, false, samples, "true".equals( request.getParameter(AttributesParameter) ) );
 
      startID=g.getId()+1;
      
