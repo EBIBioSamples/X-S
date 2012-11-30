@@ -1,19 +1,24 @@
 package uk.ac.ebi.biosd.export;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
-
-import org.h2.value.DataType;
 
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
+import uk.ac.ebi.fg.biosd.model.organizational.MSI;
+import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
 import uk.ac.ebi.fg.core_model.expgraph.Product;
 import uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicValue;
 import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyType;
 import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyValue;
+import uk.ac.ebi.fg.core_model.organizational.Contact;
+import uk.ac.ebi.fg.core_model.organizational.ContactRole;
+import uk.ac.ebi.fg.core_model.organizational.Organization;
+import uk.ac.ebi.fg.core_model.organizational.Publication;
 import uk.ac.ebi.fg.core_model.terms.OntologyEntry;
 import uk.ac.ebi.fg.core_model.xref.ReferenceSource;
 
@@ -37,8 +42,133 @@ public class AGEXMLconverter extends AbstractXMLexport
  @Override
  public void exportGroup(BioSampleGroup ao, Appendable out, boolean showNS, Samples smpSts, boolean showAttributes) throws IOException
  {
-  // TODO Auto-generated method stub
+  Set<String> attrset = null;
+  
+  if( showAttributes )
+   attrset = new HashSet<>();
+  
+  out.append("<SampleGroup ");
+  
+  if( showNS )
+   out.append("xmlns=\""+nameSpace+"\" ");
 
+  out.append("id=\"");
+  xmlEscaped(ao.getAcc(), out);
+  out.append("\">\n");
+
+
+  MSI msi = null;
+  
+  if( ao.getMSIs() != null )
+  {
+   Iterator<MSI> it = ao.getMSIs().iterator();
+   
+   if( it.hasNext() )
+    msi = it.next();
+  }
+
+
+  if( msi != null )
+  {
+   if( msi.getSubmissionDate() != null )
+   {
+    out.append("<attribute class=\"SubmissionDate\" classDefined=\"true\" dataType=\"DATETIME\">\n<value>");
+    out.append( dateTimeFmt.format(msi.getSubmissionDate() ) );
+    out.append("</value>\n</attribute>\n");
+   }
+   
+   if( msi.getReleaseDate() != null )
+   {
+    out.append("<attribute class=\"ReleaseDate\" classDefined=\"true\" dataType=\"DATETIME\">\n<value>");
+    out.append( dateTimeFmt.format(msi.getReleaseDate() ) );
+    out.append("</value>\n</attribute>\n");
+   }
+
+   if( msi.getUpdateDate() != null )
+   {
+    out.append("<attribute class=\"UpdateDate\" classDefined=\"true\" dataType=\"DATETIME\">\n<value>");
+    out.append( dateTimeFmt.format(msi.getUpdateDate() ) );
+    out.append("</value>\n</attribute>\n");
+   }
+   
+   if( msi.getReferenceSources() != null && msi.getReferenceSources().size() > 0 )
+   {
+    out.append("<attribute class=\"Term Sources\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+
+    for( ReferenceSource c : msi.getReferenceSources() )
+     exportReferenceSources(c, out);
+    
+    out.append("</attribute>\n");
+   }
+   
+   if( msi.getOrganizations() != null && msi.getOrganizations().size() > 0 )
+   {
+    out.append("<attribute class=\"Organizations\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+
+    for( Organization c : msi.getOrganizations() )
+     exportOrganization(c, out);    
+ 
+    out.append("</attribute>\n");
+   }
+
+   if( msi.getContacts() != null )
+   {
+    out.append("<attribute class=\"Persons\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+
+    for( Contact c : msi.getContacts() )
+     exportPerson(c, out); 
+    out.append("</attribute>\n");
+   }
+   
+   if( msi.getDatabases() != null )
+   {
+    for( DatabaseRefSource c : msi.getDatabases() )
+     exportDatabase(c, out);
+   }
+   
+   if( msi.getPublications() != null )
+   {
+    for( Publication c : msi.getPublications() )
+     exportPublication(c, out);
+   }
+
+  }
+
+  
+  if( ao.getPropertyValues() != null )
+  {
+   for( ExperimentalPropertyValue<ExperimentalPropertyType> pval : ao.getPropertyValues() )
+    exportPropertyValue(pval,out);
+  }
+  
+  exportAnnotations(ao, out);
+
+  
+  if( smpSts != Samples.NONE && ao.getSamples() != null )
+  {
+    for( BioSample smp : ao.getSamples() )
+    {
+     exportSample(smp, out, false, smpSts == Samples.EMBED, ao.getAcc(), attrset);
+    }
+   
+  }
+  
+  if( showAttributes )
+  {
+   out.append("<SampleAttributes>\n");
+
+   for(String attNm : attrset)
+   {
+    out.append("<attribute>");
+    xmlEscaped(attNm, out);
+    out.append("</attribute>\n");
+   }
+
+   out.append("</SampleAttributes>\n");
+  }
+  
+  
+  out.append("</SampleGroup>\n");
  }
 
  @Override
@@ -58,6 +188,86 @@ public class AGEXMLconverter extends AbstractXMLexport
  public void exportFooter(Appendable out) throws IOException
  {
   out.append("</BioSamples>\n");
+ }
+ 
+ 
+ private static void exportReferenceSources( ReferenceSource rs, Appendable out ) throws IOException
+ {
+  out.append("<value>\n<object id=\">");
+  xmlEscaped(rs.getAcc(), out);
+  out.append("\" class=\"TermSource\" classDefined=\"true\">\n");
+  
+  String s = null;
+  
+  s = rs.getName();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Term Source Name", s, out);
+  
+  s = rs.getUrl();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Term Source URI", s, out);
+  
+  s = rs.getVersion();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Term Source Version", s, out);
+
+  out.append("</object>\n</value>\n");
+ }
+ 
+ private static void exportOrganization( Organization org, Appendable out ) throws IOException
+ {
+  out.append("<value>\n<object id=\">");
+  out.append( String.valueOf(org.getId()) );
+  out.append("\" class=\"Organization\" classDefined=\"true\">\n");
+  
+  String s = null;
+  
+  s = org.getName();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Organization Name", s, out);
+
+  s = org.getAddress();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Organization Address", s, out);
+  
+  s = org.getUrl();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Organization URI", s, out);
+  
+  s = org.getEmail();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Organization Email", s, out);
+
+  if( org.getOrganizationRoles() != null && org.getOrganizationRoles().size() > 0  )
+   exportRoles("Organization Role", org.getOrganizationRoles(), out);
+   
+  out.append("</object>\n</value>\n");
+
+ }
+ 
+ private static void exportAttribute( String cls, String val, Appendable out ) throws IOException
+ {
+  out.append("<attribute class=\"");
+  xmlEscaped(cls, out);
+  out.append("\" classDefined=\"true\" dataType=\"STRING\">\n<value>");
+  xmlEscaped(val,out);
+  out.append("</value>\n</attribute>\n");
+ }
+ 
+ private static void exportRoles( String cls, Collection<ContactRole> roles, Appendable out ) throws IOException
+ {
+  out.append("<attribute class=\"");
+  xmlEscaped(cls, out);
+  out.append("\" classDefined=\"true\" dataType=\"STRING\">\n");
+  
+  for( ContactRole cr : roles )
+  {
+   out.append("<value>");
+   xmlEscaped(cr.getName(), out);
+   out.append("</value>\n");
+  }
+
+  out.append("</attribute>\n");
  }
  
  private static void exportSample(BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset) throws IOException
@@ -93,32 +303,6 @@ public class AGEXMLconverter extends AbstractXMLexport
    }
   }
   
-  if( oldFormat )
-   exportAttributedOld( ao, out, atset );
-  else
-   exportAttributed( ao, out, atset );
-
-  if( showRels && ao.getRelations() != null )
-  {
-   for( AgeRelation rl : ao.getRelations() )
-   {
-    if( rl.isInferred() )
-     continue;
-
-    String clsName = rl.getAgeElClass().getName();
-
-    out.append("<relation class=\"");
-    out.append(StringUtils.xmlEscaped(clsName));
-    out.append("\" targetId=\"");
-    out.append(StringUtils.xmlEscaped(rl.getTargetObjectId()));
-    out.append("\" targetClass=\"" +rl.getTargetObject());
-    out.append(StringUtils.xmlEscaped(rl.getTargetObject().getAgeElClass().getName()));
-    out.append("\" />");
-    
-   }
-   
-  }
-   
   if( smp.getAllDerivedFrom() != null )
   {
    for( Product<?> p : smp.getAllDerivedFrom() )
@@ -156,10 +340,10 @@ public class AGEXMLconverter extends AbstractXMLexport
 
   if( val.getUnit() != null )
   {
-   out.append("<Unit>");
-   out.append("<Value>");
+   out.append("<attribute classDefined=\"true\" dataType=\"OBJECT\" class=\"Unit\">\n");
+   out.append("<value>");
    xmlEscaped(val.getUnit().getTermText(),out);
-   out.append("</Value>\n");  
+   out.append("</value>\n");  
    
    Collection<OntologyEntry> unitont = val.getUnit().getOntologyTerms();
    
@@ -170,7 +354,7 @@ public class AGEXMLconverter extends AbstractXMLexport
    }
    
 
-   out.append("</Unit>\n");
+   out.append("</attribute>\n");
   }
   
   if( val.getOntologyTerms() != null )
@@ -182,20 +366,7 @@ public class AGEXMLconverter extends AbstractXMLexport
   out.append("</attribute>\n");
  }
  
-//  <attribute class="Term Source REF" classDefined="true" dataType="OBJECT">
-//  <objectValue>
-//  <object id="NCBI Taxonomy" class="Term Source" classDefined="true">
-//  <attribute class="Term Source URI" classDefined="true" dataType="URI">
-//  <simpleValue>
-//  <value>http://www.ncbi.nlm.nih.gov/taxonomy/</value>
-//   </simpleValue>
-//  </attribute>
-//  <attribute class="Term Source Name" classDefined="true" dataType="STRING">
-//  <simpleValue><value>NCBI Taxonomy</value></simpleValue></attribute>
-//  </object></objectValue></attribute>
-//  <attribute class="Term Source ID" classDefined="true" dataType="STRING">
-//  <simpleValue><value>10090</value></simpleValue></attribute><value>Mus musculus</value></simpleValue></attribute>
- 
+
  
  private static void exportOntologyEntry( OntologyEntry val,  Appendable out) throws IOException
  {
@@ -242,43 +413,5 @@ public class AGEXMLconverter extends AbstractXMLexport
 
  }
  
- private void exportAttributedOld( Attributed ao, PrintWriter out, Set<AgeAttributeClass> atset )
- {
-  for( AgeAttributeClass aac : ao.getAttributeClasses() )
-  {
-   if( atset != null )
-    atset.add(aac);
-   
-   out.print("<attribute class=\"");
-   out.print(StringUtils.xmlEscaped(aac.getName()));
-   out.println("\" classDefined=\""+(aac.isCustom()?"false":"true")+"\" dataType=\""+aac.getDataType().name()+"\">");
-
-   for( AgeAttribute attr : ao.getAttributesByClass(aac, false) )
-   {
-    out.print("<value>");
-    
-    exportAttributedOld( attr, out, null );
-
-    if( aac.getDataType() != DataType.OBJECT )
-     out.print(StringUtils.xmlEscaped(attr.getValue().toString()));
-    else
-    {
-     AgeObject tgtObj = (AgeObject)attr.getValue();
-     
-     out.print("<object id=\""+StringUtils.xmlEscaped(tgtObj.getId())+"\" class=\"");
-     out.print(StringUtils.xmlEscaped(tgtObj.getAgeElClass().getName()));
-     out.println("\" classDefined=\""+(tgtObj.getAgeElClass().isCustom()?"false":"true")+"\">");
- 
-     exportAttributedOld( tgtObj, out, null );
-    
-     out.println("</object>");
-    }
-
-    out.println("</value>");
-   }
-
-   out.println("</attribute>");
-  }
- }
  
 }
