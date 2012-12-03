@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import uk.ac.ebi.biosd.export.STM2XMLconverter;
+import uk.ac.ebi.biosd.export.AbstractXMLFormatter;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.core_model.dao.hibernate.toplevel.AccessibleDAO;
@@ -21,6 +21,9 @@ public class SampleServlet extends HttpServlet
 {
  private static final long serialVersionUID = 1L;
 
+ static final String DefaultSchema = SchemaManager.STXML;
+
+ static final String SchemaParameter = "schema";
  static final String ProfileParameter = "server";
  static final String IdParameter = "id";
  
@@ -37,6 +40,22 @@ public class SampleServlet extends HttpServlet
  @Override
  protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
  {
+  AbstractXMLFormatter formatter=null;
+  
+  String sch = request.getParameter(SchemaParameter);
+  
+  if( sch == null )
+   sch = DefaultSchema;
+
+  formatter = SchemaManager.getFormatter(sch);
+  
+  if( formatter == null )
+  {
+   response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+   response.getWriter().append("<html><body><span color='red'>Invalid schema: '"+sch+"'</span></body></html>");
+   return;
+  }
+
   String sample = request.getParameter(IdParameter);
   
   if( sample == null )
@@ -84,7 +103,7 @@ public class SampleServlet extends HttpServlet
   
   response.setContentType("text/xml");
   
-  STM2XMLconverter.exportSample(smp, response.getWriter());
+  formatter.exportSample(smp, response.getWriter());
   
   ts.commit();
   

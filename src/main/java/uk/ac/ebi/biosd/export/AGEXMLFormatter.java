@@ -22,7 +22,7 @@ import uk.ac.ebi.fg.core_model.organizational.Publication;
 import uk.ac.ebi.fg.core_model.terms.OntologyEntry;
 import uk.ac.ebi.fg.core_model.xref.ReferenceSource;
 
-public class AGEXMLconverter extends AbstractXMLexport
+public class AGEXMLFormatter extends AbstractXMLFormatter
 {
  private static String nameSpace = "http://www.ebi.ac.uk/biosamples/SampleGroupExportV1";
  
@@ -117,6 +117,7 @@ public class AGEXMLconverter extends AbstractXMLexport
 
     for( Contact c : msi.getContacts() )
      exportPerson(c, out); 
+
     out.append("</attribute>\n");
    }
    
@@ -141,16 +142,13 @@ public class AGEXMLconverter extends AbstractXMLexport
     exportPropertyValue(pval,out);
   }
   
-  exportAnnotations(ao, out);
-
   
   if( smpSts != Samples.NONE && ao.getSamples() != null )
   {
-    for( BioSample smp : ao.getSamples() )
-    {
-     exportSample(smp, out, false, smpSts == Samples.EMBED, ao.getAcc(), attrset);
-    }
-   
+   for(BioSample smp : ao.getSamples())
+   {
+    exportSample(smp, out, false, smpSts == Samples.EMBED, ao.getAcc(), attrset);
+   }
   }
   
   if( showAttributes )
@@ -159,14 +157,13 @@ public class AGEXMLconverter extends AbstractXMLexport
 
    for(String attNm : attrset)
    {
-    out.append("<attribute>");
+    out.append("<attribute class=\"");
     xmlEscaped(attNm, out);
-    out.append("</attribute>\n");
+    out.append("\" classDefined=\"true\" dataType=\"STRING\"/>\n");
    }
 
    out.append("</SampleAttributes>\n");
   }
-  
   
   out.append("</SampleGroup>\n");
  }
@@ -193,7 +190,7 @@ public class AGEXMLconverter extends AbstractXMLexport
  
  private static void exportReferenceSources( ReferenceSource rs, Appendable out ) throws IOException
  {
-  out.append("<value>\n<object id=\">");
+  out.append("<value>\n<object id=\"");
   xmlEscaped(rs.getAcc(), out);
   out.append("\" class=\"TermSource\" classDefined=\"true\">\n");
   
@@ -216,7 +213,7 @@ public class AGEXMLconverter extends AbstractXMLexport
  
  private static void exportOrganization( Organization org, Appendable out ) throws IOException
  {
-  out.append("<value>\n<object id=\">");
+  out.append("<value>\n<object id=\"");
   out.append( String.valueOf(org.getId()) );
   out.append("\" class=\"Organization\" classDefined=\"true\">\n");
   
@@ -241,6 +238,81 @@ public class AGEXMLconverter extends AbstractXMLexport
   if( org.getOrganizationRoles() != null && org.getOrganizationRoles().size() > 0  )
    exportRoles("Organization Role", org.getOrganizationRoles(), out);
    
+  out.append("</object>\n</value>\n");
+
+ }
+ 
+ private static void exportPerson( Contact cnt, Appendable out ) throws IOException
+ {
+  out.append("<value>\n<object id=\"");
+  out.append( String.valueOf(cnt.getId()) );
+  out.append("\" class=\"Organization\" classDefined=\"true\">\n");
+  
+  String s = null;
+  
+  s = cnt.getFirstName();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Person First Name", s, out);
+
+  s = cnt.getLastName();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Person Last Name", s, out);
+
+  s = cnt.getMidInitials();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Person Initials", s, out);
+ 
+  s = cnt.getEmail();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Person Email", s, out);
+
+  if( cnt.getContactRoles() != null && cnt.getContactRoles().size() > 0  )
+   exportRoles("Person Role", cnt.getContactRoles(), out);
+  
+  out.append("</object>\n</value>\n");
+
+ }
+ 
+ private static void exportPublication( Publication pub, Appendable out ) throws IOException
+ {
+  out.append("<value>\n<object id=\"");
+  out.append( String.valueOf(pub.getId()) );
+  out.append("\" class=\"Publication\" classDefined=\"true\">\n");
+  
+  String s = null;
+  
+  s = pub.getDOI();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Publication DOI", s, out);
+  
+  s = pub.getPubmedId();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Publication PubMed ID", s, out);
+
+  out.append("</object>\n</value>\n");
+
+ }
+ 
+ private static void exportDatabase( DatabaseRefSource cnt, Appendable out ) throws IOException
+ {
+  out.append("<value>\n<object id=\"");
+  out.append( String.valueOf(cnt.getId()) );
+  out.append("\" class=\"Database\" classDefined=\"true\">\n");
+  
+  String s = null;
+  
+  s = cnt.getName();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Database Name", s, out);
+
+  s = cnt.getUrl();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Database URI", s, out);
+
+  s = cnt.getAcc();
+  if( s != null && s.length() > 0 )
+   exportAttribute("Database ID", s, out);
+ 
   out.append("</object>\n</value>\n");
 
  }

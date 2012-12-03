@@ -14,13 +14,16 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import uk.ac.ebi.biosd.export.STM2XMLconverter;
-import uk.ac.ebi.biosd.export.STM2XMLconverter.Samples;
+import uk.ac.ebi.biosd.export.AbstractXMLFormatter;
+import uk.ac.ebi.biosd.export.AbstractXMLFormatter.Samples;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 
 public class ExportAll extends HttpServlet
 {
+ static final String DefaultSchema = SchemaManager.STXML;
+
+ static final String SchemaParameter = "schema";
  static final String ProfileParameter = "server";
  static final String LimitParameter = "limit";
  static final String SamplesParameter = "samples";
@@ -38,6 +41,22 @@ public class ExportAll extends HttpServlet
  @Override
  protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
  {
+  AbstractXMLFormatter formatter=null;
+  
+  String sch = request.getParameter(SchemaParameter);
+  
+  if( sch == null )
+   sch = DefaultSchema;
+
+  formatter = SchemaManager.getFormatter(sch);
+  
+  if( formatter == null )
+  {
+   response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+   response.getWriter().append("<html><body><span color='red'>Invalid schema: '"+sch+"'</span></body></html>");
+   return;
+  }
+  
   long limit=-1;
   
   String limP =  request.getParameter(LimitParameter);
@@ -127,9 +146,11 @@ public class ExportAll extends HttpServlet
   response.setContentType("text/xml");
   Appendable out = response.getWriter();
   
-  out.append("<BioSamples xmlns=\""+STM2XMLconverter.nameSpace+"\" timestamp=\""+(new java.util.Date().getTime())+"\">\n");
+  formatter.exportHeader(new java.util.Date().getTime(), out);
   
   Query listQuery = null;
+  
+  boolean exportAttributes = "true".equals( request.getParameter(AttributesParameter) );
   
   if( since < 0 )
    listQuery = em.createQuery("SELECT a FROM " + BioSampleGroup.class.getCanonicalName () + " a WHERE a.id >=?1 ORDER BY a.id");
@@ -159,11 +180,8 @@ public class ExportAll extends HttpServlet
     {
      count++;
      i++;
-     
-//     g.getId();
-//     System.out.println(g.getAcc() + " : " + g.getSamples().size());
 
-     STM2XMLconverter.exportGroup( g, out, false, samples, "true".equals( request.getParameter(AttributesParameter) ) );
+     formatter.exportGroup( g, out, false, samples, exportAttributes );
 
      startID=g.getId()+1;
      
@@ -182,7 +200,7 @@ public class ExportAll extends HttpServlet
    em.close();
   }
   
-  out.append("</BioSamples>\n");
+  formatter.exportFooter(out);
 
   
  }

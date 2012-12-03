@@ -27,7 +27,7 @@ import uk.ac.ebi.fg.core_model.xref.ReferenceSource;
 
 
 
-public class STXMLconverter extends AbstractXMLexport
+public class STXMLFormatter extends AbstractXMLFormatter
 {
  
 // public static final String updateDate = "Submission Update Date";
@@ -39,7 +39,7 @@ public class STXMLconverter extends AbstractXMLexport
 
  private static DateToXsdDatetimeFormatter dateTimeFmt = new DateToXsdDatetimeFormatter( TimeZone.getTimeZone("GMT") );
  
- public STXMLconverter()
+ public STXMLFormatter()
  {}
  
  

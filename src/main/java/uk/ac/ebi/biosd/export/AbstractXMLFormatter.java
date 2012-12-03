@@ -10,7 +10,7 @@ import java.util.TimeZone;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 
-public abstract class AbstractXMLexport
+public abstract class AbstractXMLFormatter
 {
  public enum Samples
  {
