@@ -22,10 +22,42 @@ import uk.ac.ebi.fg.core_model.organizational.Publication;
 import uk.ac.ebi.fg.core_model.terms.OntologyEntry;
 import uk.ac.ebi.fg.core_model.xref.ReferenceSource;
 
-public class AGEXMLFormatter extends AbstractXMLFormatter
+public class AGE1XMLFormatter extends AbstractXMLFormatter
 {
  private static String nameSpace = "http://www.ebi.ac.uk/biosamples/SampleGroupExportV1";
  
+ protected String getNameSpace()
+ {
+  return nameSpace;
+ }
+ 
+ protected void exportSimpleValuePefix( Appendable out ) throws IOException
+ {
+  out.append("<value>");
+ }
+
+ protected void exportSimpleValuePostfix( Appendable out ) throws IOException
+ {
+  out.append("</value>\n");
+ }
+ 
+ protected void exportSimpleValueStringPefix( Appendable out ) throws IOException
+ {
+ }
+
+ protected void exportSimpleValueStringPostfix( Appendable out ) throws IOException
+ {
+ }
+
+ protected void exportObjectValuePrefix( Appendable out ) throws IOException
+ {
+  out.append("<value>");
+ }
+
+ protected void exportObjectValuePostfix( Appendable out ) throws IOException
+ {
+  out.append("</value>\n");
+ }
  
  @Override
  public void exportSample(BioSample smp, Appendable out) throws IOException
@@ -50,7 +82,7 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
   out.append("<SampleGroup ");
   
   if( showNS )
-   out.append("xmlns=\""+nameSpace+"\" ");
+   out.append("xmlns=\""+getNameSpace()+"\" ");
 
   out.append("id=\"");
   xmlEscaped(ao.getAcc(), out);
@@ -72,23 +104,35 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
   {
    if( msi.getSubmissionDate() != null )
    {
-    out.append("<attribute class=\"SubmissionDate\" classDefined=\"true\" dataType=\"DATETIME\">\n<value>");
+    out.append("<attribute class=\"SubmissionDate\" classDefined=\"true\" dataType=\"DATETIME\">\n");
+    exportSimpleValuePefix(out);
+    exportSimpleValueStringPefix(out);
     out.append( dateTimeFmt.format(msi.getSubmissionDate() ) );
-    out.append("</value>\n</attribute>\n");
+    exportSimpleValueStringPostfix(out);
+    exportSimpleValuePostfix(out);
+    out.append("</attribute>\n");
    }
    
    if( msi.getReleaseDate() != null )
    {
-    out.append("<attribute class=\"ReleaseDate\" classDefined=\"true\" dataType=\"DATETIME\">\n<value>");
+    out.append("<attribute class=\"ReleaseDate\" classDefined=\"true\" dataType=\"DATETIME\">\n");
+    exportSimpleValuePefix(out);
+    exportSimpleValueStringPefix(out);
     out.append( dateTimeFmt.format(msi.getReleaseDate() ) );
-    out.append("</value>\n</attribute>\n");
+    exportSimpleValueStringPostfix(out);
+    exportSimpleValuePostfix(out);
+    out.append("</attribute>\n");
    }
 
    if( msi.getUpdateDate() != null )
    {
-    out.append("<attribute class=\"UpdateDate\" classDefined=\"true\" dataType=\"DATETIME\">\n<value>");
+    out.append("<attribute class=\"UpdateDate\" classDefined=\"true\" dataType=\"DATETIME\">\n");
+    exportSimpleValuePefix(out);
+    exportSimpleValueStringPefix(out);
     out.append( dateTimeFmt.format(msi.getUpdateDate() ) );
-    out.append("</value>\n</attribute>\n");
+    exportSimpleValueStringPostfix(out);
+    exportSimpleValuePostfix(out);
+    out.append("</attribute>\n");
    }
    
    if( msi.getReferenceSources() != null && msi.getReferenceSources().size() > 0 )
@@ -172,7 +216,7 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
  public void exportHeader(long ts,  Appendable out) throws IOException
  {
   out.append("<BioSamples xmlns=\"");
-  xmlEscaped(nameSpace, out);
+  xmlEscaped(getNameSpace(), out);
   
   if( ts > 0 )
    out.append("\" timestamp=\"").append( String.valueOf(ts) );
@@ -188,9 +232,10 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
  }
  
  
- private static void exportReferenceSources( ReferenceSource rs, Appendable out ) throws IOException
+ private void exportReferenceSources( ReferenceSource rs, Appendable out ) throws IOException
  {
-  out.append("<value>\n<object id=\"");
+  exportObjectValuePrefix( out );
+  out.append("\n<object id=\"");
   xmlEscaped(rs.getAcc(), out);
   out.append("\" class=\"TermSource\" classDefined=\"true\">\n");
   
@@ -208,12 +253,14 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
   if( s != null && s.length() > 0 )
    exportAttribute("Term Source Version", s, out);
 
-  out.append("</object>\n</value>\n");
+  out.append("</object>\n");
+  exportObjectValuePostfix( out );
  }
  
- private static void exportOrganization( Organization org, Appendable out ) throws IOException
+ private void exportOrganization( Organization org, Appendable out ) throws IOException
  {
-  out.append("<value>\n<object id=\"");
+  exportObjectValuePrefix( out );
+  out.append("\n<object id=\"");
   out.append( String.valueOf(org.getId()) );
   out.append("\" class=\"Organization\" classDefined=\"true\">\n");
   
@@ -238,13 +285,14 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
   if( org.getOrganizationRoles() != null && org.getOrganizationRoles().size() > 0  )
    exportRoles("Organization Role", org.getOrganizationRoles(), out);
    
-  out.append("</object>\n</value>\n");
-
+  out.append("</object>\n");
+  exportObjectValuePostfix( out );
  }
  
- private static void exportPerson( Contact cnt, Appendable out ) throws IOException
+ private void exportPerson( Contact cnt, Appendable out ) throws IOException
  {
-  out.append("<value>\n<object id=\"");
+  exportObjectValuePrefix( out );
+  out.append("\n<object id=\"");
   out.append( String.valueOf(cnt.getId()) );
   out.append("\" class=\"Organization\" classDefined=\"true\">\n");
   
@@ -269,13 +317,14 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
   if( cnt.getContactRoles() != null && cnt.getContactRoles().size() > 0  )
    exportRoles("Person Role", cnt.getContactRoles(), out);
   
-  out.append("</object>\n</value>\n");
-
+  out.append("</object>\n");
+  exportObjectValuePostfix( out );
  }
  
- private static void exportPublication( Publication pub, Appendable out ) throws IOException
+ private void exportPublication( Publication pub, Appendable out ) throws IOException
  {
-  out.append("<value>\n<object id=\"");
+  exportObjectValuePrefix( out );
+  out.append("\n<object id=\"");
   out.append( String.valueOf(pub.getId()) );
   out.append("\" class=\"Publication\" classDefined=\"true\">\n");
   
@@ -289,13 +338,14 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
   if( s != null && s.length() > 0 )
    exportAttribute("Publication PubMed ID", s, out);
 
-  out.append("</object>\n</value>\n");
-
+  out.append("</object>\n");
+  exportObjectValuePostfix( out );
  }
  
- private static void exportDatabase( DatabaseRefSource cnt, Appendable out ) throws IOException
+ private void exportDatabase( DatabaseRefSource cnt, Appendable out ) throws IOException
  {
-  out.append("<value>\n<object id=\"");
+  exportObjectValuePrefix( out );
+  out.append("\n<object id=\"");
   out.append( String.valueOf(cnt.getId()) );
   out.append("\" class=\"Database\" classDefined=\"true\">\n");
   
@@ -313,20 +363,24 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
   if( s != null && s.length() > 0 )
    exportAttribute("Database ID", s, out);
  
-  out.append("</object>\n</value>\n");
-
+  out.append("</object>\n");
+  exportObjectValuePostfix( out );
  }
  
- private static void exportAttribute( String cls, String val, Appendable out ) throws IOException
+ private void exportAttribute( String cls, String val, Appendable out ) throws IOException
  {
   out.append("<attribute class=\"");
   xmlEscaped(cls, out);
-  out.append("\" classDefined=\"true\" dataType=\"STRING\">\n<value>");
+  out.append("\" classDefined=\"true\" dataType=\"STRING\">\n");
+  exportSimpleValuePefix(out);
+  exportSimpleValueStringPefix(out);
   xmlEscaped(val,out);
-  out.append("</value>\n</attribute>\n");
+  exportSimpleValueStringPostfix(out);
+  exportSimpleValuePostfix(out);
+  out.append("</attribute>\n");
  }
  
- private static void exportRoles( String cls, Collection<ContactRole> roles, Appendable out ) throws IOException
+ private void exportRoles( String cls, Collection<ContactRole> roles, Appendable out ) throws IOException
  {
   out.append("<attribute class=\"");
   xmlEscaped(cls, out);
@@ -334,22 +388,24 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
   
   for( ContactRole cr : roles )
   {
-   out.append("<value>");
+   exportSimpleValuePefix(out);
+   exportSimpleValueStringPefix(out);
    xmlEscaped(cr.getName(), out);
-   out.append("</value>\n");
+   exportSimpleValueStringPostfix(out);
+   exportSimpleValuePostfix(out);
   }
 
   out.append("</attribute>\n");
  }
  
- private static void exportSample(BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset) throws IOException
+ private void exportSample(BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset) throws IOException
  {
   out.append("<Sample ");
    
   if( showNS )
   {
    out.append( "xmlns=\"");
-   xmlEscaped(nameSpace, out);
+   xmlEscaped(getNameSpace(), out);
    out.append( "\" ");
   }
 
@@ -389,7 +445,7 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
   out.append("</Sample>");
  }
 
- private static void exportPropertyValue( ExperimentalPropertyValue<? extends ExperimentalPropertyType> val,  Appendable out) throws IOException
+ private void exportPropertyValue( ExperimentalPropertyValue<? extends ExperimentalPropertyType> val,  Appendable out) throws IOException
  {
   boolean isChar = ( val instanceof BioCharacteristicValue );
   boolean isComm = ( val instanceof SampleCommentValue );
@@ -406,17 +462,22 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
   out.append("\">\n");
   
   
-  out.append("<value>");
+  exportSimpleValuePefix(out);
+  
+  exportSimpleValueStringPefix(out);
   xmlEscaped(val.getTermText(),out);
-  out.append("</value>\n");
+  exportSimpleValueStringPostfix(out);
+
 
   if( val.getUnit() != null )
   {
    out.append("<attribute classDefined=\"true\" dataType=\"OBJECT\" class=\"Unit\">\n");
-   out.append("<value>");
+   exportSimpleValuePefix(out);
+   exportSimpleValueStringPefix(out);
    xmlEscaped(val.getUnit().getTermText(),out);
-   out.append("</value>\n");  
-   
+   exportSimpleValueStringPostfix(out);
+   exportSimpleValuePostfix(out);
+
    Collection<OntologyEntry> unitont = val.getUnit().getOntologyTerms();
    
    if( unitont != null )
@@ -434,54 +495,83 @@ public class AGEXMLFormatter extends AbstractXMLFormatter
    for( OntologyEntry oe: val.getOntologyTerms() )
     exportOntologyEntry( oe, out );
   }
-  
+
+  exportSimpleValuePostfix(out);
+
   out.append("</attribute>\n");
  }
  
 
  
- private static void exportOntologyEntry( OntologyEntry val,  Appendable out) throws IOException
+ private void exportOntologyEntry( OntologyEntry val,  Appendable out) throws IOException
  {
   ReferenceSource src = val.getSource();
 
-  out.append("<attribute class=\"Term Source REF\" classDefined=\"true\" dataType=\"OBJECT\">\n<value>\n");
-  out.append("<object id=\""+src.getName()+"\" class=\"Term Source\" classDefined=\"true\">\n");
+  out.append("<attribute class=\"Term Source REF\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+  exportObjectValuePrefix(out);
+  out.append("\n<object id=\""+src.getName()+"\" class=\"Term Source\" classDefined=\"true\">\n");
   
   
   if( src != null )
   {
    if( src.getName() != null )
    {
-    out.append("<attribute class=\"Term Source Name\" classDefined=\"true\" dataType=\"STRING\">\n<value>");
-    xmlEscaped(src.getName(), out);
-    out.append("</value>\n</attribute>\n");
+    out.append("<attribute class=\"Term Source Name\" classDefined=\"true\" dataType=\"STRING\">\n");
+
+    exportSimpleValuePefix(out);
+    exportSimpleValueStringPefix(out);
+    xmlEscaped(src.getName(),out);
+    exportSimpleValueStringPostfix(out);
+    exportSimpleValuePostfix(out);
+
+    out.append("</attribute>\n");
    }
    
   
    if( src.getUrl() != null )
    {
-    out.append("<attribute class=\"Term Source URI\" classDefined=\"true\" dataType=\"STRING\">\n<value>");
-    xmlEscaped(src.getUrl(), out);
-    out.append("</value>\n</attribute>\n");
+    out.append("<attribute class=\"Term Source URI\" classDefined=\"true\" dataType=\"STRING\">\n");
+
+    exportSimpleValuePefix(out);
+    exportSimpleValueStringPefix(out);
+    xmlEscaped(src.getUrl(),out);
+    exportSimpleValueStringPostfix(out);
+    exportSimpleValuePostfix(out);
+
+    out.append("</attribute>\n");
    }
 
    if( src.getVersion() != null )
    {
-    out.append("<attribute class=\"Term Source Version\" classDefined=\"true\" dataType=\"STRING\">\n<value>");
-    xmlEscaped(src.getVersion(), out);
-    out.append("</value>\n</attribute>\n");
+    out.append("<attribute class=\"Term Source Version\" classDefined=\"true\" dataType=\"STRING\">\n");
+
+    exportSimpleValuePefix(out);
+    exportSimpleValueStringPefix(out);
+    xmlEscaped(src.getVersion(),out);
+    exportSimpleValueStringPostfix(out);
+    exportSimpleValuePostfix(out);
+
+    out.append("</attribute>\n");
    }
 
   }
   
   if( val.getAcc() != null )
   {
-   out.append("<attribute class=\"Term Source ID\" classDefined=\"true\" dataType=\"STRING\">\n<value>");
-   xmlEscaped(val.getAcc(), out);
-   out.append("</value>\n</attribute>\n");
+   out.append("<attribute class=\"Term Source ID\" classDefined=\"true\" dataType=\"STRING\">\n");
+
+   exportSimpleValuePefix(out);
+   exportSimpleValueStringPefix(out);
+   xmlEscaped(val.getAcc(),out);
+   exportSimpleValueStringPostfix(out);
+   exportSimpleValuePostfix(out);
+
+   out.append("</attribute>\n");
   }
   
-  out.append("</object>\n</value>\n</attribute>\n");
+  out.append("</object>\n");
+  exportObjectValuePostfix(out);
+  out.append("</attribute>\n");
 
  }
  
