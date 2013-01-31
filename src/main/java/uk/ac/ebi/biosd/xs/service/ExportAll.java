@@ -3,7 +3,11 @@ package uk.ac.ebi.biosd.xs.service;
 import java.io.IOException;
 import java.sql.Date;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -18,6 +22,8 @@ import uk.ac.ebi.biosd.export.AbstractXMLFormatter;
 import uk.ac.ebi.biosd.export.AbstractXMLFormatter.Samples;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
+import uk.ac.ebi.fg.biosd.model.organizational.MSI;
+import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
 
 public class ExportAll extends HttpServlet
 {
@@ -163,6 +169,10 @@ public class ExportAll extends HttpServlet
   
   listQuery.setMaxResults ( blockSize );  
   
+  Map<String, Counter> srcMap = new HashMap<String, Counter>();
+  
+  Set<String> msiTags = new HashSet<String>();
+  
   try
   {
 
@@ -183,6 +193,31 @@ public class ExportAll extends HttpServlet
 
      formatter.exportGroup( g, out, false, samples, exportAttributes );
 
+     msiTags.clear();
+     int nSmp = g.getSamples().size();
+     
+     for( MSI msi : g.getMSIs() )
+     {
+      for( DatabaseRefSource db :  msi.getDatabases() )
+      {
+       String scrNm = db.getName();
+       
+       if( msiTags.contains(scrNm) )
+        continue;
+       
+       msiTags.add(scrNm);
+       
+       Counter c = srcMap.get(db.getName());
+       
+       if( c == null )
+        srcMap.put(db.getName(), new Counter(nSmp) );
+       else
+        c.add(nSmp);
+       
+      }
+     }
+     
+     
      startID=g.getId()+1;
      
      if( count >= limit )
@@ -200,6 +235,7 @@ public class ExportAll extends HttpServlet
    em.close();
   }
   
+  formatter.exportSources(srcMap, out);
   formatter.exportFooter(out);
 
   

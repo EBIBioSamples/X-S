@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
+import uk.ac.ebi.biosd.xs.service.Counter;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
@@ -569,6 +571,13 @@ public class STXMLFormatter extends AbstractXMLFormatter
 
   out.append("</TermSource>\n");
 
+ }
+
+
+
+ @Override
+ public void exportSources(Map<String, Counter> srcMap, Appendable out) throws IOException
+ {
  }
 
 

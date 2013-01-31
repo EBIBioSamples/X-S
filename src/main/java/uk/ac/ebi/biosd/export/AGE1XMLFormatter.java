@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
+import uk.ac.ebi.biosd.xs.service.Counter;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
@@ -104,7 +106,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   {
    if( msi.getSubmissionDate() != null )
    {
-    out.append("<attribute class=\"SubmissionDate\" classDefined=\"true\" dataType=\"DATETIME\">\n");
+    out.append("<attribute class=\"Submission Date\" classDefined=\"true\" dataType=\"DATETIME\">\n");
     exportSimpleValuePefix(out);
     exportSimpleValueStringPefix(out);
     out.append( dateTimeFmt.format(msi.getSubmissionDate() ) );
@@ -115,7 +117,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    
    if( msi.getReleaseDate() != null )
    {
-    out.append("<attribute class=\"ReleaseDate\" classDefined=\"true\" dataType=\"DATETIME\">\n");
+    out.append("<attribute class=\"Submission Release Date\" classDefined=\"true\" dataType=\"DATETIME\">\n");
     exportSimpleValuePefix(out);
     exportSimpleValueStringPefix(out);
     out.append( dateTimeFmt.format(msi.getReleaseDate() ) );
@@ -126,7 +128,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
    if( msi.getUpdateDate() != null )
    {
-    out.append("<attribute class=\"UpdateDate\" classDefined=\"true\" dataType=\"DATETIME\">\n");
+    out.append("<attribute class=\"Submission Update Date\" classDefined=\"true\" dataType=\"DATETIME\">\n");
     exportSimpleValuePefix(out);
     exportSimpleValueStringPefix(out);
     out.append( dateTimeFmt.format(msi.getUpdateDate() ) );
@@ -167,14 +169,22 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    
    if( msi.getDatabases() != null )
    {
+    out.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+
     for( DatabaseRefSource c : msi.getDatabases() )
      exportDatabase(c, out);
+
+    out.append("</attribute>\n");
    }
    
    if( msi.getPublications() != null )
    {
+    out.append("<attribute class=\"Publications\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+
     for( Publication c : msi.getPublications() )
      exportPublication(c, out);
+
+    out.append("</attribute>\n");
    }
 
   }
@@ -215,7 +225,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  @Override
  public void exportHeader(long ts,  Appendable out) throws IOException
  {
-  out.append("<BioSamples xmlns=\"");
+  out.append("<Biosamples xmlns=\"");
   xmlEscaped(getNameSpace(), out);
   
   if( ts > 0 )
@@ -228,9 +238,25 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  @Override
  public void exportFooter(Appendable out) throws IOException
  {
-  out.append("</BioSamples>\n");
+  out.append("</Biosamples>\n");
  }
  
+ @Override
+ public void exportSources(Map<String, Counter> srcMap, Appendable out) throws IOException
+ {
+  out.append("<Datasources>\n");
+  
+  for( Map.Entry<String, Counter> me : srcMap.entrySet() )
+  {
+   out.append(" <Datasource name=\"");
+   xmlEscaped(me.getKey(), out);
+   out.append("\" count=\"");
+   out.append(String.valueOf(me.getValue().intValue()));
+   out.append("\" />\n");
+  }
+  
+  out.append("</Datasources>\n");
+ }
  
  private void exportReferenceSources( ReferenceSource rs, Appendable out ) throws IOException
  {

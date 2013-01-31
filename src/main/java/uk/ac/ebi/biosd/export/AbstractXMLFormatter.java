@@ -5,8 +5,10 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.IllegalFormatException;
+import java.util.Map;
 import java.util.TimeZone;
 
+import uk.ac.ebi.biosd.xs.service.Counter;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 
@@ -31,7 +33,8 @@ public abstract class AbstractXMLFormatter
  public abstract void exportHeader(long ts,  Appendable out) throws IOException;
  public abstract void exportFooter(Appendable out) throws IOException;
 
- 
+ public abstract void exportSources(Map<String, Counter> srcMap, Appendable out) throws IOException;
+
  public static class ReplacePair implements Comparable<ReplacePair>
  {
   char subject;
@@ -195,5 +198,7 @@ public abstract class AbstractXMLFormatter
    simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timezone));
   }
 }
+
+
 
 }
