@@ -13,7 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import uk.ac.ebi.biosd.export.AbstractXMLFormatter;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
-import uk.ac.ebi.fg.core_model.dao.hibernate.toplevel.AccessibleDAO;
+import uk.ac.ebi.fg.core_model.persistence.dao.hibernate.toplevel.AccessibleDAO;
 
 
 

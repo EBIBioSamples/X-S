@@ -33,6 +33,8 @@ public class ExportAll extends HttpServlet
  static final String ProfileParameter = "server";
  static final String LimitParameter = "limit";
  static final String SamplesParameter = "samples";
+ static final String SourcesParameter = "sources";
+ static final String SourcesByNameParameter = "sourcesByName";
  static final String SinceParameter = "since";
  static final String AttributesParameter = "showAttributes";
 
@@ -156,8 +158,16 @@ public class ExportAll extends HttpServlet
   
   Query listQuery = null;
   
-  boolean exportAttributes = "true".equals( request.getParameter(AttributesParameter) );
+  String prm = request.getParameter(AttributesParameter);
   
+  boolean exportAttributes = "true".equals( prm ) || "yes".equals( prm ) || "1".equals( prm );
+  
+  prm = request.getParameter(SourcesParameter);
+  boolean exportSources = "true".equals( prm ) || "yes".equals( prm ) || "1".equals( prm );
+
+  prm = request.getParameter(SourcesByNameParameter);
+  boolean sourcesByName = "true".equals( prm ) || "yes".equals( prm ) || "1".equals( prm );
+
   if( since < 0 )
    listQuery = em.createQuery("SELECT a FROM " + BioSampleGroup.class.getCanonicalName () + " a WHERE a.id >=?1 ORDER BY a.id");
   else
@@ -200,17 +210,25 @@ public class ExportAll extends HttpServlet
      {
       for( DatabaseRefSource db :  msi.getDatabases() )
       {
-       String scrNm = db.getName();
+       String scrNm = sourcesByName?db.getName():db.getAcc();
+       
+       if( scrNm == null )
+        continue;
+       
+       scrNm = scrNm.trim();
+
+       if( scrNm.length() == 0 )
+        continue;
        
        if( msiTags.contains(scrNm) )
         continue;
        
        msiTags.add(scrNm);
        
-       Counter c = srcMap.get(db.getName());
+       Counter c = srcMap.get(scrNm);
        
        if( c == null )
-        srcMap.put(db.getName(), new Counter(nSmp) );
+        srcMap.put(scrNm, new Counter(nSmp) );
        else
         c.add(nSmp);
        
@@ -235,7 +253,9 @@ public class ExportAll extends HttpServlet
    em.close();
   }
   
-  formatter.exportSources(srcMap, out);
+  if( exportSources )
+   formatter.exportSources(srcMap, out);
+  
   formatter.exportFooter(out);
 
   
