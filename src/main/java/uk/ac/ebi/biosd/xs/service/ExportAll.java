@@ -37,6 +37,7 @@ public class ExportAll extends HttpServlet
  static final String SourcesByNameParameter = "sourcesByName";
  static final String SinceParameter = "since";
  static final String AttributesParameter = "showAttributes";
+ static final String NamespaceParameter = "hideNS";
 
  private static final long serialVersionUID = 1L;
  
@@ -154,11 +155,15 @@ public class ExportAll extends HttpServlet
   response.setContentType("text/xml");
   Appendable out = response.getWriter();
   
-  formatter.exportHeader(new java.util.Date().getTime(), out);
+  String prm = request.getParameter(NamespaceParameter);
+  
+  boolean hideNS = "true".equals( prm ) || "yes".equals( prm ) || "1".equals( prm );
+
+  formatter.exportHeader(new java.util.Date().getTime(), ! hideNS, out);
   
   Query listQuery = null;
   
-  String prm = request.getParameter(AttributesParameter);
+  prm = request.getParameter(AttributesParameter);
   
   boolean exportAttributes = "true".equals( prm ) || "yes".equals( prm ) || "1".equals( prm );
   

@@ -44,20 +44,23 @@ public class STXMLFormatter extends AbstractXMLFormatter
  public STXMLFormatter()
  {}
  
- 
-
  @Override
- public void exportHeader(long ts,  Appendable out) throws IOException
+ public void exportHeader(long ts, boolean showNS,  Appendable out) throws IOException
  {
-  out.append("<BioSamples xmlns=\"");
-  xmlEscaped(nameSpace, out);
+  out.append("<BioSamples");
+  
+  if( showNS )
+  {
+   out.append(" xmlns=\"");
+   xmlEscaped(nameSpace, out);
+   out.append("\"");
+  }
   
   if( ts > 0 )
-   out.append("\" timestamp=\"").append( String.valueOf(ts) );
+   out.append(" timestamp=\"").append( String.valueOf(ts) ).append("\"");
   
-  out.append("\">\n");
+  out.append(" >\n");
  }
-
 
  @Override
  public void exportFooter(Appendable out) throws IOException

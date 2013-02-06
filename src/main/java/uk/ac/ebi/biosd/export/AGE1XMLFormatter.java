@@ -223,15 +223,22 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  }
 
  @Override
- public void exportHeader(long ts,  Appendable out) throws IOException
+ public void exportHeader(long ts, boolean showNS,  Appendable out) throws IOException
  {
-  out.append("<Biosamples xmlns=\"");
-  xmlEscaped(getNameSpace(), out);
+  out.append("<Biosamples");
+  
+  if( showNS )
+  {
+   out.append(" xmlns=\"");
+   xmlEscaped(getNameSpace(), out);
+   out.append("\"");
+  }
+  
   
   if( ts > 0 )
-   out.append("\" timestamp=\"").append( String.valueOf(ts) );
+   out.append(" timestamp=\"").append( String.valueOf(ts) ).append("\"");
   
-  out.append("\">\n");
+  out.append(" >\n");
  }
 
 

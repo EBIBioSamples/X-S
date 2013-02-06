@@ -30,7 +30,7 @@ public abstract class AbstractXMLFormatter
 
  public abstract void exportGroup( BioSampleGroup ao, Appendable out, boolean showNS, Samples smpSts, boolean showAttributes ) throws IOException;
  
- public abstract void exportHeader(long ts,  Appendable out) throws IOException;
+ public abstract void exportHeader(long ts, boolean showNS,  Appendable out) throws IOException;
  public abstract void exportFooter(Appendable out) throws IOException;
 
  public abstract void exportSources(Map<String, Counter> srcMap, Appendable out) throws IOException;
