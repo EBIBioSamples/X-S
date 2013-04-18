@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.TimeZone;
 
+import uk.ac.ebi.biosd.export.AbstractXMLFormatter.SamplesFormat;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
@@ -38,13 +39,7 @@ public class STM2XMLconverter
 // public static final String releaseDate = "Submission Release Date";
 // public static final String refLayer = "Reference Layer";
  
- public enum Samples
- {
-  NONE,
-  LIST,
-  EMBED
- }
- 
+
  public static final String nameSpace = "http://www.ebi.ac.uk/biosamples/BioSDExportV1";
 
  private static DateToXsdDatetimeFormatter dateTimeFmt = new DateToXsdDatetimeFormatter( TimeZone.getTimeZone("GMT") );
@@ -233,7 +228,7 @@ public class STM2XMLconverter
  
  public static void exportGroup( BioSampleGroup ao, Appendable out ) throws IOException
  {
-  exportGroup(ao, out, true, Samples.LIST, false );
+  exportGroup(ao, out, true, SamplesFormat.LIST, false );
  }
  
  private static void exportPerson( Contact cnt, Appendable out ) throws IOException
@@ -436,7 +431,7 @@ public class STM2XMLconverter
 
  }
  
- public static void exportGroup( BioSampleGroup ao, Appendable out, boolean showNS, Samples smpSts, boolean showAttributes ) throws IOException
+ public static void exportGroup( BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes ) throws IOException
  {
   Set<String> attrset = null;
   
@@ -529,11 +524,11 @@ public class STM2XMLconverter
   exportAnnotations(ao, out);
 
   
-  if( smpSts != Samples.NONE && ao.getSamples() != null )
+  if( smpSts != SamplesFormat.NONE && ao.getSamples() != null )
   {
     for( BioSample smp : ao.getSamples() )
     {
-     exportSample(smp, out, false, smpSts == Samples.EMBED, ao.getAcc(), attrset);
+     exportSample(smp, out, false, smpSts == SamplesFormat.EMBED, ao.getAcc(), attrset);
     }
    
   }

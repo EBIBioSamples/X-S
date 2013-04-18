@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import uk.ac.ebi.biosd.xs.service.Counter;
+import uk.ac.ebi.fg.biosd.model.access_control.User;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
@@ -26,7 +27,15 @@ import uk.ac.ebi.fg.core_model.xref.ReferenceSource;
 
 public class AGE1XMLFormatter extends AbstractXMLFormatter
 {
+
  private static String nameSpace = "http://www.ebi.ac.uk/biosamples/SampleGroupExportV1";
+
+ protected boolean nsShown=false;
+ 
+ public AGE1XMLFormatter(boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ {
+  super(showNS, showAttributes, showAC, smpfmt);
+ }
  
  protected String getNameSpace()
  {
@@ -64,17 +73,45 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  @Override
  public void exportSample(BioSample smp, Appendable out) throws IOException
  {
-  exportSample(smp, out, true, true, null, null);
+  exportSample(smp, out, isShowNS(), isShowAttributes(), null, null, isShowAC());
  }
 
  @Override
  public void exportGroup(BioSampleGroup ao, Appendable out) throws IOException
  {
-  exportGroup(ao, out, true, Samples.LIST, false );
+  exportGroup(ao, out, isShowNS(), getSamplesFormat(), isShowAttributes(), isShowAC() );
  }
 
- @Override
- public void exportGroup(BioSampleGroup ao, Appendable out, boolean showNS, Samples smpSts, boolean showAttributes) throws IOException
+ 
+ protected interface ACObj
+ {
+  Set<User> getUsers();
+  boolean isPublic();
+ }
+ 
+ protected void exportAC(ACObj ao, Appendable out) throws IOException
+ {
+  if(ao.isPublic())
+   return;
+  
+  out.append("public=\"false\" access=\"");
+
+  boolean first = true;
+
+  for(User u : ao.getUsers())
+  {
+   if(!first)
+    out.append(',');
+   else
+    first = false;
+
+   out.append(u.getName());
+  }
+
+  out.append("\" ");
+ }
+
+ private void exportGroup(final BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
  {
   Set<String> attrset = null;
   
@@ -83,8 +120,24 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   
   out.append("<SampleGroup ");
   
-  if( showNS )
+  if( showNS && ! nsShown )
    out.append("xmlns=\""+getNameSpace()+"\" ");
+  
+  if( showAC )
+   exportAC( new ACObj()
+   {
+    @Override
+    public boolean isPublic()
+    {
+     return ao.isPublic();
+    }
+    
+    @Override
+    public Set<User> getUsers()
+    {
+     return ao.getUsers();
+    }
+   }, out);
 
   out.append("id=\"");
   xmlEscaped(ao.getAcc(), out);
@@ -197,11 +250,11 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   }
   
   
-  if( smpSts != Samples.NONE && ao.getSamples() != null )
+  if( smpSts != SamplesFormat.NONE && ao.getSamples() != null )
   {
    for(BioSample smp : ao.getSamples())
    {
-    exportSample(smp, out, false, smpSts == Samples.EMBED, ao.getAcc(), attrset);
+    exportSample(smp, out, false, smpSts == SamplesFormat.EMBED, ao.getAcc(), attrset, isShowAC());
    }
   }
   
@@ -223,18 +276,22 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  }
 
  @Override
- public void exportHeader(long ts, boolean showNS,  Appendable out) throws IOException
+ public void exportHeader(long ts, long since, Appendable out) throws IOException
  {
   out.append("<Biosamples");
   
-  if( showNS )
+  if( isShowNS() )
   {
    out.append(" xmlns=\"");
    xmlEscaped(getNameSpace(), out);
    out.append("\"");
+   
+   nsShown = true;
   }
   
-  
+  if( since > 0 )
+   out.append(" since=\"").append( String.valueOf(since) ).append("\"");
+
   if( ts > 0 )
    out.append(" timestamp=\"").append( String.valueOf(ts) ).append("\"");
   
@@ -431,16 +488,32 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("</attribute>\n");
  }
  
- private void exportSample(BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset) throws IOException
+ private void exportSample(final BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset, boolean showAC) throws IOException
  {
   out.append("<Sample ");
    
-  if( showNS )
+  if( showNS && ! nsShown )
   {
    out.append( "xmlns=\"");
    xmlEscaped(getNameSpace(), out);
    out.append( "\" ");
   }
+  
+  if( showAC )
+   exportAC(new ACObj()
+   {
+    @Override
+    public boolean isPublic()
+    {
+     return smp.isPublic();
+    }
+    
+    @Override
+    public Set<User> getUsers()
+    {
+     return smp.getUsers();
+    }
+   }, out);
 
   out.append("id=\"");
   xmlEscaped(smp.getAcc(), out);

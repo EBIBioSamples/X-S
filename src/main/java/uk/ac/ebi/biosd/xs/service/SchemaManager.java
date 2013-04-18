@@ -1,11 +1,9 @@
 package uk.ac.ebi.biosd.xs.service;
 
-import java.util.Map;
-import java.util.TreeMap;
-
 import uk.ac.ebi.biosd.export.AGE1XMLFormatter;
 import uk.ac.ebi.biosd.export.AGE2XMLFormatter;
 import uk.ac.ebi.biosd.export.AbstractXMLFormatter;
+import uk.ac.ebi.biosd.export.AbstractXMLFormatter.SamplesFormat;
 import uk.ac.ebi.biosd.export.STXMLFormatter;
 
 public class SchemaManager
@@ -14,19 +12,16 @@ public class SchemaManager
  public static final String AGEXML1 = "AGE1";
  public static final String AGEXML2 = "AGE2";
  
- private static Map<String, AbstractXMLFormatter> fmtMap;
- 
- static
+
+ public static AbstractXMLFormatter getFormatter( String name, boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt )
  {
-  fmtMap = new TreeMap<String, AbstractXMLFormatter>();
+  if( STXML.equals(name) )
+   return new STXMLFormatter(showNS, showAttributes, showAC, smpfmt);
+  else if( AGEXML1.equals(name) )
+   return new AGE1XMLFormatter(showNS, showAttributes, showAC, smpfmt);
+  else if( AGEXML2.equals(name) )
+   return new AGE2XMLFormatter(showNS, showAttributes, showAC, smpfmt);
   
-  fmtMap.put(STXML, new STXMLFormatter());
-  fmtMap.put(AGEXML1, new AGE1XMLFormatter());
-  fmtMap.put(AGEXML2, new AGE2XMLFormatter());
- }
- 
- public static AbstractXMLFormatter getFormatter( String name )
- {
-  return fmtMap.get(name);
+  return null;
  }
 }

@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import uk.ac.ebi.biosd.export.AbstractXMLFormatter;
+import uk.ac.ebi.biosd.export.AbstractXMLFormatter.SamplesFormat;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.core_model.persistence.dao.hibernate.toplevel.AccessibleDAO;
@@ -41,19 +42,7 @@ public class GroupServlet extends HttpServlet
  {
   AbstractXMLFormatter formatter=null;
   
-  String sch = request.getParameter(SchemaParameter);
-  
-  if( sch == null )
-   sch = DefaultSchema;
 
-  formatter = SchemaManager.getFormatter(sch);
-  
-  if( formatter == null )
-  {
-   response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-   response.getWriter().append("<html><body><span color='red'>Invalid schema: '"+sch+"'</span></body></html>");
-   return;
-  }
 
   String group = request.getParameter(IdParameter);
   
@@ -80,6 +69,33 @@ public class GroupServlet extends HttpServlet
   {
    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
    response.getWriter().append("<html><body><span color='red'>Can't find profile: "+prof+"</span></body></html>");
+   return;
+  }
+  
+  
+  String sch = request.getParameter(SchemaParameter);
+  
+  if( sch == null )
+   sch = DefaultSchema;
+
+//  @Override
+//  public void exportSample(BioSample smp, Appendable out) throws IOException
+//  {
+//   exportSample(smp, out, true, true, null, null);
+//  }
+//
+//  @Override
+//  public void exportGroup(BioSampleGroup ao, Appendable out) throws IOException
+//  {
+//   exportGroup(ao, out, true, Samples.LIST, false );
+//  }
+  
+  formatter = SchemaManager.getFormatter(sch, true, false, false, SamplesFormat.LIST);
+  
+  if( formatter == null )
+  {
+   response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+   response.getWriter().append("<html><body><span color='red'>Invalid schema: '"+sch+"'</span></body></html>");
    return;
   }
   

@@ -5,6 +5,12 @@ import java.io.IOException;
 public class AGE2XMLFormatter extends AGE1XMLFormatter
 {
  private static String nameSpace = "http://www.ebi.ac.uk/biosamples/SampleGroupExportV2";
+
+ public AGE2XMLFormatter(boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ {
+  super(showNS, showAttributes, showAC, smpfmt);
+ }
+
  
  @Override
  protected String getNameSpace()

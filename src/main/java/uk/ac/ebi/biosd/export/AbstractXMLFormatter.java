@@ -14,13 +14,27 @@ import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 
 public abstract class AbstractXMLFormatter
 {
- public enum Samples
+ public enum SamplesFormat
  {
   NONE,
   LIST,
   EMBED
  }
  
+ private final boolean showNS;
+ private final boolean showAttributes;
+ private final boolean showAC;
+ private final SamplesFormat smpfmt;
+ 
+ public AbstractXMLFormatter(boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ {
+  super();
+  this.showNS = showNS;
+  this.showAttributes = showAttributes;
+  this.showAC = showAC;
+  this.smpfmt = smpfmt;
+ }
+
  protected static DateToXsdDatetimeFormatter dateTimeFmt = new DateToXsdDatetimeFormatter( TimeZone.getTimeZone("GMT") );
 
 
@@ -28,9 +42,9 @@ public abstract class AbstractXMLFormatter
 
  public abstract void exportGroup( BioSampleGroup ao, Appendable out ) throws IOException;
 
- public abstract void exportGroup( BioSampleGroup ao, Appendable out, boolean showNS, Samples smpSts, boolean showAttributes ) throws IOException;
+// public abstract void exportGroup( BioSampleGroup ao, Appendable out, boolean showNS, Samples smpSts, boolean showAttributes ) throws IOException;
  
- public abstract void exportHeader(long ts, boolean showNS,  Appendable out) throws IOException;
+ public abstract void exportHeader(long ts, long since, Appendable out) throws IOException;
  public abstract void exportFooter(Appendable out) throws IOException;
 
  public abstract void exportSources(Map<String, Counter> srcMap, Appendable out) throws IOException;
@@ -198,6 +212,31 @@ public abstract class AbstractXMLFormatter
    simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timezone));
   }
 }
+
+ public boolean isShowNS()
+ {
+  return showNS;
+ }
+
+
+ public boolean isShowAttributes()
+ {
+  return showAttributes;
+ }
+
+
+
+ public boolean isShowAC()
+ {
+  return showAC;
+ }
+
+ public SamplesFormat getSamplesFormat()
+ {
+  return smpfmt;
+ }
+
+
 
 
 

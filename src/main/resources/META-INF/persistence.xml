@@ -2,50 +2,52 @@
 <persistence version="2.0" xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
 	<persistence-unit name="X-S" transaction-type="RESOURCE_LOCAL">
 		<provider>org.hibernate.ejb.HibernatePersistence</provider>
-    <class>uk.ac.ebi.fg.biosd.model.expgraph.BioSample</class>
-	<class>uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentType</class>
-	<class>uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue</class>
-	<class>uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup</class>
-	<class>uk.ac.ebi.fg.biosd.model.organizational.MSI</class>
-	<class>uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.BioMaterial</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.BioMaterialProcessing</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.Data</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.DataAcquisition</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.DataProcessing</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.Node</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.Process</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.Product</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.Protocol</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.ProtocolApplication</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicType</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicValue</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.properties.DataPropertyType</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.properties.DataPropertyValue</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyType</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyValue</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.properties.ParameterType</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.properties.ParameterValue</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.properties.ProtocolType</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.properties.Unit</class>
-	<class>uk.ac.ebi.fg.core_model.expgraph.properties.UnitDimension</class>
-	<class>uk.ac.ebi.fg.core_model.organizational.Contact</class>
-	<class>uk.ac.ebi.fg.core_model.organizational.ContactRole</class>
-	<class>uk.ac.ebi.fg.core_model.organizational.Organization</class>
-	<class>uk.ac.ebi.fg.core_model.organizational.Publication</class>
-	<class>uk.ac.ebi.fg.core_model.organizational.PublicationStatus</class>
-	<class>uk.ac.ebi.fg.core_model.organizational.Submission</class>
-	<class>uk.ac.ebi.fg.core_model.terms.AnnotationType</class>
-	<class>uk.ac.ebi.fg.core_model.terms.CVTerm</class>
-	<class>uk.ac.ebi.fg.core_model.terms.FreeTextTerm</class>
-	<class>uk.ac.ebi.fg.core_model.terms.OntologyEntry</class>
-	<class>uk.ac.ebi.fg.core_model.toplevel.Accessible</class>
-	<class>uk.ac.ebi.fg.core_model.toplevel.Annotation</class>
-	<class>uk.ac.ebi.fg.core_model.toplevel.DefaultAccessibleAnnotatable</class>
-	<class>uk.ac.ebi.fg.core_model.toplevel.DefaultAnnotatable</class>
-	<class>uk.ac.ebi.fg.core_model.toplevel.Identifiable</class>
-	<class>uk.ac.ebi.fg.core_model.xref.DefaultReferrer</class>
-	<class>uk.ac.ebi.fg.core_model.xref.ReferenceSource</class>
-	<class>uk.ac.ebi.fg.core_model.xref.XRef</class>	
+<class>uk.ac.ebi.fg.biosd.model.access_control.User</class>
+<class>uk.ac.ebi.fg.biosd.model.expgraph.BioSample</class>
+<class>uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentType</class>
+<class>uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue</class>
+<class>uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup</class>
+<class>uk.ac.ebi.fg.biosd.model.organizational.MSI</class>
+<class>uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.BioMaterial</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.BioMaterialProcessing</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.Data</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.DataAcquisition</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.DataProcessing</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.Node</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.Process</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.Product</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.Protocol</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.ProtocolApplication</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicType</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicValue</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.properties.DataPropertyType</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.properties.DataPropertyValue</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyType</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyValue</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.properties.ParameterType</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.properties.ParameterValue</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.properties.ProtocolType</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.properties.Unit</class>
+<class>uk.ac.ebi.fg.core_model.expgraph.properties.UnitDimension</class>
+<class>uk.ac.ebi.fg.core_model.organizational.Contact</class>
+<class>uk.ac.ebi.fg.core_model.organizational.ContactRole</class>
+<class>uk.ac.ebi.fg.core_model.organizational.Organization</class>
+<class>uk.ac.ebi.fg.core_model.organizational.Publication</class>
+<class>uk.ac.ebi.fg.core_model.organizational.PublicationStatus</class>
+<class>uk.ac.ebi.fg.core_model.organizational.Submission</class>
+<class>uk.ac.ebi.fg.core_model.terms.AnnotationType</class>
+<class>uk.ac.ebi.fg.core_model.terms.CVTerm</class>
+<class>uk.ac.ebi.fg.core_model.terms.FreeTextTerm</class>
+<class>uk.ac.ebi.fg.core_model.terms.OntologyEntry</class>
+<class>uk.ac.ebi.fg.core_model.toplevel.Accessible</class>
+<class>uk.ac.ebi.fg.core_model.toplevel.Annotation</class>
+<class>uk.ac.ebi.fg.core_model.toplevel.DefaultAccessibleAnnotatable</class>
+<class>uk.ac.ebi.fg.core_model.toplevel.DefaultAnnotatable</class>
+<class>uk.ac.ebi.fg.core_model.toplevel.Identifiable</class>
+<class>uk.ac.ebi.fg.core_model.xref.DefaultReferrer</class>
+<class>uk.ac.ebi.fg.core_model.xref.ReferenceSource</class>
+<class>uk.ac.ebi.fg.core_model.xref.XRef</class>
+
 </persistence-unit>
 </persistence>
