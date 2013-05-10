@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.export;
+package uk.ac.ebi.biosd.xs.export;
 
 import java.io.IOException;
 import java.text.DateFormat;
@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import uk.ac.ebi.biosd.keyword.OWLKeywordExpansion;
+import uk.ac.ebi.biosd.xs.keyword.OWLKeywordExpansion;
 import uk.ac.ebi.biosd.xs.service.Counter;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
@@ -87,8 +87,11 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
   out.append("</description>\n<keywords>\n");
   
   for( String w : kw )
+  {
    xmlEscaped(w, out);
-
+   out.append(' ');
+  }
+  
   out.append("\n</keywords>\n</entry>\n");
 
   
@@ -122,8 +125,6 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  @Override
  public void exportSources(Map<String, Counter> srcMap, Appendable out) throws IOException
  {
-  // TODO Auto-generated method stub
-
  }
 
 }

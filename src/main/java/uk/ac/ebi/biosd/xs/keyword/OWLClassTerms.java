@@ -1,4 +1,4 @@
-package uk.ac.ebi.xs.test.owl;
+package uk.ac.ebi.biosd.xs.keyword;
 
 import java.util.Set;
 

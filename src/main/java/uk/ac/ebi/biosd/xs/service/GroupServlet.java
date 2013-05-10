@@ -10,8 +10,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import uk.ac.ebi.biosd.export.AbstractXMLFormatter;
-import uk.ac.ebi.biosd.export.AbstractXMLFormatter.SamplesFormat;
+import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
+import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.core_model.persistence.dao.hibernate.toplevel.AccessibleDAO;

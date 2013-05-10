@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.export;
+package uk.ac.ebi.biosd.xs.export;
 
 import java.io.IOException;
 

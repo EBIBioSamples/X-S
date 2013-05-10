@@ -29,6 +29,8 @@ import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import uk.ac.ebi.biosd.xs.keyword.OWLClassTerms;
+
 public class ReadOWL
 {
 

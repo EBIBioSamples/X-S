@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.keyword;
+package uk.ac.ebi.biosd.xs.keyword;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +24,6 @@ import org.semanticweb.owlapi.reasoner.NodeSet;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 
-import uk.ac.ebi.xs.test.owl.OWLClassTerms;
 
 public class OWLKeywordExpansion
 {

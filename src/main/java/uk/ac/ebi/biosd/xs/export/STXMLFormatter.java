@@ -1,17 +1,15 @@
-package uk.ac.ebi.biosd.export;
+package uk.ac.ebi.biosd.xs.export;
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
-import java.util.IllegalFormatException;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
-import uk.ac.ebi.biosd.export.AbstractXMLFormatter.SamplesFormat;
+import uk.ac.ebi.biosd.xs.service.Counter;
+import uk.ac.ebi.fg.biosd.model.access_control.User;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
@@ -32,17 +30,205 @@ import uk.ac.ebi.fg.core_model.xref.ReferenceSource;
 
 
 
-public class STM2XMLconverter
+public class STXMLFormatter extends AGE1XMLFormatter
 {
  
 // public static final String updateDate = "Submission Update Date";
 // public static final String releaseDate = "Submission Release Date";
 // public static final String refLayer = "Reference Layer";
  
+ 
+ public STXMLFormatter(boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ {
+  super(showNS, showAttributes, showAC, smpfmt);
+ }
+
+
 
  public static final String nameSpace = "http://www.ebi.ac.uk/biosamples/BioSDExportV1";
 
  private static DateToXsdDatetimeFormatter dateTimeFmt = new DateToXsdDatetimeFormatter( TimeZone.getTimeZone("GMT") );
+ 
+ 
+ @Override
+ public void exportHeader(long ts, long since,  Appendable out) throws IOException
+ {
+  out.append("<BioSamples");
+  
+  if( isShowNS() )
+  {
+   out.append(" xmlns=\"");
+   xmlEscaped(nameSpace, out);
+   out.append("\"");
+   
+   nsShown = true;
+  }
+  
+  if( since > 0 )
+   out.append(" since=\"").append( String.valueOf(since) ).append("\"");
+
+  if( ts > 0 )
+   out.append(" timestamp=\"").append( String.valueOf(ts) ).append("\"");
+
+ 
+  out.append(" >\n");
+ }
+
+ @Override
+ public void exportFooter(Appendable out) throws IOException
+ {
+  out.append("</BioSamples>\n");
+ }
+ 
+ @Override
+ public void exportSample(BioSample smp,  Appendable out) throws IOException
+ {
+  exportSample(smp, out, true, true, null, null, isShowAC() );
+ }
+ 
+ @Override
+ public void exportGroup( BioSampleGroup ao, Appendable out ) throws IOException
+ {
+  exportGroup(ao, out, isShowNS(), SamplesFormat.LIST, false, isShowAC() );
+ }
+ 
+ 
+ private void exportGroup( final BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC ) throws IOException
+ {
+  Set<String> attrset = null;
+  
+  if( showAttributes )
+   attrset = new HashSet<>();
+  
+  out.append("<BioSampleGroup ");
+  
+
+  if( showNS && ! nsShown )
+   out.append("xmlns=\""+getNameSpace()+"\" ");
+
+  if( showAC )
+   exportAC( new ACObj()
+   {
+    @Override
+    public boolean isPublic()
+    {
+     return ao.isPublic();
+    }
+    
+    @Override
+    public Set<User> getUsers()
+    {
+     return ao.getUsers();
+    }
+   }, out);
+  
+  out.append("id=\"");
+  xmlEscaped(ao.getAcc(), out);
+  out.append("\">\n");
+
+
+  MSI msi = null;
+  
+  if( ao.getMSIs() != null )
+  {
+   Iterator<MSI> it = ao.getMSIs().iterator();
+   
+   if( it.hasNext() )
+    msi = it.next();
+  }
+
+
+  if( msi != null )
+  {
+   if( msi.getSubmissionDate() != null )
+   {
+    out.append("<SubmissionDate>");
+    out.append( dateTimeFmt.format(msi.getSubmissionDate() ) );
+    out.append("</SubmissionDate>\n");
+   }
+   
+   if( msi.getReleaseDate() != null )
+   {
+    out.append("<ReleaseDate>");
+    out.append( dateTimeFmt.format(msi.getReleaseDate() ) );
+    out.append("</ReleaseDate>\n");
+   }
+
+   if( msi.getUpdateDate() != null )
+   {
+    out.append("<UpdateDate>");
+    out.append( dateTimeFmt.format(msi.getUpdateDate() ) );
+    out.append("</UpdateDate>\n");
+   }
+   
+   if( msi.getReferenceSources() != null )
+   {
+    for( ReferenceSource c : msi.getReferenceSources() )
+     exportReferenceSources(c, out);
+   }
+   
+   if( msi.getOrganizations() != null )
+   {
+    for( Organization c : msi.getOrganizations() )
+     exportOrganization(c, out);
+   }
+
+   if( msi.getContacts() != null )
+   {
+    for( Contact c : msi.getContacts() )
+     exportPerson(c, out);
+   }
+   
+   if( msi.getDatabases() != null )
+   {
+    for( DatabaseRefSource c : msi.getDatabases() )
+     exportDatabase(c, out);
+   }
+   
+   if( msi.getPublications() != null )
+   {
+    for( Publication c : msi.getPublications() )
+     exportPublication(c, out);
+   }
+
+  }
+
+  
+  if( ao.getPropertyValues() != null )
+  {
+   for( ExperimentalPropertyValue<ExperimentalPropertyType> pval : ao.getPropertyValues() )
+    exportPropertyValue(pval,out);
+  }
+  
+  exportAnnotations(ao, out);
+
+  
+  if( smpSts != SamplesFormat.NONE && ao.getSamples() != null )
+  {
+    for( BioSample smp : ao.getSamples() )
+    {
+     exportSample(smp, out, false, smpSts == SamplesFormat.EMBED, ao.getAcc(), attrset, isShowAC());
+    }
+   
+  }
+  
+  if( showAttributes )
+  {
+   out.append("<SampleAttributes>\n");
+
+   for(String attNm : attrset)
+   {
+    out.append("<attribute>");
+    xmlEscaped(attNm, out);
+    out.append("</attribute>\n");
+   }
+
+   out.append("</SampleAttributes>\n");
+  }
+  
+  
+  out.append("</BioSampleGroup>\n");
+ }
  
  private static void exportOntologyEntry( OntologyEntry val,  Appendable out) throws IOException
  {
@@ -87,21 +273,34 @@ public class STM2XMLconverter
 
  }
  
- public static void exportSample(BioSample smp,  Appendable out) throws IOException
- {
-  exportSample(smp, out, true, true, null, null);
- }
-// <xs:element name="Annotation" type="tns:annotationType" minOccurs="0" maxOccurs="unbounded" />
-// <xs:element name="Property" type="tns:propertyType" minOccurs="0" maxOccurs="unbounded" />
-// <xs:element name="derivedFrom" type="tns:stringValueType" minOccurs="0" maxOccurs="unbounded" />
-// <xs:element name="GroupRef" type="tns:stringValueType" minOccurs="1" maxOccurs="unbounded" />
 
- private static void exportSample(BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset) throws IOException
+
+ private void exportSample(final BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset, boolean showAC) throws IOException
  {
   out.append("<BioSample ");
   
-  if( showNS )
-   out.append( "xmlns=\""+nameSpace+"\" ");
+  if( showNS && ! nsShown )
+  {
+   out.append( "xmlns=\"");
+   xmlEscaped(getNameSpace(), out);
+   out.append( "\" ");
+  }
+  
+  if( showAC )
+   exportAC(new ACObj()
+   {
+    @Override
+    public boolean isPublic()
+    {
+     return smp.isPublic();
+    }
+    
+    @Override
+    public Set<User> getUsers()
+    {
+     return smp.getUsers();
+    }
+   }, out);
 
   out.append("id=\"");
   xmlEscaped(smp.getAcc(), out);
@@ -141,8 +340,6 @@ public class STM2XMLconverter
     xmlEscaped(p.getAcc(), out);
     out.append("</derivedFrom>\n");
    }
-   
-   
   }
   
   Set<BioSampleGroup> grps = smp.getGroups();
@@ -226,10 +423,7 @@ public class STM2XMLconverter
   out.append("</Property>\n");
  }
  
- public static void exportGroup( BioSampleGroup ao, Appendable out ) throws IOException
- {
-  exportGroup(ao, out, true, SamplesFormat.LIST, false );
- }
+
  
  private static void exportPerson( Contact cnt, Appendable out ) throws IOException
  {
@@ -430,292 +624,12 @@ public class STM2XMLconverter
   out.append("</TermSource>\n");
 
  }
- 
- public static void exportGroup( BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes ) throws IOException
+
+
+
+ @Override
+ public void exportSources(Map<String, Counter> srcMap, Appendable out) throws IOException
  {
-  Set<String> attrset = null;
-  
-  if( showAttributes )
-   attrset = new HashSet<>();
-  
-  out.append("<BioSampleGroup ");
-  
-  if( showNS )
-   out.append("xmlns=\""+nameSpace+"\" ");
-
-  out.append("id=\"");
-  xmlEscaped(ao.getAcc(), out);
-  out.append("\">\n");
-
-
-  MSI msi = null;
-  
-  if( ao.getMSIs() != null )
-  {
-   Iterator<MSI> it = ao.getMSIs().iterator();
-   
-   if( it.hasNext() )
-    msi = it.next();
-  }
-
-
-  if( msi != null )
-  {
-   if( msi.getSubmissionDate() != null )
-   {
-    out.append("<SubmissionDate>");
-    out.append( dateTimeFmt.format(msi.getSubmissionDate() ) );
-    out.append("</SubmissionDate>\n");
-   }
-   
-   if( msi.getReleaseDate() != null )
-   {
-    out.append("<ReleaseDate>");
-    out.append( dateTimeFmt.format(msi.getReleaseDate() ) );
-    out.append("</ReleaseDate>\n");
-   }
-
-   if( msi.getUpdateDate() != null )
-   {
-    out.append("<UpdateDate>");
-    out.append( dateTimeFmt.format(msi.getUpdateDate() ) );
-    out.append("</UpdateDate>\n");
-   }
-   
-   if( msi.getReferenceSources() != null )
-   {
-    for( ReferenceSource c : msi.getReferenceSources() )
-     exportReferenceSources(c, out);
-   }
-   
-   if( msi.getOrganizations() != null )
-   {
-    for( Organization c : msi.getOrganizations() )
-     exportOrganization(c, out);
-   }
-
-   if( msi.getContacts() != null )
-   {
-    for( Contact c : msi.getContacts() )
-     exportPerson(c, out);
-   }
-   
-   if( msi.getDatabases() != null )
-   {
-    for( DatabaseRefSource c : msi.getDatabases() )
-     exportDatabase(c, out);
-   }
-   
-   if( msi.getPublications() != null )
-   {
-    for( Publication c : msi.getPublications() )
-     exportPublication(c, out);
-   }
-
-  }
-
-  
-  if( ao.getPropertyValues() != null )
-  {
-   for( ExperimentalPropertyValue<ExperimentalPropertyType> pval : ao.getPropertyValues() )
-    exportPropertyValue(pval,out);
-  }
-  
-  exportAnnotations(ao, out);
-
-  
-  if( smpSts != SamplesFormat.NONE && ao.getSamples() != null )
-  {
-    for( BioSample smp : ao.getSamples() )
-    {
-     exportSample(smp, out, false, smpSts == SamplesFormat.EMBED, ao.getAcc(), attrset);
-    }
-   
-  }
-  
-  if( showAttributes )
-  {
-   out.append("<SampleAttributes>\n");
-
-   for(String attNm : attrset)
-   {
-    out.append("<attribute>");
-    xmlEscaped(attNm, out);
-    out.append("</attribute>\n");
-   }
-
-   out.append("</SampleAttributes>\n");
-  }
-  
-  
-  out.append("</BioSampleGroup>\n");
  }
-
- 
- 
- 
- public static class ReplacePair implements Comparable<ReplacePair>
- {
-  char subject;
-  String replacement;
-  
-  public ReplacePair()
-  {}
-  
-  public ReplacePair(char first, String second)
-  {
-   this.subject = first;
-   this.replacement = second;
-  }
-  
-  public char getSubject()
-  {
-   return subject;
-  }
-  
-  public void setSubject(char first)
-  {
-   this.subject = first;
-  }
-  
-  public String getReplacement()
-  {
-   return replacement;
-  }
-
-  public void setReplacement(String second)
-  {
-   this.replacement = second;
-  }
-
-  @Override
-  public int compareTo(ReplacePair toCmp)
-  {
-   return subject-toCmp.getSubject();
-  }
-  
-  @Override
-  public boolean equals( Object o )
-  {
-   return subject==((ReplacePair)o).getSubject();
-  }
-
-  @Override
-  public int hashCode()
-  {
-   return subject;
-  }
-  
- }
-
- static final ReplacePair[] htmlPairs = { 
-  new ReplacePair('"',"&quot;"),
-  new ReplacePair('\'',"&#39;"),
-  new ReplacePair('<',"&lt;"),
-  new ReplacePair('>',"&gt;"),
-  new ReplacePair('&',"&amp;"),
-  };
- 
- 
- public static void xmlEscaped( String s, Appendable out ) throws IOException
- {
-  int len = s.length();
-  
-  boolean escaping = false;
-  
-  for( int i=0; i < len; i++ )
-  {
-   char ch = s.charAt(i);
-   
-   if( ch < 0x20 && ch != 0x0D && ch != 0x0A && ch != 0x09 )
-   {
-    
-    if( ! escaping )
-    {
-     out.append( s.substring(0, i) );
-     escaping=true;
-    }
-    
-    int rem = ch%16;
-    
-    out.append("&#").append( (ch > 15)?'1':'0' ).append( (char)(rem > 9?(rem-10+'A'):(rem+'0')) ).append(';');
-   }
-   else
-   {
-    boolean replaced = false;
-    
-    for( ReplacePair p : htmlPairs )
-    {
-     if( ch == p.getSubject() )
-     {
-      if( ! escaping )
-      {
-       out.append( s.substring(0, i) );
-       escaping=true;
-      }
-      
-      out.append( p.getReplacement() );
-      replaced = true;
-      break;
-     }
-    }
-    
-    if( ! replaced )
-    {
-     if( escaping )
-      out.append(ch);
-    }
-   }
-  }
-  
-  if( ! escaping )
-   out.append(s);
- }
- 
- static class DateToXsdDatetimeFormatter
- {
-
-  private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-
-  public DateToXsdDatetimeFormatter()
-  {
-  }
-
-  public DateToXsdDatetimeFormatter(TimeZone timeZone)
-  {
-   simpleDateFormat.setTimeZone(timeZone);
-  }
-
-  /**
-   * Parse a xml date string in the format produced by this class only. This
-   * method cannot parse all valid xml date string formats - so don't try to use
-   * it as part of a general xml parser
-   */
-  public synchronized Date parse(String xmlDateTime) throws ParseException
-  {
-   if(xmlDateTime.length() != 25)
-   {
-    throw new ParseException("Date not in expected xml datetime format", 0);
-   }
-
-   StringBuilder sb = new StringBuilder(xmlDateTime);
-   sb.deleteCharAt(22);
-   return simpleDateFormat.parse(sb.toString());
-  }
-
-  public synchronized String format(Date xmlDateTime) throws IllegalFormatException
-  {
-   String s = simpleDateFormat.format(xmlDateTime);
-   
-   StringBuilder sb = new StringBuilder(s);
-   sb.insert(22, ':');
-   return sb.toString();
-  }
-
-  public synchronized void setTimeZone(String timezone)
-  {
-   simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timezone));
-  }
-}
 
 }

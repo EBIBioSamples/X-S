@@ -12,7 +12,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Query;
 
-import uk.ac.ebi.biosd.export.AbstractXMLFormatter;
+import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
 import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;

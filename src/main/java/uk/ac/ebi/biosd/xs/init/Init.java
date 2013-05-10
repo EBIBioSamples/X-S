@@ -1,22 +1,48 @@
 package uk.ac.ebi.biosd.xs.init;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import uk.ac.ebi.biosd.xs.service.EBeyeExport;
+
 public class Init implements ServletContextListener
 {
+ static String EBeyeConnectionProfileParam = "ebeye.connectionProfile";
+ static String EBeyeOutputPathParam = "ebeye.outputDir";
+ static String EBeyeTempPathParam = "ebeye.tempDir";
+ static String EBeyeUpdateHourParam = "ebeye.updateTime";
+ static String EBeyeEfoURLParam = "ebeye.efoURL";
+
  static String PersistParamPrefix = "persist";
  static String DefaultProfileParam = PersistParamPrefix+".defaultProfile";
 
+ private final Logger log = LoggerFactory.getLogger(Init.class);
+ private final Timer timer = new Timer("Timer", true);
+
+ 
  @Override
  public void contextInitialized(ServletContextEvent ctx)
  {
@@ -92,13 +118,161 @@ public class Init implements ServletContextListener
   
   if( defaultProfile != null )
    EMFManager.setDefaultFactory( Persistence.createEntityManagerFactory ( "X-S", defaultProfile ) );
+  
+  EntityManagerFactory emf;
+  String connProf = servletContext.getInitParameter(EBeyeConnectionProfileParam);
+  
+  if( connProf == null )
+   emf = EMFManager.getDefaultFactory();
+  else
+   emf = EMFManager.getFactory(connProf);
+  
+  if( emf == null )
+  {
+   log.warn("Invalid value for {} parameter. EBeye export will be disabled", EBeyeConnectionProfileParam);
+   return;
+  }
+  
+  EntityManager em = emf.createEntityManager();
+  
+  
+  String outPath = servletContext.getInitParameter(EBeyeOutputPathParam);
+  
+  if( outPath == null )
+  {
+   log.warn("Parameter '{}' is missed. EBeye export will be disabled", EBeyeOutputPathParam);
+   return;
+  }
+  
+  String tempPath = servletContext.getInitParameter(EBeyeTempPathParam);
+
+  if( tempPath == null )
+  {
+   log.warn("Parameter '{}' is missed. EBeye export will be disabled", EBeyeTempPathParam);
+   return;
+  }
+ 
+  String efoURLStr = servletContext.getInitParameter( EBeyeEfoURLParam );
+  
+  if( efoURLStr == null )
+  {
+   log.warn("Parameter '{}' is missed. EBeye export will be disabled", EBeyeEfoURLParam);
+   return;
+  }
+ 
+  URL efoURL = null;
+
+  try
+  {
+   efoURL = new URL(efoURLStr);
+  }
+  catch(MalformedURLException e)
+  {
+  }
+  
+  if( efoURL == null )
+  {
+   log.warn("Invalid URL in parameter {}. EBeye export will be disabled", EBeyeEfoURLParam);
+   return;
+  }
+  
+  String invokeTime = servletContext.getInitParameter(EBeyeUpdateHourParam);
+
+  int hour = -1;
+  int min = 0;
+  
+  if( invokeTime == null )
+  {
+   log.warn("Parameter '{}' is missed. EBeye export will not run periodicaly", EBeyeUpdateHourParam);
+  }
+  else
+  {
+   int colPos = invokeTime.indexOf(':');
+   
+   String hourStr = invokeTime;
+   String minStr = null;
+   
+   if( colPos >= 0  )
+   {
+    hourStr = invokeTime.substring(0,colPos);
+    minStr = invokeTime.substring(colPos+1);
+   }
+   
+   try
+   {
+    hour = Integer.parseInt(hourStr);
+   }
+   catch( Exception e )
+   {}
+   
+   if( hour < 0 || hour > 23 )
+   {
+    log.warn("Parameter '{}' has invalid value. EBeye export will not run periodicaly", EBeyeUpdateHourParam);
+    hour=-1;
+   }
+   
+   if( minStr != null )
+   {
+    try
+    {
+     min = Integer.parseInt(minStr);
+    }
+    catch( Exception e )
+    {}
+    
+    if( min < 0 || min > 59 )
+    {
+     log.warn("Parameter '{}' has invalid value. EBeye export will not run periodicaly", EBeyeUpdateHourParam);
+     hour=-1;
+    }
+   }
+   
+  }
+    
+  
+  EBeyeExport.setInstance( new EBeyeExport(em, new File(outPath), new File(tempPath), efoURL ) );
+  
+  if( hour != -1 )
+  {
+
+   TimerTask task = new TimerTask()
+   {
+    @Override
+    public void run()
+    {
+     try
+     {
+      EBeyeExport.getInstance().export(-1);
+     }
+     catch(IOException e)
+     {
+      log.error("Export error: "+e.getMessage());
+     }
+     
+    }
+   };
+   
+   Calendar cr = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+   cr.setTimeInMillis(System.currentTimeMillis());
+   long day = TimeUnit.DAYS.toMillis(1);
+   
+   cr.set(Calendar.HOUR_OF_DAY, hour);
+   cr.set(Calendar.MINUTE, min);
+   
+   long delay = cr.getTimeInMillis() - System.currentTimeMillis();
+   
+   long adjustedDelay = (delay > 0 ? delay : day + delay);
+   
+   timer.scheduleAtFixedRate(task, adjustedDelay, day);
+  }
+  
+  
  }
 
  @Override
  public void contextDestroyed(ServletContextEvent arg0)
  {
-  // TODO Auto-generated method stub
-  
+  timer.cancel();
  }
 
 

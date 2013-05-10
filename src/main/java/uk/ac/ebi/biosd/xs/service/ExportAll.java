@@ -10,8 +10,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import uk.ac.ebi.biosd.export.AbstractXMLFormatter;
-import uk.ac.ebi.biosd.export.AbstractXMLFormatter.SamplesFormat;
+import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
+import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
 
 public class ExportAll extends HttpServlet
@@ -166,9 +166,6 @@ public class ExportAll extends HttpServlet
   
   em.close();
 
-  formatter.exportFooter(out);
-
-  
  }
 
  /**

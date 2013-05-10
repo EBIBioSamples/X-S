@@ -1,10 +1,10 @@
 package uk.ac.ebi.biosd.xs.service;
 
-import uk.ac.ebi.biosd.export.AGE1XMLFormatter;
-import uk.ac.ebi.biosd.export.AGE2XMLFormatter;
-import uk.ac.ebi.biosd.export.AbstractXMLFormatter;
-import uk.ac.ebi.biosd.export.AbstractXMLFormatter.SamplesFormat;
-import uk.ac.ebi.biosd.export.STXMLFormatter;
+import uk.ac.ebi.biosd.xs.export.AGE1XMLFormatter;
+import uk.ac.ebi.biosd.xs.export.AGE2XMLFormatter;
+import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
+import uk.ac.ebi.biosd.xs.export.STXMLFormatter;
+import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
 
 public class SchemaManager
 {
