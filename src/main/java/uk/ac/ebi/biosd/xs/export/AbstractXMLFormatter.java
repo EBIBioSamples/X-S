@@ -38,9 +38,9 @@ public abstract class AbstractXMLFormatter
  protected static DateToXsdDatetimeFormatter dateTimeFmt = new DateToXsdDatetimeFormatter( TimeZone.getTimeZone("GMT") );
 
 
- public abstract void exportSample(BioSample smp,  Appendable out) throws IOException;
+ public abstract boolean exportSample(BioSample smp,  Appendable out) throws IOException;
 
- public abstract void exportGroup( BioSampleGroup ao, Appendable out ) throws IOException;
+ public abstract boolean exportGroup( BioSampleGroup ao, Appendable out ) throws IOException;
 
 // public abstract void exportGroup( BioSampleGroup ao, Appendable out, boolean showNS, Samples smpSts, boolean showAttributes ) throws IOException;
  

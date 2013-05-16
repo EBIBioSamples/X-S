@@ -71,15 +71,15 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  }
  
  @Override
- public void exportSample(BioSample smp, Appendable out) throws IOException
+ public boolean exportSample(BioSample smp, Appendable out) throws IOException
  {
-  exportSample(smp, out, isShowNS(), isShowAttributes(), null, null, isShowAC());
+  return exportSample(smp, out, isShowNS(), isShowAttributes(), null, null, isShowAC());
  }
 
  @Override
- public void exportGroup(BioSampleGroup ao, Appendable out) throws IOException
+ public boolean exportGroup(BioSampleGroup ao, Appendable out) throws IOException
  {
-  exportGroup(ao, out, isShowNS(), getSamplesFormat(), isShowAttributes(), isShowAC() );
+  return exportGroup(ao, out, isShowNS(), getSamplesFormat(), isShowAttributes(), isShowAC() );
  }
 
  
@@ -111,7 +111,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("\" ");
  }
 
- private void exportGroup(final BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
+ private boolean exportGroup(final BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
  {
   Set<String> attrset = null;
   
@@ -273,6 +273,8 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   }
   
   out.append("</SampleGroup>\n");
+ 
+  return true;
  }
 
  @Override
@@ -488,7 +490,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("</attribute>\n");
  }
  
- private void exportSample(final BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset, boolean showAC) throws IOException
+ private boolean exportSample(final BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset, boolean showAC) throws IOException
  {
   out.append("<Sample ");
    
@@ -549,6 +551,8 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   
   
   out.append("</Sample>");
+ 
+  return true;
  }
 
  private void exportPropertyValue( ExperimentalPropertyValue<? extends ExperimentalPropertyType> val,  Appendable out) throws IOException

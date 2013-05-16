@@ -33,7 +33,7 @@ public class EBeyeExport
  private final File outDir;
  private final File tmpDir;
  private final URL efoURL;
- private final int blockSize  = 1000;
+ private final int blockSize  = 10000;
  
  private final AtomicBoolean busy = new AtomicBoolean( false );
  
@@ -62,7 +62,7 @@ public class EBeyeExport
  }
  
  
- public boolean export( int limit ) throws IOException
+ public boolean export( int limit, boolean genSamples, boolean genGroup, boolean pubOnly ) throws IOException
  {
   if( ! busy.compareAndSet(false, true) )
   {
@@ -115,73 +115,85 @@ public class EBeyeExport
 
    try
    {
-    log.debug("Exporting groups");
-
-    grpLoop: while(true)
+    if( genGroup )
     {
+     log.debug("Exporting groups");
 
-     grpListQuery.setParameter(1, startID);
-
-     @SuppressWarnings("unchecked")
-     List<BioSampleGroup> result = grpListQuery.getResultList();
-
-     int i = 0;
-
-     for(BioSampleGroup g : result)
+     grpLoop: while(true)
      {
-      i++;
-      count++;
 
-      formatter.exportGroup(g, grpFileOut);
+      grpListQuery.setParameter(1, startID);
 
-      startID = g.getId() + 1;
+      @SuppressWarnings("unchecked")
+      List<BioSampleGroup> result = grpListQuery.getResultList();
 
-      if(count >= limit)
-       break grpLoop;
+      int i = 0;
+
+      for(BioSampleGroup g : result)
+      {
+       i++;
+
+       if( ! pubOnly || g.isPublic() )
+       {
+        formatter.exportGroup(g, grpFileOut);
+        count++;
+       }
+
+       startID = g.getId() + 1;
+
+       if(count >= limit)
+        break grpLoop;
+      }
+
+      if(i < blockSize)
+       break;
      }
 
-     if(i < blockSize)
-      break;
+     log.debug("Exporting groups done");
     }
-
-    log.debug("Exporting groups done");
-
     startID = Long.MIN_VALUE;
 
-    log.debug("Exporting samples");
-
-    count = 0;
-
-    smpLoop: while(true)
+    if( genSamples )
     {
 
-     smpListQuery.setParameter(1, startID);
+     log.debug("Exporting samples");
 
-     @SuppressWarnings("unchecked")
-     List<BioSample> result = smpListQuery.getResultList();
+     count = 0;
 
-     int i = 0;
-
-     for(BioSample s : result)
+     smpLoop: while(true)
      {
-      i++;
-      count++;
 
-      formatter.exportSample(s, smplFileOut);
+      smpListQuery.setParameter(1, startID);
 
-      startID = s.getId() + 1;
+      @SuppressWarnings("unchecked")
+      List<BioSample> result = smpListQuery.getResultList();
 
-      if(count >= limit)
-       break smpLoop;
+      int i = 0;
 
+      for(BioSample s : result)
+      {
+       i++;
+
+       if( ! pubOnly || s.isPublic() )
+       {
+        formatter.exportSample(s, smplFileOut);
+        count++;
+       }
+       
+
+       startID = s.getId() + 1;
+
+       if(count >= limit)
+        break smpLoop;
+
+      }
+
+      if(i < blockSize)
+       break;
      }
 
-     if(i < blockSize)
-      break;
+     log.debug("Exporting samples done");
     }
-
-    log.debug("Exporting samples done");
-
    }
    finally
    {

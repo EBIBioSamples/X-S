@@ -12,6 +12,9 @@ public class ControlServlet extends HttpServlet
 {
  static final String CommandParameter = "command";
  static final String LimitParameter = "limit";
+ static final String GenGroupParameter = "generateGroups";
+ static final String GenSamplesParameter = "generateSamples";
+ static final String ExportPrivateParameter = "exportPrivate";
  static final String CommandForceEBEye = "forceEBEye";
 
  private static final long serialVersionUID = 1L;
@@ -55,7 +58,20 @@ public class ControlServlet extends HttpServlet
     }
    }
    
-   if( ! exp.export(limit) )
+   String genGrpStr =  req.getParameter(GenGroupParameter);
+   
+   boolean genGrp = genGrpStr == null? true : "1".equals(genGrpStr) || "yes".equalsIgnoreCase(genGrpStr) || "on".equalsIgnoreCase(genGrpStr) || "true".equalsIgnoreCase(genGrpStr);
+   
+   String genSmpStr =  req.getParameter(GenSamplesParameter);
+   
+   boolean genSmp = genSmpStr == null? true : "1".equals(genSmpStr) || "yes".equalsIgnoreCase(genSmpStr) || "on".equalsIgnoreCase(genSmpStr) || "true".equalsIgnoreCase(genSmpStr);
+
+   String expPrvStr =  req.getParameter(ExportPrivateParameter);
+   
+   boolean expPrv = expPrvStr == null? false : "1".equals(expPrvStr) || "yes".equalsIgnoreCase(expPrvStr) || "on".equalsIgnoreCase(expPrvStr) || "true".equalsIgnoreCase(expPrvStr);
+
+   
+   if( ! exp.export(limit, genSmp, genGrp, ! expPrv) )
    {
     sendMessage("EBEye export is busy", resp.getOutputStream(), "orange");
     return;

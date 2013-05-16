@@ -81,19 +81,19 @@ public class STXMLFormatter extends AGE1XMLFormatter
  }
  
  @Override
- public void exportSample(BioSample smp,  Appendable out) throws IOException
+ public boolean exportSample(BioSample smp,  Appendable out) throws IOException
  {
-  exportSample(smp, out, true, true, null, null, isShowAC() );
+  return exportSample(smp, out, true, true, null, null, isShowAC() );
  }
  
  @Override
- public void exportGroup( BioSampleGroup ao, Appendable out ) throws IOException
+ public boolean exportGroup( BioSampleGroup ao, Appendable out ) throws IOException
  {
-  exportGroup(ao, out, isShowNS(), SamplesFormat.LIST, false, isShowAC() );
+  return exportGroup(ao, out, isShowNS(), SamplesFormat.LIST, false, isShowAC() );
  }
  
  
- private void exportGroup( final BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC ) throws IOException
+ private boolean exportGroup( final BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC ) throws IOException
  {
   Set<String> attrset = null;
   
@@ -228,6 +228,8 @@ public class STXMLFormatter extends AGE1XMLFormatter
   
   
   out.append("</BioSampleGroup>\n");
+  
+  return true;
  }
  
  private static void exportOntologyEntry( OntologyEntry val,  Appendable out) throws IOException
@@ -275,7 +277,7 @@ public class STXMLFormatter extends AGE1XMLFormatter
  
 
 
- private void exportSample(final BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset, boolean showAC) throws IOException
+ private boolean exportSample(final BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset, boolean showAC) throws IOException
  {
   out.append("<BioSample ");
   
@@ -314,7 +316,7 @@ public class STXMLFormatter extends AGE1XMLFormatter
   if( ! showAnnt )
   {
    out.append("\"/>\n");
-   return;
+   return true;
   }
  
   out.append("\">\n");
@@ -355,10 +357,11 @@ public class STXMLFormatter extends AGE1XMLFormatter
    }
   }
   
-  if( smp.getGroups() != null)
   
   out.append("</BioSample>\n");
 
+  
+  return true;
  }
  
  private static void exportAnnotations( DefaultAccessibleAnnotatable obj, Appendable out ) throws IOException

@@ -35,6 +35,8 @@ public class Init implements ServletContextListener
  static String EBeyeTempPathParam = "ebeye.tempDir";
  static String EBeyeUpdateHourParam = "ebeye.updateTime";
  static String EBeyeEfoURLParam = "ebeye.efoURL";
+ static String EBeyeGenGroup = "ebeye.generateGroups";
+ static String EBeyeGenSamples = "ebeye.generateSamples";
 
  static String PersistParamPrefix = "persist";
  static String DefaultProfileParam = PersistParamPrefix+".defaultProfile";
@@ -135,6 +137,19 @@ public class Init implements ServletContextListener
   
   EntityManager em = emf.createEntityManager();
   
+  
+  final boolean genGroup;
+  final boolean genSamples;
+  
+  String gen = servletContext.getInitParameter(EBeyeGenGroup);
+  
+  genGroup =  ( gen != null )?
+   "1".equals(gen) || "yes".equalsIgnoreCase(gen) || "on".equalsIgnoreCase(gen) || "true".equalsIgnoreCase(gen) : true;
+
+  gen = servletContext.getInitParameter(EBeyeGenSamples);
+  
+  genSamples = ( gen != null )? "1".equals(gen) || "yes".equalsIgnoreCase(gen) || "on".equalsIgnoreCase(gen) || "true".equalsIgnoreCase(gen) : true;
+
   
   String outPath = servletContext.getInitParameter(EBeyeOutputPathParam);
   
@@ -242,7 +257,7 @@ public class Init implements ServletContextListener
     {
      try
      {
-      EBeyeExport.getInstance().export(-1);
+      EBeyeExport.getInstance().export(-1, genSamples, genGroup, true );
      }
      catch(IOException e)
      {
