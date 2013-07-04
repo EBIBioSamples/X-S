@@ -38,10 +38,18 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
+
+	<repository>
+		<id>ebi-repo-snapshots</id>
+		<name>EBI Repo Snapshots</name>
+		<url>http://www.ebi.ac.uk/~maven/m2repo_snapshots</url>
+		<snapshots>
+			<enabled>true</enabled>
+		</snapshots>
+	</repository>
     </repositories>
 
 	<dependencies>
-
 
 		<dependency>
 			<groupId>uk.ac.ebi.fg</groupId>
