@@ -131,7 +131,8 @@ public class Exporter
   }
   finally
   {
-   ts.commit();
+   if( ! ts.getRollbackOnly() )
+    ts.commit();
   }
   
   if( exportSources )
