@@ -81,7 +81,6 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  {
   return exportGroup(ao, out, isShowNS(), getSamplesFormat(), isShowAttributes(), isShowAC() );
  }
-
  
  protected interface ACObj
  {
@@ -189,6 +188,52 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     exportSimpleValuePostfix(out);
     out.append("</attribute>\n");
    }
+   
+   if( msi.getAcc() != null )
+   {
+    out.append("<attribute class=\"Submission Identifier\" classDefined=\"true\" dataType=\"STRING\">\n");
+    exportSimpleValuePefix(out);
+    exportSimpleValueStringPefix(out);
+    out.append( msi.getAcc() );
+    exportSimpleValueStringPostfix(out);
+    exportSimpleValuePostfix(out);
+    out.append("</attribute>\n");
+   }
+
+   
+   if( msi.getTitle() != null )
+   {
+    out.append("<attribute class=\"Submission Title\" classDefined=\"true\" dataType=\"STRING\">\n");
+    exportSimpleValuePefix(out);
+    exportSimpleValueStringPefix(out);
+    out.append( msi.getTitle() );
+    exportSimpleValueStringPostfix(out);
+    exportSimpleValuePostfix(out);
+    out.append("</attribute>\n");
+   }
+   
+   if( msi.getDescription() != null )
+   {
+    out.append("<attribute class=\"Submission Description\" classDefined=\"true\" dataType=\"STRING\">\n");
+    exportSimpleValuePefix(out);
+    exportSimpleValueStringPefix(out);
+    out.append( msi.getDescription() );
+    exportSimpleValueStringPostfix(out);
+    exportSimpleValuePostfix(out);
+    out.append("</attribute>\n");
+   }
+   
+   if( msi.getVersion() != null )
+   {
+    out.append("<attribute class=\"Submission Version\" classDefined=\"true\" dataType=\"STRING\">\n");
+    exportSimpleValuePefix(out);
+    exportSimpleValueStringPefix(out);
+    out.append( msi.getVersion() );
+    exportSimpleValueStringPostfix(out);
+    exportSimpleValuePostfix(out);
+    out.append("</attribute>\n");
+   }
+
    
    if( msi.getReferenceSources() != null && msi.getReferenceSources().size() > 0 )
    {

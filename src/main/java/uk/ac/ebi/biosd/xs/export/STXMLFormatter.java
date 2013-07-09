@@ -89,10 +89,9 @@ public class STXMLFormatter extends AGE1XMLFormatter
  @Override
  public boolean exportGroup( BioSampleGroup ao, Appendable out ) throws IOException
  {
-  return exportGroup(ao, out, isShowNS(), SamplesFormat.LIST, false, isShowAC() );
+  return exportGroup(ao, out, isShowNS(), getSamplesFormat(), isShowAttributes(), isShowAC() );
  }
- 
- 
+
  private boolean exportGroup( final BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC ) throws IOException
  {
   Set<String> attrset = null;
@@ -161,6 +160,36 @@ public class STXMLFormatter extends AGE1XMLFormatter
     out.append("</UpdateDate>\n");
    }
    
+   
+   if( msi.getAcc() != null )
+   {
+    out.append("<SubmissionIdentifier>");
+    out.append( msi.getAcc() );
+    out.append("</SubmissionIdentifier>\n");
+   }
+
+   
+   if( msi.getTitle() != null )
+   {
+    out.append("<SubmissionTitle>");
+    out.append( msi.getTitle() );
+    out.append("</SubmissionTitle>\n");
+   }
+   
+   if( msi.getDescription() != null )
+   {
+    out.append("<SubmissionDescription>");
+    out.append( msi.getDescription() );
+    out.append("</SubmissionDescription>\n");
+   }
+   
+   if( msi.getVersion() != null )
+   {
+    out.append("<SubmissionVersion>");
+    out.append( msi.getVersion() );
+    out.append("</SubmissionVersion>\n");
+   }
+
    if( msi.getReferenceSources() != null )
    {
     for( ReferenceSource c : msi.getReferenceSources() )
