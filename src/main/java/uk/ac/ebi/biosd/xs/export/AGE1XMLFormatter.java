@@ -194,7 +194,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     out.append("<attribute class=\"Submission Identifier\" classDefined=\"true\" dataType=\"STRING\">\n");
     exportSimpleValuePefix(out);
     exportSimpleValueStringPefix(out);
-    out.append( msi.getAcc() );
+    xmlEscaped(msi.getAcc(), out);
     exportSimpleValueStringPostfix(out);
     exportSimpleValuePostfix(out);
     out.append("</attribute>\n");
@@ -206,7 +206,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     out.append("<attribute class=\"Submission Title\" classDefined=\"true\" dataType=\"STRING\">\n");
     exportSimpleValuePefix(out);
     exportSimpleValueStringPefix(out);
-    out.append( msi.getTitle() );
+    xmlEscaped(msi.getTitle(), out);
     exportSimpleValueStringPostfix(out);
     exportSimpleValuePostfix(out);
     out.append("</attribute>\n");
@@ -217,7 +217,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     out.append("<attribute class=\"Submission Description\" classDefined=\"true\" dataType=\"STRING\">\n");
     exportSimpleValuePefix(out);
     exportSimpleValueStringPefix(out);
-    out.append( msi.getDescription() );
+    xmlEscaped(msi.getDescription(), out);
     exportSimpleValueStringPostfix(out);
     exportSimpleValuePostfix(out);
     out.append("</attribute>\n");
@@ -228,7 +228,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     out.append("<attribute class=\"Submission Version\" classDefined=\"true\" dataType=\"STRING\">\n");
     exportSimpleValuePefix(out);
     exportSimpleValueStringPefix(out);
-    out.append( msi.getVersion() );
+    xmlEscaped(msi.getVersion(), out);
     exportSimpleValueStringPostfix(out);
     exportSimpleValuePostfix(out);
     out.append("</attribute>\n");

@@ -164,7 +164,7 @@ public class STXMLFormatter extends AGE1XMLFormatter
    if( msi.getAcc() != null )
    {
     out.append("<SubmissionIdentifier>");
-    out.append( msi.getAcc() );
+    xmlEscaped( msi.getAcc(), out);
     out.append("</SubmissionIdentifier>\n");
    }
 
@@ -172,21 +172,21 @@ public class STXMLFormatter extends AGE1XMLFormatter
    if( msi.getTitle() != null )
    {
     out.append("<SubmissionTitle>");
-    out.append( msi.getTitle() );
+    xmlEscaped( msi.getTitle() , out);
     out.append("</SubmissionTitle>\n");
    }
    
    if( msi.getDescription() != null )
    {
     out.append("<SubmissionDescription>");
-    out.append( msi.getDescription() );
+    xmlEscaped( msi.getDescription() , out);
     out.append("</SubmissionDescription>\n");
    }
    
    if( msi.getVersion() != null )
    {
     out.append("<SubmissionVersion>");
-    out.append( msi.getVersion() );
+    xmlEscaped( msi.getVersion() , out);
     out.append("</SubmissionVersion>\n");
    }
 
