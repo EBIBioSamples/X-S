@@ -160,7 +160,7 @@ public class ExportAll extends HttpServlet
   boolean sourcesByName = "true".equals( prm ) || "yes".equals( prm ) || "1".equals( prm );
 
   
-  Exporter expt = new Exporter(em, formatter, exportSources, sourcesByName, blockSize, limit);
+  ExporterMT expt = new ExporterMT(em, formatter, exportSources, sourcesByName, blockSize, limit);
   
   expt.export(since, out);
   

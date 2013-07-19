@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.xs.service;
+package uk.ac.ebi.biosd.xs.util;
 
 
 public class Counter extends Number

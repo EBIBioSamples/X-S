@@ -8,7 +8,7 @@ import java.util.IllegalFormatException;
 import java.util.Map;
 import java.util.TimeZone;
 
-import uk.ac.ebi.biosd.xs.service.Counter;
+import uk.ac.ebi.biosd.xs.util.Counter;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 

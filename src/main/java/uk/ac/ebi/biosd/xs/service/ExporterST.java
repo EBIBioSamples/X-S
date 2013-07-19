@@ -9,27 +9,28 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Query;
 
 import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
+import uk.ac.ebi.biosd.xs.util.Counter;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
 import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
 
-public class Exporter
+public class ExporterST
 {
- private final EntityManager em;
+ private final EntityManagerFactory emf;
  private final AbstractXMLFormatter formatter;
  private final boolean exportSources;
  private final boolean sourcesByName;
  private final int blockSize;
  private final long limit;
  
- public Exporter(EntityManager em, AbstractXMLFormatter formatter, boolean exportSources, boolean sourcesByName, int blockSize, long limit)
+ public ExporterST(EntityManagerFactory emf, AbstractXMLFormatter formatter, boolean exportSources, boolean sourcesByName, int blockSize, long limit)
  {
-  super();
-  this.em = em;
+  this.emf = emf;
   this.formatter = formatter;
   this.exportSources = exportSources;
   this.sourcesByName = sourcesByName;
@@ -44,6 +45,8 @@ public class Exporter
   
   long startID = Long.MIN_VALUE;
   long count = 0;
+  
+  EntityManager em = emf.createEntityManager();
   
   if( since < 0 )
    listQuery = em.createQuery("SELECT a FROM " + BioSampleGroup.class.getCanonicalName () + " a WHERE a.id >=?1 ORDER BY a.id");
@@ -141,4 +144,6 @@ public class Exporter
   formatter.exportFooter(out);
 
  }
+ 
+
 }
