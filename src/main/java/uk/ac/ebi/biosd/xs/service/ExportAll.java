@@ -188,8 +188,6 @@ public class ExportAll extends HttpServlet
  
   expt.export(since, out, limit);
   
-  emf.close();
-
  }
 
  /**
