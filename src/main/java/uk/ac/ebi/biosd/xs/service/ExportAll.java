@@ -3,7 +3,6 @@ package uk.ac.ebi.biosd.xs.service;
 import java.io.IOException;
 import java.util.Arrays;
 
-import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -21,6 +20,7 @@ public class ExportAll extends HttpServlet
  static final String SchemaParameter = "schema";
  static final String ProfileParameter = "server";
  static final String LimitParameter = "limit";
+ static final String ThreadsParameter = "threads";
  static final String SamplesParameter = "samples";
  static final String SourcesParameter = "sources";
  static final String SourcesByNameParameter = "sourcesByName";
@@ -28,6 +28,7 @@ public class ExportAll extends HttpServlet
  static final String AttributesParameter = "showAttributes";
  static final String NamespaceParameter = "hideNS";
  static final String NoAccessControlParameter = "noAC";
+ 
 
  private static final long serialVersionUID = 1L;
  
@@ -58,6 +59,26 @@ public class ExportAll extends HttpServlet
    {
     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
     response.getWriter().append("<html><body><span color='red'>Invalid "+LimitParameter+" parameter value. Sould be an integer value</span></body></html>");
+    return;
+   }
+  }
+  
+  if( limit <=0 )
+   limit=Long.MAX_VALUE;
+  
+  String thr =  request.getParameter(ThreadsParameter);
+  int threadsNum = 1;
+  
+  if( thr != null )
+  {
+   try
+   {
+    threadsNum = Integer.parseInt(thr);
+   }
+   catch(Exception e)
+   {
+    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+    response.getWriter().append("<html><body><span color='red'>Invalid "+ThreadsParameter+" parameter value. Sould be an integer value</span></body></html>");
     return;
    }
   }
@@ -121,8 +142,6 @@ public class ExportAll extends HttpServlet
    return;
   }
   
-  EntityManager em = emf.createEntityManager();
-  
  
   response.setContentType("text/xml");
   Appendable out = response.getWriter();
@@ -160,11 +179,16 @@ public class ExportAll extends HttpServlet
   boolean sourcesByName = "true".equals( prm ) || "yes".equals( prm ) || "1".equals( prm );
 
   
-  ExporterMT expt = new ExporterMT(em, formatter, exportSources, sourcesByName, blockSize, limit);
+  Exporter expt = null;
   
-  expt.export(since, out);
+  if( threadsNum == 1 )
+   expt = new ExporterST(emf, formatter, exportSources, sourcesByName, blockSize);
+  else
+   expt = new ExporterMT(emf, formatter, exportSources, sourcesByName, blockSize, threadsNum);
+ 
+  expt.export(since, out, limit);
   
-  em.close();
+  emf.close();
 
  }
 

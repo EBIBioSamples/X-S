@@ -2,6 +2,7 @@ package uk.ac.ebi.biosd.xs.service;
 
 import java.io.IOException;
 import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,6 +13,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -25,16 +28,16 @@ import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
 import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
 
-public class ExporterMT
+public class ExporterMT implements Exporter
 {
  private final EntityManagerFactory emf;
  private final AbstractXMLFormatter formatter;
  private final boolean exportSources;
  private final boolean sourcesByName;
  private final int blockSize;
- private final long limit;
+ private final int threads;
  
- public ExporterMT(EntityManagerFactory emf, AbstractXMLFormatter formatter, boolean exportSources, boolean sourcesByName, int blockSize, long limit)
+ public ExporterMT(EntityManagerFactory emf, AbstractXMLFormatter formatter, boolean exportSources, boolean sourcesByName, int blockSize, int thN)
  {
   super();
   this.emf = emf;
@@ -42,11 +45,12 @@ public class ExporterMT
   this.exportSources = exportSources;
   this.sourcesByName = sourcesByName;
   this.blockSize = blockSize;
-  this.limit = limit;
+  threads = thN;
  }
 
  
- public void export( long since, Appendable out, int threads) throws IOException
+ @Override
+ public void export( long since, Appendable out, long limit) throws IOException
  {
   ExecutorService tPool = Executors.newFixedThreadPool(threads);
   
@@ -56,6 +60,8 @@ public class ExporterMT
   Map<String, Counter> srcMap = new HashMap<String, Counter>();
   
   List<EntityManager> emlst = new ArrayList<>(threads);
+  
+  AtomicBoolean stopFlag = new AtomicBoolean(false);
   
   for( int i=0; i < threads; i++ )
   {
@@ -74,13 +80,23 @@ public class ExporterMT
    
    listQuery.setMaxResults ( blockSize ); 
    
-   tPool.submit( new ExporterTask(srcMap, rm, listQuery, reqQ) );
+   tPool.submit( new ExporterTask(srcMap, rm, listQuery, reqQ, stopFlag) );
    
    emlst.add(em);
   }
   
-  formatter.exportHeader(new java.util.Date().getTime(), since, out);
+  SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+  java.util.Date startTime = new java.util.Date();
+  long startTs = startTime.getTime();
+  
+  formatter.exportHeader( startTs, since, out);
+  
+  out.append("\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n");
 
+  
+  int count=0;
+  
+  int tnum = threads;
   
   while( true )
   {
@@ -102,22 +118,51 @@ public class ExporterMT
    
    if( s == null )
    {
-    threads--;
+    tnum--;
    
-   if( threads == 0 )
+   if( tnum == 0 )
     break;
    }
    
+   count++;
+   
    out.append(s);
+   
+   if( limit > 0 && count >= limit )
+   {
+    stopFlag.set(true);
+    break;
+   }
   }
 
   for( EntityManager em : emlst )
    em.close();
   
+  tPool.shutdown();
   
+  while( true )
+  {
+   try
+   {
+    if( ! tPool.awaitTermination(30, TimeUnit.SECONDS) )
+     System.out.println("Can't terminate thread pool");
+    
+    break;
+   }
+   catch(InterruptedException e)
+   {
+   }
+  }
    
   if( exportSources )
    formatter.exportSources(srcMap, out);
+  
+  java.util.Date endTime = new java.util.Date();
+  long endTs = endTime.getTime();
+
+  long rate = (endTs-startTs)/count;
+  
+  out.append("\n<!-- Exported: "+count+" groups. Rate: "+rate+"ms per group -->\n<!-- End time: "+simpleDateFormat.format(endTime)+" -->\n");
   
   formatter.exportFooter(out);
 
@@ -139,14 +184,17 @@ public class ExporterMT
   Query listQuery;
   Map<String, Counter> sourcesMap;
   BlockingQueue<Object> resultQueue;
+  AtomicBoolean stopFlag;
   
-  ExporterTask(Map<String, Counter> srcMap, RangeManager rMgr, Query q, BlockingQueue<Object> resQ )
+  ExporterTask(Map<String, Counter> srcMap, RangeManager rMgr, Query q, BlockingQueue<Object> resQ, AtomicBoolean stf )
   {
    sourcesMap = srcMap;
    rangeMngr = rMgr;
    
    listQuery = q;
    resultQueue = resQ;
+   
+   stopFlag = stf;
   }
 
   @Override
@@ -176,6 +224,9 @@ public class ExporterMT
 
      for(BioSampleGroup g : result)
      {
+      if( stopFlag.get() )
+       return;
+      
       sb.setLength(0);
 
       formatter.exportGroup(g, sb);

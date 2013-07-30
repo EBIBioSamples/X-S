@@ -2,6 +2,7 @@ package uk.ac.ebi.biosd.xs.service;
 
 import java.io.IOException;
 import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,27 +20,26 @@ import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
 import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
 
-public class ExporterST
+public class ExporterST implements Exporter
 {
  private final EntityManagerFactory emf;
  private final AbstractXMLFormatter formatter;
  private final boolean exportSources;
  private final boolean sourcesByName;
  private final int blockSize;
- private final long limit;
  
- public ExporterST(EntityManagerFactory emf, AbstractXMLFormatter formatter, boolean exportSources, boolean sourcesByName, int blockSize, long limit)
+ public ExporterST(EntityManagerFactory emf, AbstractXMLFormatter formatter, boolean exportSources, boolean sourcesByName, int blockSize)
  {
   this.emf = emf;
   this.formatter = formatter;
   this.exportSources = exportSources;
   this.sourcesByName = sourcesByName;
   this.blockSize = blockSize;
-  this.limit = limit;
  }
 
  
- public void export( long since, Appendable out) throws IOException
+ @Override
+ public void export( long since, Appendable out, long limit) throws IOException
  {
   Query listQuery = null;
   
@@ -67,7 +67,13 @@ public class ExporterST
   
   ts.begin ();
 
-  formatter.exportHeader(new java.util.Date().getTime(), since, out);
+  SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+  java.util.Date startTime = new java.util.Date();
+  long startTs = startTime.getTime();
+  
+  formatter.exportHeader( startTs, since, out);
+  
+  out.append("\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n");
   
   try
   {
@@ -140,6 +146,13 @@ public class ExporterST
   
   if( exportSources )
    formatter.exportSources(srcMap, out);
+  
+  java.util.Date endTime = new java.util.Date();
+  long endTs = endTime.getTime();
+
+  long rate = (endTs-startTs)/count;
+  
+  out.append("\n<!-- Exported: "+count+" groups. Rate: "+rate+"ms per group -->\n<!-- End time: "+simpleDateFormat.format(endTime)+" -->\n");
   
   formatter.exportFooter(out);
 
