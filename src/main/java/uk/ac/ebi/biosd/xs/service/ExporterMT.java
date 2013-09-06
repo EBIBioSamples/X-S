@@ -24,6 +24,7 @@ import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
 import uk.ac.ebi.biosd.xs.util.Counter;
 import uk.ac.ebi.biosd.xs.util.RangeManager;
 import uk.ac.ebi.biosd.xs.util.RangeManager.Range;
+import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
 import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
@@ -80,7 +81,7 @@ public class ExporterMT implements Exporter
    
    listQuery.setMaxResults ( blockSize ); 
    
-   tPool.submit( new ExporterTask(srcMap, rm, listQuery, reqQ, stopFlag) );
+   tPool.submit( new GroupExporterTask(srcMap, rm, listQuery, reqQ, stopFlag) );
    
    emlst.add(em);
   }
@@ -120,8 +121,8 @@ public class ExporterMT implements Exporter
    {
     tnum--;
    
-   if( tnum == 0 )
-    break;
+    if( tnum == 0 )
+     break;
    }
    
    count++;
@@ -131,6 +132,8 @@ public class ExporterMT implements Exporter
    if( limit > 0 && count >= limit )
    {
     stopFlag.set(true);
+    reqQ.clear();
+    
     break;
    }
   }
@@ -178,7 +181,7 @@ public class ExporterMT implements Exporter
   }
  }
  
- class ExporterTask implements Runnable
+ class GroupExporterTask implements Runnable
  {
   RangeManager rangeMngr;
   Query listQuery;
@@ -186,7 +189,7 @@ public class ExporterMT implements Exporter
   BlockingQueue<Object> resultQueue;
   AtomicBoolean stopFlag;
   
-  ExporterTask(Map<String, Counter> srcMap, RangeManager rMgr, Query q, BlockingQueue<Object> resQ, AtomicBoolean stf )
+  GroupExporterTask(Map<String, Counter> srcMap, RangeManager rMgr, Query q, BlockingQueue<Object> resQ, AtomicBoolean stf )
   {
    sourcesMap = srcMap;
    rangeMngr = rMgr;
@@ -267,6 +270,10 @@ public class ExporterMT implements Exporter
       }
 
       putIntoQueue(sb.toString());
+      
+      if( stopFlag.get() )
+       return;
+
      }
      
      r.setMin(lastId + 1);
@@ -301,6 +308,9 @@ public class ExporterMT implements Exporter
     }
     catch(InterruptedException e)
     {
+     if( stopFlag.get() )
+      return;
+     
      continue;
     }
     
@@ -310,4 +320,105 @@ public class ExporterMT implements Exporter
   }
  }
  
+ 
+ class SampleExporterTask implements Runnable
+ {
+  RangeManager rangeMngr;
+  Query listQuery;
+  BlockingQueue<Object> resultQueue;
+  AtomicBoolean stopFlag;
+  
+  SampleExporterTask( RangeManager rMgr, Query q, BlockingQueue<Object> resQ, AtomicBoolean stf )
+  {
+   rangeMngr = rMgr;
+   
+   listQuery = q;
+   resultQueue = resQ;
+   
+   stopFlag = stf;
+  }
+
+  @Override
+  public void run()
+  {
+   Range r = rangeMngr.getRange();
+
+   long lastId = 0;
+
+   StringBuilder sb = new StringBuilder();
+
+   try
+   {
+
+    while(r != null)
+    {
+     System.out.println("Processing range: " + r + " Thread: " + Thread.currentThread().getName());
+
+     lastId = r.getMax();
+     listQuery.setParameter(1, r.getMin());
+     listQuery.setParameter(2, r.getMax());
+
+     @SuppressWarnings("unchecked")
+     List<BioSample> result = listQuery.getResultList();
+
+     for(BioSample s : result)
+     {
+      if( stopFlag.get() )
+       return;
+      
+      sb.setLength(0);
+
+      formatter.exportSample(s, sb);
+
+      putIntoQueue(sb.toString());
+      
+      if( stopFlag.get() )
+       return;
+
+     }
+     
+     r.setMin(lastId + 1);
+
+     r = rangeMngr.returnAndGetRange(r);
+
+     if(r == null)
+     {
+      putIntoQueue( new PoisonObject() );
+      
+//      System.out.println("Processing finished. Thread: " + Thread.currentThread().getName());
+
+      return;
+     }
+    }
+   }
+   catch(IOException e)
+   {
+    // TODO Auto-generated catch block
+    e.printStackTrace();
+   }
+  }
+
+  public void putIntoQueue( Object o )
+  {
+
+   while(true)
+   {
+    try
+    {
+     resultQueue.put(o);
+    }
+    catch(InterruptedException e)
+    {
+     if( stopFlag.get() )
+      return;
+     
+     continue;
+    }
+    
+    return;
+   }
+
+  }
+ }
+
 }

@@ -83,8 +83,8 @@ public class ExportAll extends HttpServlet
    }
   }
   
-  if( limit <=0 )
-   limit=Long.MAX_VALUE;
+  if( threadsNum <=0 )
+   threadsNum=Runtime.getRuntime().availableProcessors();
   
   long since=-1;
   

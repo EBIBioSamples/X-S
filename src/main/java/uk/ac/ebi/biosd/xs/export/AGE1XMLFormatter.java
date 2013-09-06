@@ -73,13 +73,13 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  @Override
  public boolean exportSample(BioSample smp, Appendable out) throws IOException
  {
-  return exportSample(smp, out, isShowNS(), isShowAttributes(), null, null, isShowAC());
+  return exportSample(smp, out, isShowNS(), isShowAttributes(), true, null, isShowAC());
  }
 
  @Override
  public boolean exportGroup(BioSampleGroup ao, Appendable out) throws IOException
  {
-  return exportGroup(ao, out, isShowNS(), getSamplesFormat(), isShowAttributes(), isShowAC() );
+  return exportGroup(ao, out, out, isShowNS(), getSamplesFormat(), isShowAttributes(), isShowAC() );
  }
  
  protected interface ACObj
@@ -110,7 +110,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("\" ");
  }
 
- private boolean exportGroup(final BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
+ protected boolean exportGroup(final BioSampleGroup ao, Appendable out, Appendable smpout, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
  {
   Set<String> attrset = null;
   
@@ -299,7 +299,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   {
    for(BioSample smp : ao.getSamples())
    {
-    exportSample(smp, out, false, smpSts == SamplesFormat.EMBED, ao.getAcc(), attrset, isShowAC());
+    exportSample(smp, smpout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
    }
   }
   
@@ -535,8 +535,9 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("</attribute>\n");
  }
  
- private boolean exportSample(final BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset, boolean showAC) throws IOException
+ protected boolean exportSample(final BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, boolean showGrpId, Set<String> attrset, boolean showAC) throws IOException
  {
+  
   out.append("<Sample ");
    
   if( showNS && ! nsShown )
@@ -565,40 +566,55 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("id=\"");
   xmlEscaped(smp.getAcc(), out);
  
-  if( grpId != null )
-  {
-   out.append("\" groupId=\"");
-   xmlEscaped(grpId, out);
-  }
- 
+
   out.append("\">\n");
   
-  if( smp.getPropertyValues() != null )
+  if( showAnnt )
   {
-   for( ExperimentalPropertyValue<ExperimentalPropertyType> pval : smp.getPropertyValues() )
+
+   if(smp.getPropertyValues() != null)
    {
-    exportPropertyValue(pval,out);
-    
-    if( attrset != null )
-     attrset.add(pval.getType().getTermText());
+    for(ExperimentalPropertyValue<ExperimentalPropertyType> pval : smp.getPropertyValues())
+    {
+     exportPropertyValue(pval, out);
+
+     if(attrset != null)
+      attrset.add(pval.getType().getTermText());
+    }
    }
-  }
-  
-  if( smp.getAllDerivedFrom() != null )
-  {
-   for( Product<?> p : smp.getAllDerivedFrom() )
+
+   if(smp.getAllDerivedFrom() != null)
    {
-    out.append("<relation class=\"derivedFrom\" targetId=\"");
-    xmlEscaped(p.getAcc(), out);
-    out.append("\" targetClass=\"Sample\" />\n");
+    for(Product< ? > p : smp.getAllDerivedFrom())
+    {
+     out.append("<relation class=\"derivedFrom\" targetId=\"");
+     xmlEscaped(p.getAcc(), out);
+     out.append("\" targetClass=\"Sample\" />\n");
+    }
    }
+
+   if(showGrpId)
+   {
+    out.append("<GroupIds>\n");
+
+    for(BioSampleGroup sg : smp.getGroups())
+    {
+     out.append("<Id>");
+     xmlEscaped(sg.getAcc(), out);
+     out.append("</Id>\n");
+    }
+
+    out.append("</GroupIds>\n");
+
+   }
+
   }
-  
   
   out.append("</Sample>");
  
   return true;
  }
+
 
  private void exportPropertyValue( ExperimentalPropertyValue<? extends ExperimentalPropertyType> val,  Appendable out) throws IOException
  {
