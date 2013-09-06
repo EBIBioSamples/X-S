@@ -103,7 +103,9 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
  {
   super.exportHeader(ts, since, out);
   
-  smpStream = new PrintStream(File.createTempFile("XSexport", ".tmp"),"utf-8");
+  tmpFile = File.createTempFile("XSexport", ".tmp");
+  
+  smpStream = new PrintStream(tmpFile,"utf-8");
   sampleSet.clear();
  }
 
@@ -123,6 +125,8 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
    
    while( rd.read(buf) != -1 )
    {
+//    String str = new String(buf.array());
+    
     out.append(buf);
     
     buf.clear();
