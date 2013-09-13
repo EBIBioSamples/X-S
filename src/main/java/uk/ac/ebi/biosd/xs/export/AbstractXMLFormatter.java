@@ -114,6 +114,9 @@ public abstract class AbstractXMLFormatter
  
  public static void xmlEscaped( String s, Appendable out ) throws IOException
  {
+  if( s == null )
+   return;
+  
   int len = s.length();
   
   boolean escaping = false;

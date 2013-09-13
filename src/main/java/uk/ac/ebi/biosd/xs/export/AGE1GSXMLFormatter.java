@@ -8,11 +8,13 @@ import java.io.PrintStream;
 import java.io.Reader;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.fg.biosd.model.access_control.User;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
@@ -35,9 +37,44 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
  
  
  @Override
- protected boolean exportSample(BioSample smp, Appendable out, boolean showNS, boolean showAnnt, boolean showGrpId, Set<String> attrset, boolean showAC) throws IOException
+ protected void exportSamples(BioSampleGroup ao, Appendable mainout, Appendable auxout, SamplesFormat smpSts, Set<String> attrset) throws IOException
  {
+  if(ao.getSamples() == null)
+   return;
+
+  assert LoggerFactory.getLogger().entry("Start procesing sample block", "sblock");
+
+  Collection<BioSample> smpls = ao.getSamples();
+
+  assert LoggerFactory.getLogger().checkpoint("Got samples: " + smpls.size(), "sblock");
+
+  int scnt = 1;
+
+  mainout.append("<Samples>\n");
+
+  for(BioSample smp : smpls)
+  {
+   assert LoggerFactory.getLogger().checkpoint("Processing sample: " + smp.getAcc() + " " + (scnt++) + " of " + smpls.size(), "sblock");
+
+   mainout.append("<Id>");
+   xmlEscaped(smp.getAcc(), mainout);
+   mainout.append("</Id>\n");
+
+   
+   if( smpSts != SamplesFormat.NONE )
+    exportSample(smp, auxout, auxout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
+  }
+
+  mainout.append("</Samples>\n");
+
+  assert LoggerFactory.getLogger().exit("End procesing sample block", "sblock");
+ }
  
+ @Override
+ protected boolean exportSample(BioSample smp, Appendable mainout, Appendable auxout, boolean showNS, boolean showAnnt, boolean showGrpId, Set<String> attrset, boolean showAC) throws IOException
+ {
+  assert LoggerFactory.getLogger().entry("Start exporting sample: "+smp.getAcc(), "sample");
+
   try
   {
    lock.lock();
@@ -47,11 +84,13 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
 
    sampleSet.add(smp.getAcc());
    
-   return super.exportSample(smp, out, showNS, showAnnt, showGrpId, attrset, showAC);
+   return super.exportSample(smp, mainout, auxout, showNS, true, true, attrset, showAC);
   }
   finally
   {
    lock.unlock();
+
+   assert LoggerFactory.getLogger().exit("End exporting sample:"+smp.getAcc(), "sample");
   }
   
  }
@@ -59,13 +98,20 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
  @Override
  public boolean exportSample(BioSample smp, Appendable out) throws IOException
  {
-  return super.exportSample(smp, out, isShowNS(), isShowAttributes(), true, null, isShowAC());
+  return super.exportSample(smp, out, out, isShowNS(), isShowAttributes(), true, null, isShowAC());
  }
 
  @Override
  public boolean exportGroup(BioSampleGroup ao, Appendable out) throws IOException
  {
-  return super.exportGroup(ao, out, smpStream, isShowNS(), getSamplesFormat(), isShowAttributes(), isShowAC() );
+  assert LoggerFactory.getLogger().entry("Start exporting group: "+ao.getAcc(), "group");
+
+  boolean res = super.exportGroup(ao, out, smpStream, isShowNS(), getSamplesFormat(), isShowAttributes(), isShowAC() );
+  
+  assert LoggerFactory.getLogger().exit("End exporting group: "+ao.getAcc(), "group");
+
+  return res;
+
  }
  
  protected interface ACObj
@@ -125,9 +171,9 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
    
    while( rd.read(buf) != -1 )
    {
-//    String str = new String(buf.array());
+    String str = new String(buf.array(),0,buf.position());
     
-    out.append(buf);
+    out.append(str);
     
     buf.clear();
    }

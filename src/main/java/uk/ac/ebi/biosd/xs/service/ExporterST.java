@@ -15,6 +15,7 @@ import javax.persistence.EntityTransaction;
 import javax.persistence.Query;
 
 import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
+import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.biosd.xs.util.Counter;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
@@ -41,6 +42,8 @@ public class ExporterST implements Exporter
  @Override
  public void export( long since, Appendable out, long limit) throws IOException
  {
+  assert LoggerFactory.getLogger().entry("Start exporting", "export");
+  
   Query listQuery = null;
   
   long startID = Long.MIN_VALUE;
@@ -80,12 +83,15 @@ public class ExporterST implements Exporter
 
    blockLoop: while(true)
    {
+    assert LoggerFactory.getLogger().entry("Start processing block", "block");
 
     listQuery.setParameter ( 1, startID );
     
     @SuppressWarnings("unchecked")
     List<BioSampleGroup> result = listQuery.getResultList();
-    
+
+    assert LoggerFactory.getLogger().checkpoint("Got groups: "+result.size(), "block");
+
     int i=0;
     
     for(BioSampleGroup g : result)
@@ -98,6 +104,8 @@ public class ExporterST implements Exporter
      msiTags.clear();
      int nSmp = g.getSamples().size();
      
+     assert LoggerFactory.getLogger().entry("Start processing MSIs", "msi");
+
      for( MSI msi : g.getMSIs() )
      {
       for( DatabaseRefSource db :  msi.getDatabases() )
@@ -126,14 +134,18 @@ public class ExporterST implements Exporter
        
       }
      }
-     
+
+     assert LoggerFactory.getLogger().exit("END processing MSIs", "msi");
+
      
      startID=g.getId()+1;
      
      if( count >= limit )
       break blockLoop;
     }
-    
+   
+    assert LoggerFactory.getLogger().exit("End processing block", "block");
+
     if( i < blockSize )
      break;
    }
@@ -152,12 +164,16 @@ public class ExporterST implements Exporter
 
   long rate = (endTs-startTs)/count;
   
-  out.append("\n<!-- Exported: "+count+" groups. Rate: "+rate+"ms per group -->\n<!-- End time: "+simpleDateFormat.format(endTime)+" -->\n");
   
   formatter.exportFooter(out);
+
+  out.append("\n<!-- Exported: "+count+" groups. Rate: "+rate+"ms per group -->\n<!-- End time: "+simpleDateFormat.format(endTime)+" -->\n");
   
   em.close();
 
+  assert LoggerFactory.getLogger().exit("End exporting", "export");
+
+  
  }
  
 

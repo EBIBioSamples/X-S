@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.biosd.xs.util.Counter;
 import uk.ac.ebi.fg.biosd.model.access_control.User;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
@@ -73,7 +74,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  @Override
  public boolean exportSample(BioSample smp, Appendable out) throws IOException
  {
-  return exportSample(smp, out, isShowNS(), isShowAttributes(), true, null, isShowAC());
+  return exportSample(smp, out, out, isShowNS(), isShowAttributes(), true, null, isShowAC());
  }
 
  @Override
@@ -110,17 +111,40 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("\" ");
  }
 
- protected boolean exportGroup(final BioSampleGroup ao, Appendable out, Appendable smpout, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
+ protected void exportSamples(BioSampleGroup ao, Appendable mainout, Appendable auxout, SamplesFormat smpSts, Set<String> attrset) throws IOException
+ {
+  if( smpSts != SamplesFormat.NONE && ao.getSamples() != null )
+  {
+   assert LoggerFactory.getLogger().entry("Start procesing sample block", "sblock");
+
+   Collection<BioSample> smpls = ao.getSamples();
+   
+   assert LoggerFactory.getLogger().checkpoint("Got samples: "+smpls.size(), "sblock");
+
+   int scnt = 1;
+   
+   for(BioSample smp : smpls)
+   {
+    assert LoggerFactory.getLogger().checkpoint("Processing sample: "+smp.getAcc()+" "+(scnt++)+" of "+smpls.size(), "sblock");
+
+    exportSample(smp, mainout, auxout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
+   }
+  
+   assert LoggerFactory.getLogger().exit("End procesing sample block", "sblock");
+  }
+ }
+ 
+ protected boolean exportGroup(final BioSampleGroup ao, Appendable mainout, Appendable auxout, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
  {
   Set<String> attrset = null;
   
   if( showAttributes )
    attrset = new HashSet<>();
   
-  out.append("<SampleGroup ");
+  mainout.append("<SampleGroup ");
   
   if( showNS && ! nsShown )
-   out.append("xmlns=\""+getNameSpace()+"\" ");
+   mainout.append("xmlns=\""+getNameSpace()+"\" ");
   
   if( showAC )
    exportAC( new ACObj()
@@ -136,11 +160,11 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     {
      return ao.getUsers();
     }
-   }, out);
+   }, mainout);
 
-  out.append("id=\"");
-  xmlEscaped(ao.getAcc(), out);
-  out.append("\">\n");
+  mainout.append("id=\"");
+  xmlEscaped(ao.getAcc(), mainout);
+  mainout.append("\">\n");
 
 
   MSI msi = null;
@@ -158,131 +182,131 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   {
    if( msi.getSubmissionDate() != null )
    {
-    out.append("<attribute class=\"Submission Date\" classDefined=\"true\" dataType=\"DATETIME\">\n");
-    exportSimpleValuePefix(out);
-    exportSimpleValueStringPefix(out);
-    out.append( dateTimeFmt.format(msi.getSubmissionDate() ) );
-    exportSimpleValueStringPostfix(out);
-    exportSimpleValuePostfix(out);
-    out.append("</attribute>\n");
+    mainout.append("<attribute class=\"Submission Date\" classDefined=\"true\" dataType=\"DATETIME\">\n");
+    exportSimpleValuePefix(mainout);
+    exportSimpleValueStringPefix(mainout);
+    mainout.append( dateTimeFmt.format(msi.getSubmissionDate() ) );
+    exportSimpleValueStringPostfix(mainout);
+    exportSimpleValuePostfix(mainout);
+    mainout.append("</attribute>\n");
    }
    
    if( msi.getReleaseDate() != null )
    {
-    out.append("<attribute class=\"Submission Release Date\" classDefined=\"true\" dataType=\"DATETIME\">\n");
-    exportSimpleValuePefix(out);
-    exportSimpleValueStringPefix(out);
-    out.append( dateTimeFmt.format(msi.getReleaseDate() ) );
-    exportSimpleValueStringPostfix(out);
-    exportSimpleValuePostfix(out);
-    out.append("</attribute>\n");
+    mainout.append("<attribute class=\"Submission Release Date\" classDefined=\"true\" dataType=\"DATETIME\">\n");
+    exportSimpleValuePefix(mainout);
+    exportSimpleValueStringPefix(mainout);
+    mainout.append( dateTimeFmt.format(msi.getReleaseDate() ) );
+    exportSimpleValueStringPostfix(mainout);
+    exportSimpleValuePostfix(mainout);
+    mainout.append("</attribute>\n");
    }
 
    if( msi.getUpdateDate() != null )
    {
-    out.append("<attribute class=\"Submission Update Date\" classDefined=\"true\" dataType=\"DATETIME\">\n");
-    exportSimpleValuePefix(out);
-    exportSimpleValueStringPefix(out);
-    out.append( dateTimeFmt.format(msi.getUpdateDate() ) );
-    exportSimpleValueStringPostfix(out);
-    exportSimpleValuePostfix(out);
-    out.append("</attribute>\n");
+    mainout.append("<attribute class=\"Submission Update Date\" classDefined=\"true\" dataType=\"DATETIME\">\n");
+    exportSimpleValuePefix(mainout);
+    exportSimpleValueStringPefix(mainout);
+    mainout.append( dateTimeFmt.format(msi.getUpdateDate() ) );
+    exportSimpleValueStringPostfix(mainout);
+    exportSimpleValuePostfix(mainout);
+    mainout.append("</attribute>\n");
    }
    
    if( msi.getAcc() != null )
    {
-    out.append("<attribute class=\"Submission Identifier\" classDefined=\"true\" dataType=\"STRING\">\n");
-    exportSimpleValuePefix(out);
-    exportSimpleValueStringPefix(out);
-    xmlEscaped(msi.getAcc(), out);
-    exportSimpleValueStringPostfix(out);
-    exportSimpleValuePostfix(out);
-    out.append("</attribute>\n");
+    mainout.append("<attribute class=\"Submission Identifier\" classDefined=\"true\" dataType=\"STRING\">\n");
+    exportSimpleValuePefix(mainout);
+    exportSimpleValueStringPefix(mainout);
+    xmlEscaped(msi.getAcc(), mainout);
+    exportSimpleValueStringPostfix(mainout);
+    exportSimpleValuePostfix(mainout);
+    mainout.append("</attribute>\n");
    }
 
    
    if( msi.getTitle() != null )
    {
-    out.append("<attribute class=\"Submission Title\" classDefined=\"true\" dataType=\"STRING\">\n");
-    exportSimpleValuePefix(out);
-    exportSimpleValueStringPefix(out);
-    xmlEscaped(msi.getTitle(), out);
-    exportSimpleValueStringPostfix(out);
-    exportSimpleValuePostfix(out);
-    out.append("</attribute>\n");
+    mainout.append("<attribute class=\"Submission Title\" classDefined=\"true\" dataType=\"STRING\">\n");
+    exportSimpleValuePefix(mainout);
+    exportSimpleValueStringPefix(mainout);
+    xmlEscaped(msi.getTitle(), mainout);
+    exportSimpleValueStringPostfix(mainout);
+    exportSimpleValuePostfix(mainout);
+    mainout.append("</attribute>\n");
    }
    
    if( msi.getDescription() != null )
    {
-    out.append("<attribute class=\"Submission Description\" classDefined=\"true\" dataType=\"STRING\">\n");
-    exportSimpleValuePefix(out);
-    exportSimpleValueStringPefix(out);
-    xmlEscaped(msi.getDescription(), out);
-    exportSimpleValueStringPostfix(out);
-    exportSimpleValuePostfix(out);
-    out.append("</attribute>\n");
+    mainout.append("<attribute class=\"Submission Description\" classDefined=\"true\" dataType=\"STRING\">\n");
+    exportSimpleValuePefix(mainout);
+    exportSimpleValueStringPefix(mainout);
+    xmlEscaped(msi.getDescription(), mainout);
+    exportSimpleValueStringPostfix(mainout);
+    exportSimpleValuePostfix(mainout);
+    mainout.append("</attribute>\n");
    }
    
    if( msi.getVersion() != null )
    {
-    out.append("<attribute class=\"Submission Version\" classDefined=\"true\" dataType=\"STRING\">\n");
-    exportSimpleValuePefix(out);
-    exportSimpleValueStringPefix(out);
-    xmlEscaped(msi.getVersion(), out);
-    exportSimpleValueStringPostfix(out);
-    exportSimpleValuePostfix(out);
-    out.append("</attribute>\n");
+    mainout.append("<attribute class=\"Submission Version\" classDefined=\"true\" dataType=\"STRING\">\n");
+    exportSimpleValuePefix(mainout);
+    exportSimpleValueStringPefix(mainout);
+    xmlEscaped(msi.getVersion(), mainout);
+    exportSimpleValueStringPostfix(mainout);
+    exportSimpleValuePostfix(mainout);
+    mainout.append("</attribute>\n");
    }
 
    
    if( msi.getReferenceSources() != null && msi.getReferenceSources().size() > 0 )
    {
-    out.append("<attribute class=\"Term Sources\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+    mainout.append("<attribute class=\"Term Sources\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
     for( ReferenceSource c : msi.getReferenceSources() )
-     exportReferenceSources(c, out);
+     exportReferenceSources(c, mainout);
     
-    out.append("</attribute>\n");
+    mainout.append("</attribute>\n");
    }
    
    if( msi.getOrganizations() != null && msi.getOrganizations().size() > 0 )
    {
-    out.append("<attribute class=\"Organizations\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+    mainout.append("<attribute class=\"Organizations\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
     for( Organization c : msi.getOrganizations() )
-     exportOrganization(c, out);    
+     exportOrganization(c, mainout);    
  
-    out.append("</attribute>\n");
+    mainout.append("</attribute>\n");
    }
 
    if( msi.getContacts() != null )
    {
-    out.append("<attribute class=\"Persons\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+    mainout.append("<attribute class=\"Persons\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
     for( Contact c : msi.getContacts() )
-     exportPerson(c, out); 
+     exportPerson(c, mainout); 
 
-    out.append("</attribute>\n");
+    mainout.append("</attribute>\n");
    }
    
    if( msi.getDatabases() != null )
    {
-    out.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+    mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
     for( DatabaseRefSource c : msi.getDatabases() )
-     exportDatabase(c, out);
+     exportDatabase(c, mainout);
 
-    out.append("</attribute>\n");
+    mainout.append("</attribute>\n");
    }
    
    if( msi.getPublications() != null )
    {
-    out.append("<attribute class=\"Publications\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+    mainout.append("<attribute class=\"Publications\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
     for( Publication c : msi.getPublications() )
-     exportPublication(c, out);
+     exportPublication(c, mainout);
 
-    out.append("</attribute>\n");
+    mainout.append("</attribute>\n");
    }
 
   }
@@ -291,33 +315,27 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   if( ao.getPropertyValues() != null )
   {
    for( ExperimentalPropertyValue<ExperimentalPropertyType> pval : ao.getPropertyValues() )
-    exportPropertyValue(pval,out);
+    exportPropertyValue(pval,mainout);
   }
   
-  
-  if( smpSts != SamplesFormat.NONE && ao.getSamples() != null )
-  {
-   for(BioSample smp : ao.getSamples())
-   {
-    exportSample(smp, smpout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
-   }
-  }
+
+  exportSamples( ao, mainout, auxout, smpSts, attrset);
   
   if( showAttributes )
   {
-   out.append("<SampleAttributes>\n");
+   mainout.append("<SampleAttributes>\n");
 
    for(String attNm : attrset)
    {
-    out.append("<attribute class=\"");
-    xmlEscaped(attNm, out);
-    out.append("\" classDefined=\"true\" dataType=\"STRING\"/>\n");
+    mainout.append("<attribute class=\"");
+    xmlEscaped(attNm, mainout);
+    mainout.append("\" classDefined=\"true\" dataType=\"STRING\"/>\n");
    }
 
-   out.append("</SampleAttributes>\n");
+   mainout.append("</SampleAttributes>\n");
   }
   
-  out.append("</SampleGroup>\n");
+  mainout.append("</SampleGroup>\n");
  
   return true;
  }
@@ -535,16 +553,16 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("</attribute>\n");
  }
  
- protected boolean exportSample(final BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, boolean showGrpId, Set<String> attrset, boolean showAC) throws IOException
+ protected boolean exportSample(final BioSample smp, Appendable mainout, Appendable auxout, boolean showNS, boolean showAnnt, boolean showGrpId, Set<String> attrset, boolean showAC) throws IOException
  {
   
-  out.append("<Sample ");
+  mainout.append("<Sample ");
    
   if( showNS && ! nsShown )
   {
-   out.append( "xmlns=\"");
-   xmlEscaped(getNameSpace(), out);
-   out.append( "\" ");
+   mainout.append( "xmlns=\"");
+   xmlEscaped(getNameSpace(), mainout);
+   mainout.append( "\" ");
   }
   
   if( showAC )
@@ -561,13 +579,13 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     {
      return smp.getUsers();
     }
-   }, out);
+   }, mainout);
 
-  out.append("id=\"");
-  xmlEscaped(smp.getAcc(), out);
+  mainout.append("id=\"");
+  xmlEscaped(smp.getAcc(), mainout);
  
 
-  out.append("\">\n");
+  mainout.append("\">\n");
   
   if( showAnnt )
   {
@@ -576,7 +594,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    {
     for(ExperimentalPropertyValue<ExperimentalPropertyType> pval : smp.getPropertyValues())
     {
-     exportPropertyValue(pval, out);
+     exportPropertyValue(pval, mainout);
 
      if(attrset != null)
       attrset.add(pval.getType().getTermText());
@@ -587,30 +605,30 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    {
     for(Product< ? > p : smp.getAllDerivedFrom())
     {
-     out.append("<relation class=\"derivedFrom\" targetId=\"");
-     xmlEscaped(p.getAcc(), out);
-     out.append("\" targetClass=\"Sample\" />\n");
+     mainout.append("<relation class=\"derivedFrom\" targetId=\"");
+     xmlEscaped(p.getAcc(), mainout);
+     mainout.append("\" targetClass=\"Sample\" />\n");
     }
    }
 
    if(showGrpId)
    {
-    out.append("<GroupIds>\n");
+    mainout.append("<Groups>\n");
 
     for(BioSampleGroup sg : smp.getGroups())
     {
-     out.append("<Id>");
-     xmlEscaped(sg.getAcc(), out);
-     out.append("</Id>\n");
+     mainout.append("<Id>");
+     xmlEscaped(sg.getAcc(), mainout);
+     mainout.append("</Id>\n");
     }
 
-    out.append("</GroupIds>\n");
+    mainout.append("</Groups>\n");
 
    }
 
   }
   
-  out.append("</Sample>");
+  mainout.append("</Sample>\n");
  
   return true;
  }

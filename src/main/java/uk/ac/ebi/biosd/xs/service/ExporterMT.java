@@ -165,9 +165,10 @@ public class ExporterMT implements Exporter
 
   long rate = (endTs-startTs)/count;
   
+  formatter.exportFooter(out);
+
   out.append("\n<!-- Exported: "+count+" groups. Rate: "+rate+"ms per group -->\n<!-- End time: "+simpleDateFormat.format(endTime)+" -->\n");
   
-  formatter.exportFooter(out);
 
  }
 
