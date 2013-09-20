@@ -106,10 +106,8 @@ public class EBeyeExport
    PrintStream smplFileOut = new PrintStream(smplFile);
    PrintStream grpFileOut = new PrintStream(grpFile);
 
-   long tstamp = new java.util.Date().getTime();
-
-   formatter.exportHeader(tstamp, -1L, smplFileOut);
-   formatter.exportHeader(tstamp, -1L, grpFileOut);
+   formatter.exportHeader(-1L, smplFileOut);
+   formatter.exportHeader(-1L, grpFileOut);
 
    int count = 0;
 

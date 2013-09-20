@@ -104,7 +104,7 @@ public class SampleServlet extends HttpServlet
    return;
   }
   
-  response.setContentType("text/xml");
+  response.setContentType("text/xml; charset=UTF-8");
   
   formatter.exportSample(smp, response.getWriter());
   

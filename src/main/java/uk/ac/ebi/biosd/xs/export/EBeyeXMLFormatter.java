@@ -265,9 +265,9 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  }
 
  @Override
- public void exportHeader(long ts, long since, Appendable out) throws IOException
+ public void exportHeader( long since, Appendable out ) throws IOException
  {
-  Date d = new Date(ts);
+  Date d = new Date();
   
   
   out.append("<database>\n<name>BioSamples database</name>\n<release_date>");
@@ -284,6 +284,12 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
 
  @Override
  public void exportSources(Map<String, Counter> srcMap, Appendable out) throws IOException
+ {
+ }
+
+
+ @Override
+ public void shutdown()
  {
  }
 

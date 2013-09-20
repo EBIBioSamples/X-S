@@ -2,6 +2,7 @@ package uk.ac.ebi.biosd.xs.export;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -51,7 +52,7 @@ public class STXMLFormatter extends AGE1XMLFormatter
  
  
  @Override
- public void exportHeader(long ts, long since,  Appendable out) throws IOException
+ public void exportHeader(long since,  Appendable out) throws IOException
  {
   out.append("<BioSamples");
   
@@ -67,9 +68,7 @@ public class STXMLFormatter extends AGE1XMLFormatter
   if( since > 0 )
    out.append(" since=\"").append( String.valueOf(since) ).append("\"");
 
-  if( ts > 0 )
-   out.append(" timestamp=\"").append( String.valueOf(ts) ).append("\"");
-
+  out.append(" timestamp=\"").append( String.valueOf(new Date().getTime()) ).append("\"");
  
   out.append(" >\n");
  }

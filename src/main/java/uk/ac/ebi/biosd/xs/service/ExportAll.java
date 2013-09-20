@@ -2,6 +2,7 @@ package uk.ac.ebi.biosd.xs.service;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 
 import javax.persistence.EntityManagerFactory;
 import javax.servlet.ServletException;
@@ -143,7 +144,7 @@ public class ExportAll extends HttpServlet
   }
   
  
-  response.setContentType("text/xml");
+  response.setContentType("text/xml; charset=UTF-8");
   Appendable out = response.getWriter();
   
   String prm = request.getParameter(NamespaceParameter);
@@ -184,10 +185,28 @@ public class ExportAll extends HttpServlet
   if( threadsNum == 1 )
    expt = new ExporterST(emf, formatter, exportSources, sourcesByName, blockSize);
   else
-   expt = new ExporterMT(emf, formatter, exportSources, sourcesByName, blockSize, threadsNum);
+   expt = new ExporterMT(emf, formatter, exportSources, sourcesByName, threadsNum);
  
-  expt.export(since, out, limit);
+  System.out.println("Start exporting. Request from: "+request.getRemoteAddr()+" Limit: "+limit+" Time: "+new Date()+" Thread: "+Thread.currentThread().getName());
   
+  try
+  {
+   expt.export(since, out, limit);
+  }
+  catch( IOException e )
+  {
+   e.printStackTrace();
+
+   System.out.println("Breaking exporting. Request from: "+request.getRemoteAddr()+" Time: "+new Date()+" Thread: "+Thread.currentThread().getName()+" Error: "+e.getMessage());
+  }
+  finally
+  {
+   formatter.shutdown();
+  }
+  
+  System.out.println("Finished exporting. Request from: "+request.getRemoteAddr()+" Time: "+new Date()+" Thread: "+Thread.currentThread().getName());
+
+ 
  }
 
  /**

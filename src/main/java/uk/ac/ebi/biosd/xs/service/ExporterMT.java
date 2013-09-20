@@ -1,8 +1,6 @@
 package uk.ac.ebi.biosd.xs.service;
 
 import java.io.IOException;
-import java.sql.Date;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -35,17 +34,15 @@ public class ExporterMT implements Exporter
  private final AbstractXMLFormatter formatter;
  private final boolean exportSources;
  private final boolean sourcesByName;
- private final int blockSize;
  private final int threads;
  
- public ExporterMT(EntityManagerFactory emf, AbstractXMLFormatter formatter, boolean exportSources, boolean sourcesByName, int blockSize, int thN)
+ public ExporterMT(EntityManagerFactory emf, AbstractXMLFormatter formatter, boolean exportSources, boolean sourcesByName, int thN)
  {
   super();
   this.emf = emf;
   this.formatter = formatter;
   this.exportSources = exportSources;
   this.sourcesByName = sourcesByName;
-  this.blockSize = blockSize;
   threads = thN;
  }
 
@@ -65,35 +62,9 @@ public class ExporterMT implements Exporter
   AtomicBoolean stopFlag = new AtomicBoolean(false);
   
   for( int i=0; i < threads; i++ )
-  {
-   EntityManager em = emf.createEntityManager();
-   
-   Query listQuery;
-   
-   if( since < 0 )
-    listQuery = em.createQuery("SELECT a FROM " + BioSampleGroup.class.getCanonicalName () + " a WHERE a.id >=?1 and a.id <=?2 ORDER BY a.id");
-   else
-   {
-    listQuery = em.createQuery("SELECT grp FROM " + BioSampleGroup.class.getCanonicalName () + " grp JOIN grp.MSIs msi WHERE grp.id >=?1 and grp.id <=?2 and msi.updateDate > ?3  ORDER BY grp.id");
-   
-    listQuery.setParameter(3, new Date(since));
-   }
-   
-   listQuery.setMaxResults ( blockSize ); 
-   
-   tPool.submit( new GroupExporterTask(srcMap, rm, listQuery, reqQ, stopFlag) );
-   
-   emlst.add(em);
-  }
+   tPool.submit( new GroupExporterTask(srcMap, rm, emf, since, reqQ, stopFlag) );
   
-  SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-  java.util.Date startTime = new java.util.Date();
-  long startTs = startTime.getTime();
-  
-  formatter.exportHeader( startTs, since, out);
-  
-  out.append("\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n");
-
+  formatter.exportHeader( since, out );
   
   int count=0;
   
@@ -119,6 +90,14 @@ public class ExporterMT implements Exporter
    
    if( s == null )
    {
+    if( ((PoisonedObject)o).getException() != null )
+    {
+     stopFlag.set(true);
+     reqQ.clear();
+     
+     throw new IOException(((PoisonedObject)o).getException());
+    }
+    
     tnum--;
    
     if( tnum == 0 )
@@ -160,21 +139,28 @@ public class ExporterMT implements Exporter
   if( exportSources )
    formatter.exportSources(srcMap, out);
   
-  java.util.Date endTime = new java.util.Date();
-  long endTs = endTime.getTime();
-
-  long rate = (endTs-startTs)/count;
-  
   formatter.exportFooter(out);
-
-  out.append("\n<!-- Exported: "+count+" groups. Rate: "+rate+"ms per group -->\n<!-- End time: "+simpleDateFormat.format(endTime)+" -->\n");
-  
 
  }
 
  
- static class PoisonObject
+ static class PoisonedObject
  {
+  IOException expt;
+  
+  PoisonedObject()
+  {}
+
+  PoisonedObject( IOException e )
+  {
+   expt = e;
+  }
+  
+  IOException getException()
+  {
+   return expt;
+  }
+  
   @Override
   public String toString()
   {
@@ -182,28 +168,41 @@ public class ExporterMT implements Exporter
   }
  }
  
- class GroupExporterTask implements Runnable
+ 
+ enum TaskState
  {
-  RangeManager rangeMngr;
-  Query listQuery;
-  Map<String, Counter> sourcesMap;
-  BlockingQueue<Object> resultQueue;
-  AtomicBoolean stopFlag;
+  OK,
+  IOERROR,
+  INTERRUPTED
+ }
+ 
+ class GroupExporterTask implements Callable<TaskState>
+ {
+  private final RangeManager rangeMngr;
+  private final EntityManagerFactory emFactory;
+  private final Map<String, Counter> sourcesMap;
+  private final BlockingQueue<Object> resultQueue;
+  private final AtomicBoolean stopFlag;
+  private final long since;
   
-  GroupExporterTask(Map<String, Counter> srcMap, RangeManager rMgr, Query q, BlockingQueue<Object> resQ, AtomicBoolean stf )
+  GroupExporterTask(Map<String, Counter> srcMap, RangeManager rMgr, EntityManagerFactory emf, long since, BlockingQueue<Object> resQ, AtomicBoolean stf )
   {
    sourcesMap = srcMap;
    rangeMngr = rMgr;
    
-   listQuery = q;
+   emFactory = emf;
    resultQueue = resQ;
    
    stopFlag = stf;
+   
+   this.since = since;
   }
 
   @Override
-  public void run()
+  public TaskState call()
   {
+   GroupQueryManager grpq = new GroupQueryManager(emFactory);
+   
    Range r = rangeMngr.getRange();
 
    long lastId = 0;
@@ -212,25 +211,18 @@ public class ExporterMT implements Exporter
 
    StringBuilder sb = new StringBuilder();
 
-   try
-   {
 
     while(r != null)
+   {
+    //     System.out.println("Processing range: " + r + " Thread: " + Thread.currentThread().getName());
+    try
     {
-     System.out.println("Processing range: " + r + " Thread: " + Thread.currentThread().getName());
 
-     lastId = r.getMax();
-     listQuery.setParameter(1, r.getMin());
-     listQuery.setParameter(2, r.getMax());
-
-     @SuppressWarnings("unchecked")
-     List<BioSampleGroup> result = listQuery.getResultList();
-
-     for(BioSampleGroup g : result)
+     for(BioSampleGroup g : grpq.getGroups(since, lastId))
      {
-      if( stopFlag.get() )
-       return;
-      
+      if(stopFlag.get())
+       return TaskState.INTERRUPTED;
+
       sb.setLength(0);
 
       formatter.exportGroup(g, sb);
@@ -271,31 +263,42 @@ public class ExporterMT implements Exporter
       }
 
       putIntoQueue(sb.toString());
-      
-      if( stopFlag.get() )
-       return;
+
+      if(stopFlag.get())
+       return TaskState.INTERRUPTED;
 
      }
-     
-     r.setMin(lastId + 1);
 
-     r = rangeMngr.returnAndGetRange(r);
+    }
+    catch(IOException e)
+    {
+     e.printStackTrace();
 
-     if(r == null)
-     {
-      putIntoQueue( new PoisonObject() );
-      
-//      System.out.println("Processing finished. Thread: " + Thread.currentThread().getName());
+     putIntoQueue(new PoisonedObject(e));
 
-      return;
-     }
+     return TaskState.IOERROR;
+    }
+    finally
+    {
+     grpq.release();
+    }
+
+    r.setMin(lastId + 1);
+
+    r = rangeMngr.returnAndGetRange(r);
+
+    if(r == null)
+    {
+     putIntoQueue(new PoisonedObject());
+
+     //      System.out.println("Processing finished. Thread: " + Thread.currentThread().getName());
+
+     return TaskState.OK;
     }
    }
-   catch(IOException e)
-   {
-    // TODO Auto-generated catch block
-    e.printStackTrace();
-   }
+
+  
+   return TaskState.OK;
   }
 
   public void putIntoQueue( Object o )
@@ -384,7 +387,7 @@ public class ExporterMT implements Exporter
 
      if(r == null)
      {
-      putIntoQueue( new PoisonObject() );
+      putIntoQueue( new PoisonedObject() );
       
 //      System.out.println("Processing finished. Thread: " + Thread.currentThread().getName());
 
@@ -394,8 +397,10 @@ public class ExporterMT implements Exporter
    }
    catch(IOException e)
    {
-    // TODO Auto-generated catch block
     e.printStackTrace();
+    
+    putIntoQueue( new PoisonedObject(e) );
+
    }
   }
 

@@ -19,7 +19,7 @@ import uk.ac.ebi.fg.biosd.model.access_control.User;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 
-public class AGE1GSXMLFormatter extends AGE1XMLFormatter
+public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 {
 
  
@@ -30,7 +30,7 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
  
  private final Set<String> sampleSet = new HashSet<>();
  
- public AGE1GSXMLFormatter(boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ public AGE2GSXMLFormatter(boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
  {
   super(showNS, showAttributes, showAC, smpfmt);
  }
@@ -50,7 +50,7 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
 
   int scnt = 1;
 
-  mainout.append("<Samples>\n");
+  mainout.append("<SampleIds>\n");
 
   for(BioSample smp : smpls)
   {
@@ -65,7 +65,7 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
     exportSample(smp, auxout, auxout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
   }
 
-  mainout.append("</Samples>\n");
+  mainout.append("</SampleIds>\n");
 
   assert LoggerFactory.getLogger().exit("End procesing sample block", "sblock");
  }
@@ -80,8 +80,12 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
    lock.lock();
    
    if( sampleSet.contains(smp.getAcc()) )
+   {
+    incSampleCounter();
     return false;
-
+   }
+   
+   incUniqSampleCounter();
    sampleSet.add(smp.getAcc());
    
    return super.exportSample(smp, mainout, auxout, showNS, true, true, attrset, showAC);
@@ -145,11 +149,15 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
 
 
  @Override
- public void exportHeader(long ts, long since, Appendable out) throws IOException
+ public void exportHeader( long since, Appendable out) throws IOException
  {
-  super.exportHeader(ts, since, out);
+  super.exportHeader(since, out);
+  
+  out.append("<SampleGroups>\n");
   
   tmpFile = File.createTempFile("XSexport", ".tmp");
+  
+  System.out.println("Tmp file: "+tmpFile.getAbsolutePath());
   
   smpStream = new PrintStream(tmpFile,"utf-8");
   sampleSet.clear();
@@ -161,6 +169,11 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
  {
   smpStream.close();
   sampleSet.clear();
+  
+  smpStream = null;
+  
+  out.append("</SampleGroups>\n<Samples>\n");
+ 
   
   Reader rd = new InputStreamReader( new FileInputStream(tmpFile), Charset.forName("utf-8"));
   
@@ -186,7 +199,18 @@ public class AGE1GSXMLFormatter extends AGE1XMLFormatter
   
   tmpFile.delete();
   
+  out.append("</Samples>\n");
+
   super.exportFooter(out);
  } 
  
+ @Override
+ public void shutdown()
+ {
+  if( smpStream != null )
+  {
+   smpStream.close();
+   tmpFile.delete();
+  }
+ }
 }

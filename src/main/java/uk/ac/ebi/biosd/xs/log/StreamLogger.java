@@ -4,7 +4,7 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import uk.ac.ebi.xs.test.StringUtils;
+import uk.ac.ebi.biosd.xs.util.StringUtils;
 
 public class StreamLogger implements TimeLogger
 {
