@@ -27,19 +27,38 @@ public class GroupQueryManager
   blockSize = blksz;
  }
 
+ public List<BioSampleGroup> getGroups(long since, long startId)
+ {
+  return getGroups( since, startId, null );
+ }
  
  @SuppressWarnings("unchecked")
- public List<BioSampleGroup> getGroups(long since, long startId)
+ public List<BioSampleGroup> getGroups(long since, long startId, Long endId)
  {
   Query listQuery = null;
   
   EntityManager em = factory.createEntityManager();
   
+  
   if( since < 0 )
-   listQuery = em.createQuery("SELECT a FROM " + BioSampleGroup.class.getCanonicalName () + " a WHERE a.id >=?1 ORDER BY a.id");
+  {
+   if( endId == null )
+    listQuery = em.createQuery("SELECT a FROM " + BioSampleGroup.class.getCanonicalName () + " a WHERE a.id >=?1 ORDER BY a.id");
+   else
+   {
+    listQuery = em.createQuery("SELECT a FROM " + BioSampleGroup.class.getCanonicalName () + " a WHERE a.id >=?1 and a.id <= ?2 ORDER BY a.id ");
+    listQuery.setParameter(2, endId.longValue());
+   }
+  }
   else
   {
-   listQuery = em.createQuery("SELECT grp FROM " + BioSampleGroup.class.getCanonicalName () + " grp JOIN grp.MSIs msi WHERE grp.id >=?1 and msi.updateDate > ?2  ORDER BY grp.id");
+   if( endId == null )
+    listQuery = em.createQuery("SELECT grp FROM " + BioSampleGroup.class.getCanonicalName () + " grp JOIN grp.MSIs msi WHERE grp.id >=?1 and msi.updateDate > ?2  ORDER BY grp.id");
+   else
+   {
+    listQuery = em.createQuery("SELECT grp FROM " + BioSampleGroup.class.getCanonicalName () + " grp JOIN grp.MSIs msi WHERE grp.id >=?1 and grp.id <= ?3 and msi.updateDate > ?2  ORDER BY grp.id");
+    listQuery.setParameter(3, endId.longValue());
+   }
   
    listQuery.setParameter(2, new Date(since));
   }

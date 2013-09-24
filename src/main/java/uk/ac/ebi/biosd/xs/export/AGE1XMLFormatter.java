@@ -405,7 +405,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("\n<!-- Unique samples: "+getUniqSampleCount()+". Rate: "+rate+"ms per unique sample -->");
 
   
-  out.append("\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n");
+  out.append("\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->");
   out.append("\n<!-- End time: "+simpleDateFormat.format(endTime)+". Time spent: "+StringUtils.millisToString(endTs-startTs)+" -->");
   out.append("\n<!-- Thank you. Good bye. -->\n");
 

@@ -1,7 +1,6 @@
 package uk.ac.ebi.biosd.xs.service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,7 +14,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Query;
 
@@ -57,7 +55,6 @@ public class ExporterMT implements Exporter
 
   Map<String, Counter> srcMap = new HashMap<String, Counter>();
   
-  List<EntityManager> emlst = new ArrayList<>(threads);
   
   AtomicBoolean stopFlag = new AtomicBoolean(false);
   
@@ -70,56 +67,65 @@ public class ExporterMT implements Exporter
   
   int tnum = threads;
   
-  while( true )
+  try
   {
-   Object o;
-   
-   try
+   while(true)
    {
-    o=reqQ.take();
-   }
-   catch(InterruptedException e)
-   {
-    continue;
-   }
-   
-   if( o == null )
-    continue;
-   
-   String s = o.toString();
-   
-   if( s == null )
-   {
-    if( ((PoisonedObject)o).getException() != null )
+    Object o;
+
+    try
+    {
+     o = reqQ.take();
+    }
+    catch(InterruptedException e)
+    {
+     continue;
+    }
+
+    if(o == null)
+     continue;
+
+    String s = o.toString();
+
+    if(s == null)
+    {
+     if(((PoisonedObject) o).getException() != null)
+     {
+      stopFlag.set(true);
+      reqQ.clear();
+
+      throw new IOException(((PoisonedObject) o).getException());
+     }
+
+     tnum--;
+
+     if(tnum == 0)
+      break;
+    }
+
+    count++;
+
+    out.append(s);
+
+    if(limit > 0 && count >= limit)
     {
      stopFlag.set(true);
      reqQ.clear();
-     
-     throw new IOException(((PoisonedObject)o).getException());
-    }
-    
-    tnum--;
-   
-    if( tnum == 0 )
+
      break;
-   }
-   
-   count++;
-   
-   out.append(s);
-   
-   if( limit > 0 && count >= limit )
-   {
-    stopFlag.set(true);
-    reqQ.clear();
-    
-    break;
+    }
    }
   }
+  catch (Exception e) 
+  {
+   stopFlag.set(true);
+   reqQ.clear();
 
-  for( EntityManager em : emlst )
-   em.close();
+   tPool.shutdown();
   
+   throw e;
+  }
+
   tPool.shutdown();
   
   while( true )
@@ -205,24 +211,27 @@ public class ExporterMT implements Exporter
    
    Range r = rangeMngr.getRange();
 
-   long lastId = 0;
 
    Set<String> msiTags = new HashSet<String>();
 
    StringBuilder sb = new StringBuilder();
 
 
-    while(r != null)
+   while(r != null)
    {
-    //     System.out.println("Processing range: " + r + " Thread: " + Thread.currentThread().getName());
+    long lastId = r.getMax();
+
+    System.out.println("Processing range: " + r + " Thread: " + Thread.currentThread().getName());
     try
     {
 
-     for(BioSampleGroup g : grpq.getGroups(since, lastId))
+     for(BioSampleGroup g : grpq.getGroups( since, r.getMin(), r.getMax() ))
      {
       if(stopFlag.get())
        return TaskState.INTERRUPTED;
 
+      lastId = g.getId();
+      
       sb.setLength(0);
 
       formatter.exportGroup(g, sb);
@@ -283,7 +292,10 @@ public class ExporterMT implements Exporter
      grpq.release();
     }
 
-    r.setMin(lastId + 1);
+    if( lastId == r.getMax() )
+     r = null;
+    else
+     r.setMin(lastId + 1);
 
     r = rangeMngr.returnAndGetRange(r);
 

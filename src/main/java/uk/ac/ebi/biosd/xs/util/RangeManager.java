@@ -82,21 +82,31 @@ public class RangeManager
    start=start+step+1;
    
    ranges.add(r);
+   
+   System.out.println("("+Thread.currentThread().getName()+") Added to the range queue "+r+", requested: "+requested+" Queue:"+ranges.size());
+
   }
   
-  ranges.add( new Range(start, max) );
+  Range r = new Range(start, max);
+
+  System.out.println("("+Thread.currentThread().getName()+") Added to the range queue "+r+", requested: "+requested+" Queue:"+ranges.size());
+  
+  ranges.add( r );
  }
 
  public synchronized Range getRange()
  {
-  System.out.println("("+Thread.currentThread().getName()+") Getting range, requested: "+requested+" Queue:"+ranges.size());
 
   
   if(ranges.size() == 0)
   {
    if(requested == 0)
-    return null;
+   {
+    System.out.println("("+Thread.currentThread().getName()+") No more ranges, requested: "+requested+" Queue:"+ranges.size());
 
+    return null;
+   }
+   
    while(ranges.size() == 0)
    {
     
@@ -117,13 +127,17 @@ public class RangeManager
   
   requested++;
   
-  return ranges.poll();
+  Range r = ranges.poll();
+  
+  System.out.println("("+Thread.currentThread().getName()+") Getting range "+r+", requested: "+requested+" Queue:"+ranges.size());
+
+  return r;
   
  }
  
  public synchronized Range returnAndGetRange( Range r )
  {
-  if( r.getMin() >= r.getMax() )
+  if( r == null || r.getMin() > r.getMax() )
   {
    requested--;
    
@@ -137,13 +151,13 @@ public class RangeManager
 
   if( ranges.size() != 0 || r.getMax()-r.getMin() < nWays )
   {
-   System.out.println("("+Thread.currentThread().getName()+") Continue range, requested: "+requested+" Queue:"+ranges.size());
+   System.out.println("("+Thread.currentThread().getName()+") Continue range "+r+", requested: "+requested+" Queue:"+ranges.size());
 
    return r;
   }
   
   
-  System.out.println("("+Thread.currentThread().getName()+") Splitting range, requested: "+requested+" Queue:"+ranges.size());
+  System.out.println("("+Thread.currentThread().getName()+") Splitting range "+r+", requested: "+requested+" Queue:"+ranges.size());
 
   
   fillQueue(r.getMin(), r.getMax());

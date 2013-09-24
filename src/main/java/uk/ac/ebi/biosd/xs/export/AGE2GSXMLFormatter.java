@@ -9,6 +9,7 @@ import java.io.Reader;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
@@ -28,7 +29,7 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  private File tmpFile;
  private PrintStream smpStream;
  
- private final Set<String> sampleSet = new HashSet<>();
+ private final Set<String> sampleSet = Collections.synchronizedSet( new HashSet<String>() );
  
  public AGE2GSXMLFormatter(boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
  {
@@ -75,20 +76,27 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  {
   assert LoggerFactory.getLogger().entry("Start exporting sample: "+smp.getAcc(), "sample");
 
+  
+  if( ! sampleSet.add(smp.getAcc()) )
+  {
+   incSampleCounter();
+   return false;
+  }
+  
+  incUniqSampleCounter();
+
+  StringBuilder sb = new StringBuilder(4000);
+  
+  boolean res = super.exportSample(smp, sb, auxout, showNS, true, true, attrset, showAC);
+  
   try
   {
    lock.lock();
+
+   mainout.append(sb);
    
-   if( sampleSet.contains(smp.getAcc()) )
-   {
-    incSampleCounter();
-    return false;
-   }
+   return res;
    
-   incUniqSampleCounter();
-   sampleSet.add(smp.getAcc());
-   
-   return super.exportSample(smp, mainout, auxout, showNS, true, true, attrset, showAC);
   }
   finally
   {
