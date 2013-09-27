@@ -1,7 +1,6 @@
 package uk.ac.ebi.biosd.xs.export;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -31,18 +30,14 @@ import uk.ac.ebi.fg.core_model.xref.ReferenceSource;
 public class AGE1XMLFormatter extends AbstractXMLFormatter
 {
 
- private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
- java.util.Date startTime = new java.util.Date();
- long startTs = startTime.getTime();
-
  
  private static String nameSpace = "http://www.ebi.ac.uk/biosamples/SampleGroupExportV1";
 
  protected boolean nsShown=false;
  
- public AGE1XMLFormatter(boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ public AGE1XMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
  {
-  super(showNS, showAttributes, showAC, smpfmt);
+  super( showAttributes, showAC, smpfmt );
  }
  
  protected String getNameSpace()
@@ -79,15 +74,15 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  }
  
  @Override
- public boolean exportSample(BioSample smp, Appendable out) throws IOException
+ public boolean exportSample(BioSample smp, Appendable out, boolean showNS) throws IOException
  {
-  return exportSample(smp, out, out, isShowNS(), isShowAttributes(), true, null, isShowAC());
+  return exportSample(smp, out, out, showNS, isShowAttributes(), true, null, isShowAC());
  }
 
  @Override
- public boolean exportGroup(BioSampleGroup ao, Appendable out) throws IOException
+ public boolean exportGroup(BioSampleGroup ao, Appendable out, boolean showNS) throws IOException
  {
-  return exportGroup(ao, out, out, isShowNS(), getSamplesFormat(), isShowAttributes(), isShowAC() );
+  return exportGroup(ao, out, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
  }
  
  protected interface ACObj
@@ -354,7 +349,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  }
 
  @Override
- public void exportHeader( long since, Appendable out) throws IOException
+ public void exportHeader( long since, Appendable out, boolean showNS ) throws IOException
  {
   startTime = new java.util.Date();
 
@@ -363,7 +358,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n");
   out.append("<Biosamples");
   
-  if( isShowNS() )
+  if( showNS )
   {
    out.append(" xmlns=\"");
    xmlEscaped(getNameSpace(), out);
@@ -812,5 +807,35 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  @Override
  public void shutdown()
  {}
+
+ @Override
+ public boolean isSamplesExport()
+ {
+  return false;
+ }
+
+ @Override
+ public void exportGroupHeader(Appendable out, boolean showNS) throws IOException
+ {
+  return;
+ }
+
+ @Override
+ public void exportSampleHeader(Appendable out, boolean showNS) throws IOException
+ {
+  return;
+ }
+
+ @Override
+ public void exportGroupFooter(Appendable out) throws IOException
+ {
+  return;
+ }
+
+ @Override
+ public void exportSampleFooter(Appendable out) throws IOException
+ {
+  return;
+ }
  
 }

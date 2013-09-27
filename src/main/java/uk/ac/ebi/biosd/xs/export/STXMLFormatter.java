@@ -39,9 +39,9 @@ public class STXMLFormatter extends AGE1XMLFormatter
 // public static final String refLayer = "Reference Layer";
  
  
- public STXMLFormatter(boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ public STXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
  {
-  super(showNS, showAttributes, showAC, smpfmt);
+  super( showAttributes, showAC, smpfmt);
  }
 
 
@@ -52,11 +52,11 @@ public class STXMLFormatter extends AGE1XMLFormatter
  
  
  @Override
- public void exportHeader(long since,  Appendable out) throws IOException
+ public void exportHeader(long since,  Appendable out, boolean showNS) throws IOException
  {
   out.append("<BioSamples");
   
-  if( isShowNS() )
+  if( showNS )
   {
    out.append(" xmlns=\"");
    xmlEscaped(nameSpace, out);
@@ -80,15 +80,15 @@ public class STXMLFormatter extends AGE1XMLFormatter
  }
  
  @Override
- public boolean exportSample(BioSample smp,  Appendable out) throws IOException
+ public boolean exportSample(BioSample smp,  Appendable out, boolean showNS) throws IOException
  {
-  return exportSample(smp, out, true, true, null, null, isShowAC() );
+  return exportSample(smp, out, showNS, true, null, null, isShowAC() );
  }
  
  @Override
- public boolean exportGroup( BioSampleGroup ao, Appendable out ) throws IOException
+ public boolean exportGroup( BioSampleGroup ao, Appendable out, boolean showNS ) throws IOException
  {
-  return exportGroup(ao, out, out, isShowNS(), getSamplesFormat(), isShowAttributes(), isShowAC() );
+  return exportGroup(ao, out, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
  }
 
  @Override

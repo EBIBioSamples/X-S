@@ -9,14 +9,12 @@ import java.io.Reader;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
-import uk.ac.ebi.fg.biosd.model.access_control.User;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 
@@ -28,14 +26,21 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  
  private File tmpFile;
  private PrintStream smpStream;
+ private final StringBuilder sbcache[] = new StringBuilder[8];
+ private int sbcacheptr=0;
  
- private final Set<String> sampleSet = Collections.synchronizedSet( new HashSet<String>() );
+ private final Set<String> sampleSet =  new HashSet<String>() ;
  
- public AGE2GSXMLFormatter(boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ public AGE2GSXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
  {
-  super(showNS, showAttributes, showAC, smpfmt);
+  super(showAttributes, showAC, smpfmt);
  }
  
+ @Override
+ public boolean isSamplesExport()
+ {
+  return true;
+ }
  
  @Override
  protected void exportSamples(BioSampleGroup ao, Appendable mainout, Appendable auxout, SamplesFormat smpSts, Set<String> attrset) throws IOException
@@ -76,16 +81,28 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  {
   assert LoggerFactory.getLogger().entry("Start exporting sample: "+smp.getAcc(), "sample");
 
+  StringBuilder sb = null;
   
-  if( ! sampleSet.add(smp.getAcc()) )
+  synchronized(sampleSet)
   {
-   incSampleCounter();
-   return false;
+   if( ! sampleSet.add(smp.getAcc()) )
+   {
+    incSampleCounter();
+    return false;
+   }
+   
+   incUniqSampleCounter();
+   
+   if( sbcacheptr == 0 )
+    sb = new StringBuilder(4000);
+   else
+   {
+    sb = sbcache[--sbcacheptr];
+    sb.setLength(0);
+   }
   }
   
-  incUniqSampleCounter();
 
-  StringBuilder sb = new StringBuilder(4000);
   
   boolean res = super.exportSample(smp, sb, auxout, showNS, true, true, attrset, showAC);
   
@@ -95,8 +112,6 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 
    mainout.append(sb);
    
-   return res;
-   
   }
   finally
   {
@@ -105,20 +120,29 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
    assert LoggerFactory.getLogger().exit("End exporting sample:"+smp.getAcc(), "sample");
   }
   
+  synchronized(sampleSet)
+  {
+   if( sbcacheptr < sbcache.length )
+    sbcache[sbcacheptr++]=sb;
+  }
+  
+  return res;
+  
+
  }
  
  @Override
- public boolean exportSample(BioSample smp, Appendable out) throws IOException
+ public boolean exportSample(BioSample smp, Appendable out, boolean showNS) throws IOException
  {
-  return super.exportSample(smp, out, out, isShowNS(), isShowAttributes(), true, null, isShowAC());
+  return super.exportSample(smp, out, out, showNS, isShowAttributes(), true, null, isShowAC());
  }
 
  @Override
- public boolean exportGroup(BioSampleGroup ao, Appendable out) throws IOException
+ public boolean exportGroup(BioSampleGroup ao, Appendable out, boolean showNS) throws IOException
  {
   assert LoggerFactory.getLogger().entry("Start exporting group: "+ao.getAcc(), "group");
 
-  boolean res = super.exportGroup(ao, out, smpStream, isShowNS(), getSamplesFormat(), isShowAttributes(), isShowAC() );
+  boolean res = super.exportGroup(ao, out, smpStream, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
   
   assert LoggerFactory.getLogger().exit("End exporting group: "+ao.getAcc(), "group");
 
@@ -126,40 +150,11 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 
  }
  
- protected interface ACObj
- {
-  Set<User> getUsers();
-  boolean isPublic();
- }
  
- protected void exportAC(ACObj ao, Appendable out) throws IOException
- {
-  if(ao.isPublic())
-   return;
-  
-  out.append("public=\"false\" access=\"");
-
-  boolean first = true;
-
-  for(User u : ao.getUsers())
-  {
-   if(!first)
-    out.append(',');
-   else
-    first = false;
-
-   out.append(u.getName());
-  }
-
-  out.append("\" ");
- }
-
-
-
  @Override
- public void exportHeader( long since, Appendable out) throws IOException
+ public void exportHeader( long since, Appendable out, boolean showNS) throws IOException
  {
-  super.exportHeader(since, out);
+  super.exportHeader(since, out, showNS);
   
   out.append("<SampleGroups>\n");
   
@@ -221,4 +216,5 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
    tmpFile.delete();
   }
  }
+ 
 }

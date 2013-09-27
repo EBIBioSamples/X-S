@@ -5,14 +5,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.IllegalFormatException;
-import java.util.Map;
 import java.util.TimeZone;
 
-import uk.ac.ebi.biosd.xs.util.Counter;
-import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
-import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
-
-public abstract class AbstractXMLFormatter
+public abstract class AbstractXMLFormatter implements XMLFormatter
 {
  public enum SamplesFormat
  {
@@ -20,76 +15,23 @@ public abstract class AbstractXMLFormatter
   LIST,
   EMBED
  }
+
+ protected static DateToXsdDatetimeFormatter dateTimeFmt = new DateToXsdDatetimeFormatter( TimeZone.getTimeZone("GMT") );
  
- private final boolean showNS;
  private final boolean showAttributes;
  private final boolean showAC;
  private final SamplesFormat smpfmt;
  
- private volatile int groupCount=0;
- private volatile int sampleCount=0;
- private volatile int uniqSampleCount=0;
+
  
- public AbstractXMLFormatter(boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ public AbstractXMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
  {
   super();
-  this.showNS = showNS;
   this.showAttributes = showAttributes;
   this.showAC = showAC;
   this.smpfmt = smpfmt;
  }
 
- protected static DateToXsdDatetimeFormatter dateTimeFmt = new DateToXsdDatetimeFormatter( TimeZone.getTimeZone("GMT") );
-
- public abstract void shutdown();
- 
- public abstract boolean exportSample(BioSample smp,  Appendable out) throws IOException;
-
- public abstract boolean exportGroup( BioSampleGroup ao, Appendable out ) throws IOException;
-
-// public abstract void exportGroup( BioSampleGroup ao, Appendable out, boolean showNS, Samples smpSts, boolean showAttributes ) throws IOException;
- 
- public abstract void exportHeader(long since, Appendable out) throws IOException;
- public abstract void exportFooter(Appendable out) throws IOException;
-
- public abstract void exportSources(Map<String, Counter> srcMap, Appendable out) throws IOException;
-
- public void resetCounters()
- {
-  groupCount=0;
-  sampleCount=0;
-  uniqSampleCount=0;
- }
- 
- protected void incGroupCounter()
- {
-  groupCount++;
- }
- 
- protected void incSampleCounter()
- {
-  sampleCount++;
- }
-
- protected void incUniqSampleCounter()
- {
-  uniqSampleCount++;
- }
-
- public int getGroupCount()
- {
-  return groupCount;
- }
-
- public int getSampleCount()
- {
-  return sampleCount;
- }
-
- public int getUniqSampleCount()
- {
-  return uniqSampleCount;
- }
  
  public static class ReplacePair implements Comparable<ReplacePair>
  {
@@ -256,11 +198,6 @@ public abstract class AbstractXMLFormatter
   {
    simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timezone));
   }
-}
-
- public boolean isShowNS()
- {
-  return showNS;
  }
 
 

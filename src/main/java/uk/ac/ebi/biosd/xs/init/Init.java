@@ -26,7 +26,7 @@ import javax.servlet.ServletContextListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import uk.ac.ebi.biosd.xs.service.EBeyeExport;
+import uk.ac.ebi.biosd.xs.service.ebeye.EBeyeExport;
 
 public class Init implements ServletContextListener
 {
