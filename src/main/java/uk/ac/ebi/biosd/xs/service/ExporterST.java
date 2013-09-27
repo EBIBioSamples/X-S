@@ -15,8 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.persistence.EntityManagerFactory;
-
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.biosd.xs.util.Counter;
@@ -180,15 +178,15 @@ public class ExporterST implements Exporter
      break;
    }
 
+   formatter.exportGroupFooter(out);
+
    if(exportSources)
     formatter.exportSources(srcMap, out);
-
-   formatter.exportGroupFooter(out);
 
    if(formatter.isSamplesExport())
    {
     formatter.exportSampleFooter(smpStream);
-    
+
     smpStream.close();
     smpStream = null;
 
@@ -213,8 +211,6 @@ public class ExporterST implements Exporter
     {
      rd.close();
     }
-
-
 
    }
 

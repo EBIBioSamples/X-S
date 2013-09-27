@@ -9,22 +9,18 @@ public class OutputTask implements Runnable
  private final Appendable out;
  private final BlockingQueue<Object> inQueue;
  private final BlockingQueue<ControlMessage> controlQueue;
- private final long limit;
  
- public OutputTask( Appendable out, BlockingQueue<Object> inQueue, BlockingQueue<ControlMessage> controlQueue, long limit )
+ public OutputTask( Appendable out, BlockingQueue<Object> inQueue, BlockingQueue<ControlMessage> controlQueue)
  {
   this.out = out;
   this.inQueue = inQueue;
   this.controlQueue = controlQueue;
-  
-  this.limit = limit;
  }
  
  
  @Override
  public void run()
  {
-  long count=0;
   
   while( true )
   {
@@ -59,15 +55,6 @@ public class OutputTask implements Runnable
     putIntoQueue(new ControlMessage(Type.OUTPUT_ERROR, this));
     return;
    }
-   
-   count++;
-   
-   if( limit > 0 && count >= limit )
-   {
-    putIntoQueue(new ControlMessage(Type.OUTPUT_FINISH, this));
-    return;
-   }
-
    
   }
   

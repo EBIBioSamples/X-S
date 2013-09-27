@@ -9,13 +9,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.persistence.EntityManagerFactory;
+import java.util.concurrent.atomic.AtomicLong;
 
 import uk.ac.ebi.biosd.xs.service.mtexport.ControlMessage.Type;
 import uk.ac.ebi.biosd.xs.util.RangeManager;
 
-public class ExporterMT 
+public class ExporterMTControl
 {
  private final EntityManagerFactory emf;
  final  List<FormattingRequest> requests;
@@ -23,7 +22,7 @@ public class ExporterMT
  final boolean sourcesByName;
  private final int threads;
  
- public ExporterMT(EntityManagerFactory emf, List<FormattingRequest> ftasks, boolean exportSources, boolean sourcesByName, int thN)
+ public ExporterMTControl(EntityManagerFactory emf, List<FormattingRequest> ftasks, boolean exportSources, boolean sourcesByName, int thN)
  {
   super();
   this.emf = emf;
@@ -48,14 +47,14 @@ public class ExporterMT
   for( FormattingRequest req : requests )
   {
    BlockingQueue<Object> grQueue = new ArrayBlockingQueue<>(100);
-   outputs.add( new OutputTask(req.getGroupOut(), grQueue, msgQ, limit) );
+   outputs.add( new OutputTask(req.getGroupOut(), grQueue, msgQ) );
    
    BlockingQueue<Object> smQueue=null;
    
    if( req.getSampleOut() != null )
    {
     smQueue = new ArrayBlockingQueue<>(100);
-    outputs.add( new OutputTask(req.getSampleOut(), smQueue, msgQ, limit) );
+    outputs.add( new OutputTask(req.getSampleOut(), smQueue, msgQ) );
    }
    
    tasks.add( new FormattingTask(req.getFormatter(), grQueue, smQueue) );
@@ -73,9 +72,14 @@ public class ExporterMT
   for( OutputTask ot : outputs )
    tPool.submit(ot);
 
+  AtomicLong limitCnt = null;
+  
+  if( limit > 0 )
+   limitCnt = new AtomicLong(limit);
+  
   for( int i=0; i < threads; i++ )
   {
-   MTExporterTask et = new MTExporterTask(emf, rm, since, tasks, statistics, msgQ, stopFlag, sourcesByName);
+   MTExporterTask et = new MTExporterTask(emf, rm, since, tasks, statistics, msgQ, stopFlag, sourcesByName,limitCnt);
    
    exporters.add(et);
    

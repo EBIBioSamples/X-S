@@ -6,8 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.persistence.EntityManagerFactory;
+import java.util.concurrent.atomic.AtomicLong;
 
 import uk.ac.ebi.biosd.xs.service.GroupQueryManager;
 import uk.ac.ebi.biosd.xs.service.mtexport.ControlMessage.Type;
@@ -32,9 +31,10 @@ public class MTExporterTask implements Runnable
  private final AtomicBoolean stopFlag;
  private final boolean sourcesByName;
  private boolean hasSampleOutput = false;
+ private final AtomicLong limit;
  
  public MTExporterTask( EntityManagerFactory emf, RangeManager rMgr, long since, List<FormattingTask> tasks,
-   MTExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, boolean srcByNm )
+   MTExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, boolean srcByNm, AtomicLong lim )
  {
   emFactory = emf;
   rangeMngr = rMgr;
@@ -48,6 +48,8 @@ public class MTExporterTask implements Runnable
   
   sourcesByName = srcByNm;
   
+  limit = lim;
+  
   for( FormattingTask ft : tasks )
   {
    if( ft.getSampleQueue() != null )
@@ -56,6 +58,7 @@ public class MTExporterTask implements Runnable
     break;
    }
   }
+  
  }
 
  @Override
@@ -85,6 +88,18 @@ public class MTExporterTask implements Runnable
      {
       putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH,this) );
       return;
+     }
+     
+     if( limit != null )
+     {
+      long c = limit.decrementAndGet();
+      
+      if( c < 0 )
+      {
+       putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH,this) );
+       return;
+      }
+
      }
      
      lastId = g.getId();
