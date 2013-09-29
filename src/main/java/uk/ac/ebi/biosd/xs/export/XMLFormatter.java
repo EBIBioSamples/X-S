@@ -28,9 +28,4 @@ public interface XMLFormatter
 
  void exportSources(Map<String, Counter> srcMap, Appendable out) throws IOException;
  
- public int getGroupCount();
-
- public int getSampleCount();
-
- public int getUniqSampleCount();
 }

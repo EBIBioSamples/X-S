@@ -1,18 +1,9 @@
 package uk.ac.ebi.biosd.xs.export;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.io.Reader;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Date;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
@@ -20,16 +11,6 @@ import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 
 public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 {
-
- 
- private final Lock lock = new ReentrantLock();
- 
- private File tmpFile;
- private PrintStream smpStream;
- private final StringBuilder sbcache[] = new StringBuilder[8];
- private int sbcacheptr=0;
- 
- private final Set<String> sampleSet =  new HashSet<String>() ;
  
  public AGE2GSXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
  {
@@ -43,7 +24,7 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  }
  
  @Override
- protected void exportSamples(BioSampleGroup ao, Appendable mainout, Appendable auxout, SamplesFormat smpSts, Set<String> attrset) throws IOException
+ protected void exportSamples(BioSampleGroup ao, Appendable mainout, SamplesFormat smpSts, Set<String> attrset) throws IOException
  {
   if(ao.getSamples() == null)
    return;
@@ -68,7 +49,7 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 
    
    if( smpSts != SamplesFormat.NONE )
-    exportSample(smp, auxout, auxout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
+    exportSample(smp, mainout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
   }
 
   mainout.append("</SampleIds>\n");
@@ -76,65 +57,17 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
   assert LoggerFactory.getLogger().exit("End procesing sample block", "sblock");
  }
  
- @Override
- protected boolean exportSample(BioSample smp, Appendable mainout, Appendable auxout, boolean showNS, boolean showAnnt, boolean showGrpId, Set<String> attrset, boolean showAC) throws IOException
- {
-  assert LoggerFactory.getLogger().entry("Start exporting sample: "+smp.getAcc(), "sample");
-
-  StringBuilder sb = null;
-  
-  synchronized(sampleSet)
-  {
-   if( ! sampleSet.add(smp.getAcc()) )
-   {
-    incSampleCounter();
-    return false;
-   }
-   
-   incUniqSampleCounter();
-   
-   if( sbcacheptr == 0 )
-    sb = new StringBuilder(4000);
-   else
-   {
-    sb = sbcache[--sbcacheptr];
-    sb.setLength(0);
-   }
-  }
-  
-
-  
-  boolean res = super.exportSample(smp, sb, auxout, showNS, true, true, attrset, showAC);
-  
-  try
-  {
-   lock.lock();
-
-   mainout.append(sb);
-   
-  }
-  finally
-  {
-   lock.unlock();
-
-   assert LoggerFactory.getLogger().exit("End exporting sample:"+smp.getAcc(), "sample");
-  }
-  
-  synchronized(sampleSet)
-  {
-   if( sbcacheptr < sbcache.length )
-    sbcache[sbcacheptr++]=sb;
-  }
-  
-  return res;
-  
-
- }
  
  @Override
  public boolean exportSample(BioSample smp, Appendable out, boolean showNS) throws IOException
  {
-  return super.exportSample(smp, out, out, showNS, isShowAttributes(), true, null, isShowAC());
+  assert LoggerFactory.getLogger().entry("Start exporting sample: "+smp.getAcc(), "sample");
+  
+  boolean res =  super.exportSample(smp, out, showNS, isShowAttributes(), true, null, isShowAC());
+
+  assert LoggerFactory.getLogger().exit("End exporting sample: "+smp.getAcc(), "sample");
+  
+  return res;
  }
 
  @Override
@@ -142,7 +75,7 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  {
   assert LoggerFactory.getLogger().entry("Start exporting group: "+ao.getAcc(), "group");
 
-  boolean res = super.exportGroup(ao, out, smpStream, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
+  boolean res = super.exportGroup(ao, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
   
   assert LoggerFactory.getLogger().exit("End exporting group: "+ao.getAcc(), "group");
 
@@ -150,71 +83,67 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 
  }
  
- 
  @Override
- public void exportHeader( long since, Appendable out, boolean showNS) throws IOException
+ public void exportGroupHeader(Appendable out, boolean showNS) throws IOException
  {
-  super.exportHeader(since, out, showNS);
+
+  if( showNS )
+   out.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
   
-  out.append("<SampleGroups>\n");
+  out.append("<SampleGroups");
   
-  tmpFile = File.createTempFile("XSexport", ".tmp");
+  if( showNS )
+  {
+   out.append(" xmlns=\"");
+   xmlEscaped(getNameSpace(), out);
+   out.append("\"");
+
+   Date startTime = new java.util.Date();
+   out.append(" timestamp=\"").append( String.valueOf(startTime.getTime()) ).append("\"");
+   
+   nsShown = true;
+  }
   
-  System.out.println("Tmp file: "+tmpFile.getAbsolutePath());
+  out.append(">\n");
   
-  smpStream = new PrintStream(tmpFile,"utf-8");
-  sampleSet.clear();
  }
-
-
- @Override
- public void exportFooter(Appendable out) throws IOException
- {
-  smpStream.close();
-  sampleSet.clear();
-  
-  smpStream = null;
-  
-  out.append("</SampleGroups>\n<Samples>\n");
  
-  
-  Reader rd = new InputStreamReader( new FileInputStream(tmpFile), Charset.forName("utf-8"));
-  
-  try
-  {
+ @Override
+ public void exportGroupFooter(Appendable out) throws IOException
+ {
+  out.append("</SampleGroups>\n");
+ }
+ 
+ @Override
+ public void exportSampleHeader(Appendable out, boolean showNS) throws IOException
+ {
 
-   CharBuffer buf = CharBuffer.allocate(4096);
-   
-   while( rd.read(buf) != -1 )
-   {
-    String str = new String(buf.array(),0,buf.position());
-    
-    out.append(str);
-    
-    buf.clear();
-   }
-   
-  }
-  finally
+  if( showNS )
+   out.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+  
+  out.append("<Samples");
+  
+  if( showNS )
   {
-   rd.close();
+   out.append(" xmlns=\"");
+   xmlEscaped(getNameSpace(), out);
+   out.append("\"");
+
+   Date startTime = new java.util.Date();
+   out.append(" timestamp=\"").append( String.valueOf(startTime.getTime()) ).append("\"");
+   
+   nsShown = true;
   }
   
-  tmpFile.delete();
+  out.append(">\n");
   
+ }
+ 
+ @Override
+ public void exportSampleFooter(Appendable out) throws IOException
+ {
   out.append("</Samples>\n");
-
-  super.exportFooter(out);
- } 
- 
- @Override
- public void shutdown()
- {
-  if( smpStream != null )
-  {
-   smpStream.close();
-   tmpFile.delete();
-  }
  }
  
+
 }

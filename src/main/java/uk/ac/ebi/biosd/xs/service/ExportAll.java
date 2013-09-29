@@ -183,9 +183,9 @@ public class ExportAll extends HttpServlet
   Exporter expt = null;
   
   if( threadsNum == 1 )
-   expt = new ExporterST(emf, formatter, exportSources, sourcesByName, blockSize);
+   expt = new ExporterST(emf, formatter, exportSources, sourcesByName, blockSize, ! hideNS );
   else
-   expt = new ExporterMT(emf, formatter, exportSources, sourcesByName, threadsNum);
+   expt = new ExporterMT(emf, formatter, exportSources, sourcesByName, ! hideNS, threadsNum);
  
   System.out.println("Start exporting. Request from: "+request.getRemoteAddr()+" Limit: "+limit+" Time: "+new Date()+" Thread: "+Thread.currentThread().getName());
   

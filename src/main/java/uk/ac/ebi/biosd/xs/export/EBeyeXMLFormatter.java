@@ -33,7 +33,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  
  public EBeyeXMLFormatter(OWLKeywordExpansion exp)
  {
-  super(false, false, false, null);
+  super(false, false, null);
   
   expander=exp;
  }
@@ -41,7 +41,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  static DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 
  @Override
- public boolean exportSample(BioSample smp, Appendable out) throws IOException
+ public boolean exportSample(BioSample smp, Appendable out, boolean showNS) throws IOException
  {
   
   out.append("<entry id=\"");
@@ -114,7 +114,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  
 
  @Override
- public boolean exportGroup(BioSampleGroup grp, Appendable out) throws IOException
+ public boolean exportGroup(BioSampleGroup grp, Appendable out, boolean showNS) throws IOException
  {
   
   out.append("<entry id=\"");
@@ -265,7 +265,21 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  }
 
  @Override
- public void exportHeader( long since, Appendable out ) throws IOException
+ public void exportSampleHeader(Appendable out, boolean showNS) throws IOException
+ {
+  exportHeader(-1, out, showNS);
+ }
+
+
+
+ @Override
+ public void exportSampleFooter(Appendable out) throws IOException
+ {
+  exportFooter(out);
+ }
+ 
+ @Override
+ public void exportHeader( long since, Appendable out, boolean showNS ) throws IOException
  {
   Date d = new Date();
   
@@ -292,5 +306,25 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  public void shutdown()
  {
  }
+
+
+ @Override
+ public boolean isSamplesExport()
+ {
+  return true;
+ }
+
+ @Override
+ public void exportGroupHeader(Appendable out, boolean showNS) throws IOException
+ {
+ }
+
+ 
+ @Override
+ public void exportGroupFooter(Appendable out) throws IOException
+ {
+ }
+
+
 
 }

@@ -11,6 +11,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.persistence.EntityManagerFactory;
+
 import uk.ac.ebi.biosd.xs.service.mtexport.ControlMessage.Type;
 import uk.ac.ebi.biosd.xs.util.RangeManager;
 

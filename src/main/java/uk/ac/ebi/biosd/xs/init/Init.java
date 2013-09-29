@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.servlet.ServletContext;
@@ -135,8 +134,6 @@ public class Init implements ServletContextListener
    return;
   }
   
-  EntityManager em = emf.createEntityManager();
-  
   
   final boolean genGroup;
   final boolean genSamples;
@@ -245,7 +242,7 @@ public class Init implements ServletContextListener
   }
     
   
-  EBeyeExport.setInstance( new EBeyeExport(em, new File(outPath), new File(tempPath), efoURL ) );
+  EBeyeExport.setInstance( new EBeyeExport(emf, new File(outPath), new File(tempPath), efoURL ) );
   
   if( hour != -1 )
   {

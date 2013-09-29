@@ -11,6 +11,8 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 
+import javax.persistence.EntityManagerFactory;
+
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.service.mtexport.ExporterMTControl;
 import uk.ac.ebi.biosd.xs.service.mtexport.FormattingRequest;
@@ -46,16 +48,14 @@ public class ExporterMT implements Exporter
   java.util.Date startTime = new java.util.Date();
   long startTs = startTime.getTime();
 
+  formatter.exportHeader(since, out, showNS);
   
-  out.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
   out.append("<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n");
 
-
-  formatter.exportHeader(since, out, showNS);
   formatter.exportGroupHeader(out, false);
 
   File tmpFile = null;
-  PrintStream sampleOut;
+  PrintStream sampleOut=null;
 
   if(formatter.isSamplesExport())
   {

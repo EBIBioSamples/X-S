@@ -17,14 +17,15 @@ public class SchemaManager
 
  public static AbstractXMLFormatter getFormatter( String name, boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt )
  {
+  
   if( STXML.equals(name) )
-   return new STXMLFormatter(showNS, showAttributes, showAC, smpfmt);
+   return new STXMLFormatter( showAttributes, showAC, smpfmt);
   else if( AGEXML1.equals(name) )
-   return new AGE1XMLFormatter(showNS, showAttributes, showAC, smpfmt);
+   return new AGE1XMLFormatter( showAttributes, showAC, smpfmt);
   else if( AGEXML2.equals(name) )
-   return new AGE2XMLFormatter(showNS, showAttributes, showAC, smpfmt);
+   return new AGE2XMLFormatter( showAttributes, showAC, smpfmt);
   else if( AGEXML2GS.equals(name) )
-   return new AGE2GSXMLFormatter(showNS, showAttributes, showAC, smpfmt);
+   return new AGE2GSXMLFormatter( showAttributes, showAC, smpfmt);
   
   return null;
  }

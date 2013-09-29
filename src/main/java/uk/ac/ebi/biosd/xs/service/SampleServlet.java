@@ -27,6 +27,7 @@ public class SampleServlet extends HttpServlet
  static final String SchemaParameter = "schema";
  static final String ProfileParameter = "server";
  static final String IdParameter = "id";
+ static final String ShowNSParameter = "showNS";
  
  public SampleServlet()
  {
@@ -87,7 +88,13 @@ public class SampleServlet extends HttpServlet
    return;
   }
   
+  String showNSPrm = request.getParameter(ShowNSParameter);
+  
+  boolean showNS = showNSPrm!=null && ("true".equalsIgnoreCase(showNSPrm) || "1".equalsIgnoreCase(showNSPrm) || "yes".equalsIgnoreCase(showNSPrm) );
+  
   EntityManager em = emf.createEntityManager();
+  
+//  Query listQuery = em.createQuery("SELECT a FROM " + BioSample.class.getCanonicalName () + " a WHERE a.acc = ?1");
   
   EntityTransaction ts = em.getTransaction ();
   
@@ -106,7 +113,7 @@ public class SampleServlet extends HttpServlet
   
   response.setContentType("text/xml; charset=UTF-8");
   
-  formatter.exportSample(smp, response.getWriter());
+  formatter.exportSample(smp, response.getWriter(), showNS);
   
   ts.commit();
   

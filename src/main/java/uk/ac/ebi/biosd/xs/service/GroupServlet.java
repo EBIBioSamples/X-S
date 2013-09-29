@@ -26,7 +26,8 @@ public class GroupServlet extends HttpServlet
  static final String SchemaParameter = "schema";
  static final String ProfileParameter = "server";
  static final String IdParameter = "id";
- 
+ static final String ShowNSParameter = "showNS";
+
  public GroupServlet()
  {
   super();
@@ -55,6 +56,10 @@ public class GroupServlet extends HttpServlet
   
   String prof = request.getParameter(ProfileParameter);
   
+  String showNSPrm = request.getParameter(ShowNSParameter);
+  
+  boolean showNS = showNSPrm!=null && ("true".equalsIgnoreCase(showNSPrm) || "1".equalsIgnoreCase(showNSPrm) || "yes".equalsIgnoreCase(showNSPrm) );
+
   EntityManagerFactory emf = null;
   
   if( prof == null )
@@ -118,7 +123,7 @@ public class GroupServlet extends HttpServlet
   
   response.setContentType("text/xml; charset=UTF-8");
   
-  formatter.exportGroup(smp, response.getWriter());
+  formatter.exportGroup(smp, response.getWriter(), showNS);
   
   ts.commit();
   

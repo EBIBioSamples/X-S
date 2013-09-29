@@ -2,6 +2,7 @@ package uk.ac.ebi.biosd.xs.export;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -9,7 +10,6 @@ import java.util.Set;
 
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.biosd.xs.util.Counter;
-import uk.ac.ebi.biosd.xs.util.StringUtils;
 import uk.ac.ebi.fg.biosd.model.access_control.User;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
@@ -76,13 +76,15 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  @Override
  public boolean exportSample(BioSample smp, Appendable out, boolean showNS) throws IOException
  {
-  return exportSample(smp, out, out, showNS, isShowAttributes(), true, null, isShowAC());
+  return exportSample(smp, out, showNS, isShowAttributes(), true, null, isShowAC());
  }
 
+ 
+ 
  @Override
  public boolean exportGroup(BioSampleGroup ao, Appendable out, boolean showNS) throws IOException
  {
-  return exportGroup(ao, out, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
+  return exportGroup(ao, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
  }
  
  protected interface ACObj
@@ -113,7 +115,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("\" ");
  }
 
- protected void exportSamples(BioSampleGroup ao, Appendable mainout, Appendable auxout, SamplesFormat smpSts, Set<String> attrset) throws IOException
+ protected void exportSamples(BioSampleGroup ao, Appendable mainout, SamplesFormat smpSts, Set<String> attrset) throws IOException
  {
   if( smpSts != SamplesFormat.NONE && ao.getSamples() != null )
   {
@@ -123,23 +125,17 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    
    assert LoggerFactory.getLogger().checkpoint("Got samples: "+smpls.size(), "sblock");
 
-   int scnt = 1;
-   
    for(BioSample smp : smpls)
    {
-    assert LoggerFactory.getLogger().checkpoint("Processing sample: "+smp.getAcc()+" "+(scnt++)+" of "+smpls.size(), "sblock");
-
-    exportSample(smp, mainout, auxout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
+    exportSample(smp, mainout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
    }
   
    assert LoggerFactory.getLogger().exit("End procesing sample block", "sblock");
   }
  }
  
- protected boolean exportGroup(final BioSampleGroup ao, Appendable mainout, Appendable auxout, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
+ protected boolean exportGroup(final BioSampleGroup ao, Appendable mainout, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
  {
-  incGroupCounter();
-  
   Set<String> attrset = null;
   
   if( showAttributes )
@@ -327,7 +323,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   }
   
 
-  exportSamples( ao, mainout, auxout, smpSts, attrset);
+  exportSamples( ao, mainout, smpSts, attrset);
   
   if( showAttributes )
   {
@@ -351,11 +347,10 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  @Override
  public void exportHeader( long since, Appendable out, boolean showNS ) throws IOException
  {
-  startTime = new java.util.Date();
+  Date startTime = new java.util.Date();
 
   
   out.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-  out.append("\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n");
   out.append("<Biosamples");
   
   if( showNS )
@@ -380,30 +375,6 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  public void exportFooter(Appendable out) throws IOException
  {
   out.append("</Biosamples>\n");
-  
-  java.util.Date endTime = new java.util.Date();
-  long endTs = endTime.getTime();
-
-  
-  long rate = getGroupCount()!=0? (endTs-startTs)/getGroupCount():0;
-  
-
-  
-  out.append("\n<!-- Exported: "+getGroupCount()+" groups. Rate: "+rate+"ms per group -->");
-  
-  rate = getSampleCount()!=0? (endTs-startTs)/getSampleCount():0;
-  
-  out.append("\n<!-- Samples in groups: "+getSampleCount()+". Rate: "+rate+"ms per sample -->");
-
-  rate = getUniqSampleCount()!=0? (endTs-startTs)/getUniqSampleCount():0;
-  
-  out.append("\n<!-- Unique samples: "+getUniqSampleCount()+". Rate: "+rate+"ms per unique sample -->");
-
-  
-  out.append("\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->");
-  out.append("\n<!-- End time: "+simpleDateFormat.format(endTime)+". Time spent: "+StringUtils.millisToString(endTs-startTs)+" -->");
-  out.append("\n<!-- Thank you. Good bye. -->\n");
-
  }
  
  @Override
@@ -589,10 +560,8 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("</attribute>\n");
  }
  
- protected boolean exportSample(final BioSample smp, Appendable mainout, Appendable auxout, boolean showNS, boolean showAnnt, boolean showGrpId, Set<String> attrset, boolean showAC) throws IOException
+ protected boolean exportSample(final BioSample smp, Appendable mainout, boolean showNS, boolean showAnnt, boolean showGrpId, Set<String> attrset, boolean showAC) throws IOException
  {
-  incSampleCounter();
-  
    
   if( showNS && ! nsShown )
   {

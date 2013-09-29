@@ -88,11 +88,11 @@ public class STXMLFormatter extends AGE1XMLFormatter
  @Override
  public boolean exportGroup( BioSampleGroup ao, Appendable out, boolean showNS ) throws IOException
  {
-  return exportGroup(ao, out, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
+  return exportGroup(ao, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
  }
 
  @Override
- protected boolean exportGroup( final BioSampleGroup ao, Appendable out, Appendable smpout, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC ) throws IOException
+ protected boolean exportGroup( final BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC ) throws IOException
  {
   Set<String> attrset = null;
   
@@ -236,7 +236,7 @@ public class STXMLFormatter extends AGE1XMLFormatter
   {
     for( BioSample smp : ao.getSamples() )
     {
-     exportSample(smp, smpout, false, smpSts == SamplesFormat.EMBED, ao.getAcc(), attrset, isShowAC());
+     exportSample(smp, out, false, smpSts == SamplesFormat.EMBED, ao.getAcc(), attrset, isShowAC());
     }
    
   }

@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.EntityManagerFactory;
+
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.biosd.xs.util.Counter;
@@ -66,10 +68,11 @@ public class ExporterST implements Exporter
   long startTs = startTime.getTime();
 
   
-  out.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-  out.append("<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n");
 
   formatter.exportHeader( since, out, showNS );
+  
+  out.append("<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n");
+
   formatter.exportGroupHeader( out, false );
   
   if( formatter.isSamplesExport() )
