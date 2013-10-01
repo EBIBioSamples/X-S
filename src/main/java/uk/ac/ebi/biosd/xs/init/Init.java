@@ -25,17 +25,21 @@ import javax.servlet.ServletContextListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import uk.ac.ebi.biosd.xs.service.RequestConfig;
+import uk.ac.ebi.biosd.xs.service.RequestConfig.ParamPool;
 import uk.ac.ebi.biosd.xs.service.ebeye.EBeyeExport;
 
 public class Init implements ServletContextListener
 {
+ static final String EBeyeAuxPrefix = "ebeye.aux.";
+ 
  static String EBeyeConnectionProfileParam = "ebeye.connectionProfile";
  static String EBeyeOutputPathParam = "ebeye.outputDir";
  static String EBeyeTempPathParam = "ebeye.tempDir";
  static String EBeyeUpdateHourParam = "ebeye.updateTime";
  static String EBeyeEfoURLParam = "ebeye.efoURL";
- static String EBeyeGenGroup = "ebeye.generateGroups";
  static String EBeyeGenSamples = "ebeye.generateSamples";
+ static String EBeyeThreads = "ebeye.threads";
 
  static String PersistParamPrefix = "persist";
  static String DefaultProfileParam = PersistParamPrefix+".defaultProfile";
@@ -53,7 +57,7 @@ public class Init implements ServletContextListener
   
   Matcher mtch = Pattern.compile("^"+PersistParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
   
-  ServletContext servletContext = ctx.getServletContext();
+  final ServletContext servletContext = ctx.getServletContext();
   
   Enumeration<?> pNames = servletContext.getInitParameterNames();
   
@@ -135,15 +139,9 @@ public class Init implements ServletContextListener
   }
   
   
-  final boolean genGroup;
   final boolean genSamples;
-  
-  String gen = servletContext.getInitParameter(EBeyeGenGroup);
-  
-  genGroup =  ( gen != null )?
-   "1".equals(gen) || "yes".equalsIgnoreCase(gen) || "on".equalsIgnoreCase(gen) || "true".equalsIgnoreCase(gen) : true;
 
-  gen = servletContext.getInitParameter(EBeyeGenSamples);
+  String gen = servletContext.getInitParameter(EBeyeGenSamples);
   
   genSamples = ( gen != null )? "1".equals(gen) || "yes".equalsIgnoreCase(gen) || "on".equalsIgnoreCase(gen) || "true".equalsIgnoreCase(gen) : true;
 
@@ -240,9 +238,38 @@ public class Init implements ServletContextListener
    }
    
   }
-    
   
-  EBeyeExport.setInstance( new EBeyeExport(emf, new File(outPath), new File(tempPath), efoURL ) );
+  String str = servletContext.getInitParameter(EBeyeThreads);
+  
+  int t=0;
+  
+  if( str != null )
+  {
+   try
+   {
+    t = Integer.parseInt(str);
+   }
+   catch(Exception e)
+   {
+   }
+  }
+  
+  final int threads = t;
+
+    
+  RequestConfig reqCfg = new RequestConfig();
+  reqCfg.loadParameters(new ParamPool()
+  {
+   
+   @Override
+   public String getParameter(String name)
+   {
+    return servletContext.getInitParameter(name);
+   }
+  }, EBeyeAuxPrefix);
+  
+  
+  EBeyeExport.setInstance( new EBeyeExport(emf, new File(outPath), new File(tempPath), efoURL, reqCfg ) );
   
   if( hour != -1 )
   {
@@ -254,7 +281,7 @@ public class Init implements ServletContextListener
     {
      try
      {
-      EBeyeExport.getInstance().export(-1, genSamples, genGroup, true );
+      EBeyeExport.getInstance().export(-1, genSamples, true, threads );
      }
      catch(IOException e)
      {

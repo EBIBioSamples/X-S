@@ -1,6 +1,7 @@
 package uk.ac.ebi.biosd.xs.service;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -10,9 +11,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
 import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
+import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
+import uk.ac.ebi.biosd.xs.service.RequestConfig.ParamPool;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.core_model.persistence.dao.hibernate.toplevel.AccessibleDAO;
 
@@ -21,12 +23,11 @@ public class GroupServlet extends HttpServlet
 {
  private static final long serialVersionUID = 1L;
 
- static final String DefaultSchema = SchemaManager.STXML;
+ static final String        DefaultSchema        = SchemaManager.STXML;
+ static final boolean       DefaultShowNS        = false;
+ static final SamplesFormat DefaultSamplesFormat = SamplesFormat.EMBED;
 
- static final String SchemaParameter = "schema";
- static final String ProfileParameter = "server";
  static final String IdParameter = "id";
- static final String ShowNSParameter = "showNS";
 
  public GroupServlet()
  {
@@ -39,27 +40,56 @@ public class GroupServlet extends HttpServlet
   *      response)
   */
  @Override
- protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+ protected void doGet(final HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
  {
-  AbstractXMLFormatter formatter=null;
+  
+  XMLFormatter formatter=null;
   
 
 
-  String group = request.getParameter(IdParameter);
+  String id = request.getParameter(IdParameter);
   
-  if( group == null )
+  if( id == null )
   {
    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-   response.getWriter().append("<html><body><span color='red'>No group ID provided</span></body></html>");
+   response.getWriter().append("<html><body><span color='red'>No sample ID provided</span></body></html>");
    return;
   }
   
-  String prof = request.getParameter(ProfileParameter);
   
-  String showNSPrm = request.getParameter(ShowNSParameter);
+  RequestConfig reqCfg = new RequestConfig();
   
-  boolean showNS = showNSPrm!=null && ("true".equalsIgnoreCase(showNSPrm) || "1".equalsIgnoreCase(showNSPrm) || "yes".equalsIgnoreCase(showNSPrm) );
-
+  reqCfg.loadParameters(new ParamPool()
+  {
+   
+   @Override
+   public String getParameter(String name)
+   {
+    return request.getParameter(name);
+   }
+  }, "");
+  
+  
+  SamplesFormat samplesFormat = SamplesFormat.EMBED;
+  
+  String pv = reqCfg.getOutput(null);
+  
+  if( pv != null )
+  {
+   try
+   {
+    samplesFormat = SamplesFormat.valueOf(pv);
+   }
+   catch(Exception e)
+   {
+    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+    response.getWriter().append("<html><body><span color='red'>Invalid "+RequestConfig.SamplesParameter+" parameter value. Sould be one of: "+Arrays.asList(SamplesFormat.values())+"</span></body></html>");
+    return;
+   }
+  }
+  
+  String prof = reqCfg.getServer(null);
+  
   EntityManagerFactory emf = null;
   
   if( prof == null )
@@ -77,25 +107,14 @@ public class GroupServlet extends HttpServlet
    return;
   }
   
+ 
+  response.setContentType("text/xml; charset=UTF-8");
+  Appendable out = response.getWriter();
   
-  String sch = request.getParameter(SchemaParameter);
   
-  if( sch == null )
-   sch = DefaultSchema;
-
-//  @Override
-//  public void exportSample(BioSample smp, Appendable out) throws IOException
-//  {
-//   exportSample(smp, out, true, true, null, null);
-//  }
-//
-//  @Override
-//  public void exportGroup(BioSampleGroup ao, Appendable out) throws IOException
-//  {
-//   exportGroup(ao, out, true, Samples.LIST, false );
-//  }
+  String sch = reqCfg.getSchema(DefaultSchema);
   
-  formatter = SchemaManager.getFormatter(sch, true, false, false, SamplesFormat.LIST);
+  formatter = SchemaManager.getFormatter(sch, false, false, samplesFormat);
   
   if( formatter == null )
   {
@@ -104,30 +123,41 @@ public class GroupServlet extends HttpServlet
    return;
   }
   
+  
+  boolean showNS =reqCfg.getShowNamespace( DefaultShowNS );
+  
   EntityManager em = emf.createEntityManager();
+  
+//  Query listQuery = em.createQuery("SELECT a FROM " + BioSample.class.getCanonicalName () + " a WHERE a.acc = ?1");
   
   EntityTransaction ts = em.getTransaction ();
   
   ts.begin ();
   
-  AccessibleDAO<BioSampleGroup> smpDAO = new AccessibleDAO<>(BioSampleGroup.class, em);
-  
-  BioSampleGroup smp = smpDAO.find(group);
-
-  if( smp == null )
+  try
   {
-   response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-   response.getWriter().append("<html><body><span color='red'>Group with ID: "+group+" not found</span></body></html>");
-   return;
+   
+   AccessibleDAO<BioSampleGroup> smpDAO = new AccessibleDAO<>(BioSampleGroup.class, em);
+   
+   BioSampleGroup grp = smpDAO.find(id);
+   
+   if( grp == null )
+   {
+    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+    response.getWriter().append("<html><body><span color='red'>Group with ID: "+id+" not found</span></body></html>");
+    return;
+   }
+   
+   
+   formatter.exportGroup(grp, out, showNS);
   }
-  
-  response.setContentType("text/xml; charset=UTF-8");
-  
-  formatter.exportGroup(smp, response.getWriter(), showNS);
-  
-  ts.commit();
-  
-  em.close();
+  finally
+  {
+   ts.commit();
+   
+   em.close();
+  }
+
   
  }
 

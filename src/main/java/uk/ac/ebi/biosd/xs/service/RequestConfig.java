@@ -8,28 +8,30 @@ public class RequestConfig
   String getParameter( String name );
  }
  
- static final String SchemaParameter          = "schema";
- static final String ProfileParameter         = "server";
- static final String LimitParameter           = "limit";
- static final String ThreadsParameter         = "threads";
- static final String SamplesParameter         = "samplesFormat";
- static final String ShowSourcesParameter     = "showSources";
- static final String SourcesByNameParameter   = "sourcesByName";
- static final String SinceParameter           = "since";
- static final String AttributesParameter      = "showAttributes";
- static final String NamespaceParameter       = "showNS";
- static final String NoAccessControlParameter = "hideAC";
+ public static final String SchemaParameter            = "schema";
+ public static final String ProfileParameter           = "server";
+ public static final String LimitParameter             = "limit";
+ public static final String ThreadsParameter           = "threads";
+ public static final String SamplesParameter           = "samplesFormat";
+ public static final String ShowSourcesParameter       = "sourcesSummary";
+ public static final String SourcesByNameParameter     = "sourcesByName";
+ public static final String SinceParameter             = "since";
+ public static final String AttributesSummaryParameter = "attributesSummary";
+ public static final String NamespaceParameter         = "showNS";
+ public static final String ShowAccessControlParameter       = "showAC";
+ public static final String OutputParameter            = "output";
 
  private Boolean     showNamespace;
  private Boolean     showSources;
  private Boolean     sourcesByName;
- private Boolean     showAttributes;
- private Boolean     hideAccessControl;
+ private Boolean     showAttributesSummary;
+ private Boolean     showAccessControl;
+ private String      output;
  private String      schema;
  private String      server;
  private String      samplesFormat;
  private Integer     threads;
- private Integer     limit;
+ private Long        limit;
  private Long        since;
 
  
@@ -59,7 +61,7 @@ public class RequestConfig
   {
    try
    {
-    limit = Integer.parseInt(pv);
+    limit = Long.parseLong(pv);
    }
    catch(Exception e)
    {
@@ -106,11 +108,11 @@ public class RequestConfig
    sourcesByName = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
   }
 
-  pv = params.getParameter(pfx+AttributesParameter);
+  pv = params.getParameter(pfx+AttributesSummaryParameter);
   
   if( pv != null  )
   {
-   showAttributes = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
+   showAttributesSummary = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
   }
 
   pv = params.getParameter(pfx+NamespaceParameter);
@@ -120,11 +122,11 @@ public class RequestConfig
    showNamespace = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
   }
 
-  pv = params.getParameter(pfx+NoAccessControlParameter);
+  pv = params.getParameter(pfx+ShowAccessControlParameter);
   
   if( pv != null  )
   {
-   hideAccessControl = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
+   showAccessControl = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
   }
 
  }
@@ -144,14 +146,14 @@ public class RequestConfig
   return sourcesByName!=null?sourcesByName:def;
  }
 
- public Boolean getShowAttributes(boolean def)
+ public Boolean getShowAttributesSummary(boolean def)
  {
-  return showAttributes!=null?showAttributes:def;
+  return showAttributesSummary!=null?showAttributesSummary:def;
  }
 
- public Boolean getHideAccessControl(boolean def)
+ public Boolean getShowAccessControl(boolean def)
  {
-  return hideAccessControl!=null?hideAccessControl:def;
+  return showAccessControl!=null?showAccessControl:def;
  }
 
  public String getSchema(String def)
@@ -179,9 +181,14 @@ public class RequestConfig
   return since!=null?since:def;
  }
  
- public int getLimit(int def)
+ public long getLimit(long def)
  {
   return limit!=null?limit:def;
+ }
+
+ public String getOutput(String def)
+ {
+  return output!=null?output:def;
  }
 
 }

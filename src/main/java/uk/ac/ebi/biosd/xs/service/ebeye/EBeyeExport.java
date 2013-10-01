@@ -1,19 +1,17 @@
 package uk.ac.ebi.biosd.xs.service.ebeye;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.Reader;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.persistence.EntityManagerFactory;
@@ -21,36 +19,41 @@ import javax.persistence.EntityManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
-import uk.ac.ebi.biosd.xs.export.EBeyeXMLFormatter;
-import uk.ac.ebi.biosd.xs.keyword.OWLKeywordExpansion;
-import uk.ac.ebi.biosd.xs.service.ExporterMT;
-import uk.ac.ebi.biosd.xs.service.GroupQueryManager;
-import uk.ac.ebi.biosd.xs.service.ExporterMT.PoisonedObject;
-import uk.ac.ebi.biosd.xs.service.ExporterMT.TaskState;
-import uk.ac.ebi.biosd.xs.util.Counter;
-import uk.ac.ebi.biosd.xs.util.RangeManager;
-import uk.ac.ebi.biosd.xs.util.RangeManager.Range;
-import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
-import uk.ac.ebi.fg.biosd.model.organizational.MSI;
-import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
+import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
+import uk.ac.ebi.biosd.xs.export.XMLFormatter;
+import uk.ac.ebi.biosd.xs.service.RequestConfig;
+import uk.ac.ebi.biosd.xs.service.SchemaManager;
+import uk.ac.ebi.biosd.xs.service.mtexport.ExporterMTControl;
+import uk.ac.ebi.biosd.xs.service.mtexport.FormattingRequest;
+import uk.ac.ebi.biosd.xs.service.mtexport.MTExporterStat;
+import uk.ac.ebi.biosd.xs.util.StringUtils;
 
 public class EBeyeExport
 {
  private static EBeyeExport instance;
  
- private static final String samplesFileName = "samples.xml";
- private static final String groupsFileName = "groups.xml";
+ static final String                DefaultSchema         = SchemaManager.STXML;
+ static final String                DefaultSamplesFormat  = SamplesFormat.EMBED.name();
+ static final boolean               DefaultShowNS         = false;
+ static final boolean               DefaultShowSources    = true;
+ static final boolean               DefaultSourcesByName  = false;
+
  
- private AbstractXMLFormatter ebeyeFmt;
+ private static final String        samplesFileName      = "samples.xml";
+ private static final String        groupsFileName       = "groups.xml";
+ private static final String        auxFileName          = "aux.xml";
+ private static final String        auxSamplesTmpFileName= "aux_samples.tmp.xml";
+ 
+ private XMLFormatter ebeyeFmt;
  private final EntityManagerFactory emf;
 
  private final File outDir;
  private final File tmpDir;
- private final File auxOut;
- private final AbstractXMLFormatter auxFmt;
+ private File auxOut;
+ private XMLFormatter auxFmt = null;
  private final URL efoURL;
  private final int blockSize  = 500;
+ private final RequestConfig auxConfig;
  
  private final AtomicBoolean busy = new AtomicBoolean( false );
  
@@ -67,22 +70,50 @@ public class EBeyeExport
   EBeyeExport.instance = instance;
  }
  
- public EBeyeExport(EntityManagerFactory emf, File outDir, File tmpDir, URL efoURL, File aux, AbstractXMLFormatter auxf)
+ public EBeyeExport(EntityManagerFactory emf, File outDir, File tmpDir, URL efoURL, RequestConfig rc)
  {
+  log = LoggerFactory.getLogger(EBeyeExport.class);
+
   this.emf=emf;
   
   this.outDir = outDir;
   this.tmpDir = tmpDir;
   this.efoURL = efoURL;
   
-  auxOut = aux;
-  auxFmt = auxf;
+  auxConfig = rc;
   
-  log = LoggerFactory.getLogger(EBeyeExport.class);
+  if( rc.getOutput(null) != null  )
+  {
+   auxOut = new File(rc.getOutput(null));
+   
+   if( ! auxOut.canWrite() )
+   {
+    log.error("Output file is not writable: "+auxOut);
+    auxOut = null;
+   }
+
+
+   SamplesFormat smpfmt = null;
+   
+   try
+   {
+    smpfmt = SamplesFormat.valueOf(rc.getSamplesFormat(DefaultSamplesFormat) );
+
+    auxFmt = SchemaManager.getFormatter(rc.getSchema(DefaultSchema), rc.getShowAttributesSummary(true), rc.getShowAccessControl(true), smpfmt);
+   }
+   catch(Exception e)
+   {
+    log.error("Invalid aux sample format parameter: "+smpfmt);
+   }
+   
+  }
+  
+  
+  
  }
  
  
- public boolean export( int limit, boolean genSamples, boolean genGroup, boolean pubOnly, int threads ) throws IOException
+ public boolean export( int limit, boolean genSamples, boolean pubOnly, int threads ) throws IOException
  {
   if( ! busy.compareAndSet(false, true) )
   {
@@ -90,136 +121,190 @@ public class EBeyeExport
    return false;
   }
   
+  if( threads <= 0 )
+   threads = Runtime.getRuntime().availableProcessors();
+  
   try
   {
-
-   ExecutorService tPool = Executors.newFixedThreadPool(threads);
+   if(!checkDirs())
+    return false;
    
-   BlockingQueue<Object> reqQ = new ArrayBlockingQueue<>(100);
-   RangeManager rm = new RangeManager(Long.MIN_VALUE,Long.MAX_VALUE,threads);
+   PrintStream smplFileOut = null;
+   PrintStream grpFileOut = null;
+   PrintStream auxFileOut = null;
 
-   Map<String, Counter> srcMap = new HashMap<String, Counter>();
-   
    
    File smplFile = new File(tmpDir, samplesFileName);
    File grpFile = new File(tmpDir, groupsFileName);
+   File auxFile = new File(tmpDir, auxFileName);
 
-   PrintStream smplFileOut = new PrintStream(smplFile, "UTF-8");
-   PrintStream grpFileOut = new PrintStream(grpFile, "UTF-8");
-   PrintStream auxFileOut = null;
+   grpFileOut = new PrintStream(grpFile, "UTF-8");
+   
+   if( genSamples )
+    smplFileOut = new PrintStream(smplFile, "UTF-8");
    
    if( auxOut != null )
-    auxFileOut = new PrintStream(auxOut, "UTF-8");
+    auxFileOut = new PrintStream(auxFile, "UTF-8");
    
-   AtomicBoolean stopFlag = new AtomicBoolean(false);
    
-   for( int i=0; i < threads; i++ )
-    tPool.submit( new EBeyeExporterTask(srcMap, rm, emf, reqQ, stopFlag) );
-   
-   ebeyeFmt.exportHeader( -1, null );
-   
-    
-   if(!checkDirs())
-    return false;
-
    if(limit < 0)
     limit = Integer.MAX_VALUE;
+    
+
 
    log.debug("Start exporting EBeye XML files");
 
-   cleanDir(tmpDir);
-
-   ebeyeFmt = new EBeyeXMLFormatter(new OWLKeywordExpansion(efoURL));
-
-   int count=0;
    
-   int tnum = threads;
+   SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+   java.util.Date startTime = new java.util.Date();
+   long startTs = startTime.getTime();
+
+   ebeyeFmt.exportGroupHeader(  grpFileOut, true );
+
+   if( genSamples )
+    ebeyeFmt.exportSampleHeader( smplFileOut, true );
    
+   if( auxFileOut != null )
+    auxFmt.exportHeader(-1, auxFileOut, auxConfig.getShowNamespace(DefaultShowNS) );
+   
+   String commStr = "<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n";
+   
+   grpFileOut.append(commStr);
+
+   if( genSamples )
+    smplFileOut.append(commStr);
+
+   if( auxFileOut != null )
+   {
+    auxFileOut.append(commStr);
+   
+    auxFmt.exportGroupHeader(auxFileOut, false);
+   }
+
+   File tmpAuxSampleFile = null;
+   PrintStream tmpAuxSampleOut=null;
+
+   if( auxFileOut !=null && auxFmt.isSamplesExport())
+   {
+    tmpAuxSampleFile = new File(tmpDir, auxSamplesTmpFileName);
+
+    log.info("Tmp file: " + tmpAuxSampleFile.getAbsolutePath());
+
+    tmpAuxSampleOut = new PrintStream(tmpAuxSampleFile, "utf-8");
+   }
+
+   List<FormattingRequest> frList= new ArrayList<>();
+   
+   frList.add( new FormattingRequest(ebeyeFmt, grpFileOut, smplFileOut) );
+   
+   if( auxFileOut != null )
+    frList.add( new FormattingRequest(auxFmt, auxFileOut, tmpAuxSampleOut) );
+   
+   ExporterMTControl mtc = new ExporterMTControl(emf, frList, auxConfig.getShowSources(DefaultShowSources), auxConfig.getSourcesByName(DefaultSourcesByName), threads);
+
    try
    {
-    while(true)
-    {
-     Object o;
 
-     try
-     {
-      o = reqQ.take();
-     }
-     catch(InterruptedException e)
-     {
-      continue;
-     }
+    MTExporterStat stat = mtc.export(-1, limit);
 
-     if(o == null)
-      continue;
+    ebeyeFmt.exportGroupFooter( grpFileOut );
 
-     String s = o.toString();
-
-     if(s == null)
-     {
-      if(((PoisonedObject) o).getException() != null)
-      {
-       stopFlag.set(true);
-       reqQ.clear();
-
-       throw new IOException(((PoisonedObject) o).getException());
-      }
-
-      tnum--;
-
-      if(tnum == 0)
-       break;
-     }
-
-     count++;
-
-     out.append(s);
-
-     if(limit > 0 && count >= limit)
-     {
-      stopFlag.set(true);
-      reqQ.clear();
-
-      break;
-     }
-    }
-   }
-   catch (Exception e) 
-   {
-    stopFlag.set(true);
-    reqQ.clear();
-
-    tPool.shutdown();
-   
-    throw e;
-   }
-
-   tPool.shutdown();
-   
-   while( true )
-   {
-    try
-    {
-     if( ! tPool.awaitTermination(30, TimeUnit.SECONDS) )
-      System.out.println("Can't terminate thread pool");
-     
-     break;
-    }
-    catch(InterruptedException e)
-    {
-    }
-   }
+    if( genSamples )
+     ebeyeFmt.exportSampleFooter( smplFileOut );
     
-   if( exportSources )
-    formatter.exportSources(srcMap, out);
+    
+    if(auxFileOut != null )
+    {
+     auxFmt.exportGroupFooter(auxFileOut);
+     
+     if( auxConfig.getShowSources(DefaultShowSources))
+      auxFmt.exportSources(stat.getSourcesMap(), auxFileOut);
+
+     if(auxFmt.isSamplesExport())
+     {
+      tmpAuxSampleOut.close();
+      
+      tmpAuxSampleOut = null;
+      
+      auxFmt.exportSampleHeader(auxFileOut, false);
+      
+      Reader rd = new InputStreamReader(new FileInputStream(tmpAuxSampleFile), Charset.forName("utf-8"));
+      
+      try
+      {
+       
+       CharBuffer buf = CharBuffer.allocate(4096);
+       
+       while(rd.read(buf) != -1)
+       {
+        String str = new String(buf.array(), 0, buf.position());
+        
+        auxFileOut.append(str);
+        
+        buf.clear();
+       }
+       
+      }
+      finally
+      {
+       rd.close();
+      }
+      
+      
+      auxFmt.exportSampleFooter(auxFileOut);
+      
+     }
+
+     auxFmt.exportFooter(auxFileOut);
+    }
+    
+
+    
+    java.util.Date endTime = new java.util.Date();
+    long endTs = endTime.getTime();
+
+    
+    long rate = stat.getGroupCount()!=0? (endTs-startTs)/stat.getGroupCount():0;
+    
+
+    
+    grpFileOut.append("\n<!-- Exported: "+stat.getGroupCount()+" groups in "+threads+" threads. Rate: "+rate+"ms per group -->");
+    
+    rate = stat.getSampleCount()!=0? (endTs-startTs)/stat.getSampleCount():0;
+    
+    grpFileOut.append("\n<!-- Samples in groups: "+stat.getSampleCount()+". Rate: "+rate+"ms per sample -->");
+
+    rate = stat.getUniqSampleCount()!=0? (endTs-startTs)/stat.getUniqSampleCount():0;
+    
+    grpFileOut.append("\n<!-- Unique samples: "+stat.getUniqSampleCount()+". Rate: "+rate+"ms per unique sample -->");
+
+    
+    grpFileOut.append("\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->");
+    grpFileOut.append("\n<!-- End time: "+simpleDateFormat.format(endTime)+". Time spent: "+StringUtils.millisToString(endTs-startTs)+" -->");
+    grpFileOut.append("\n<!-- Thank you. Good bye. -->\n");
+
+
+   }
+   finally
+   {
+    if(tmpAuxSampleOut != null )
+     tmpAuxSampleOut.close();
+    
+    if( tmpAuxSampleFile != null )
+     tmpAuxSampleFile.delete();
+   }
    
-   formatter.exportFooter(out);
+   
+   cleanDir(tmpDir);
 
-   ebeyeFmt.exportFooter(smplFileOut);
-   ebeyeFmt.exportFooter(grpFileOut);
-
-   smplFileOut.close();
    grpFileOut.close();
+   
+   if( genSamples )
+    smplFileOut.close();
+   
+   if( auxFileOut != null )
+    auxFileOut.close();
 
    cleanDir(outDir);
 
@@ -283,165 +368,6 @@ public class EBeyeExport
    f.delete();
   }
   
- }
-
- class EBeyeExporterTask implements Callable<TaskState>
- {
-  private final RangeManager rangeMngr;
-  private final EntityManagerFactory emFactory;
-  private final Map<String, Counter> sourcesMap;
-  private final BlockingQueue<Object> resultQueue;
-  private final AtomicBoolean stopFlag;
-  
-  EBeyeExporterTask(Map<String, Counter> srcMap, RangeManager rMgr, EntityManagerFactory emf,  BlockingQueue<Object> resQ, AtomicBoolean stf )
-  {
-   sourcesMap = srcMap;
-   rangeMngr = rMgr;
-   
-   emFactory = emf;
-   resultQueue = resQ;
-   
-   stopFlag = stf;
-   
-  }
-
-  @Override
-  public TaskState call()
-  {
-   GroupQueryManager grpq = new GroupQueryManager(emFactory);
-   
-   Range r = rangeMngr.getRange();
-
-
-   Set<String> msiTags = new HashSet<String>();
-
-   StringBuilder sb = new StringBuilder();
-
-
-   while(r != null)
-   {
-    long lastId = r.getMax();
-
-    System.out.println("Processing range: " + r + " Thread: " + Thread.currentThread().getName());
-    try
-    {
-
-     for(BioSampleGroup g : grpq.getGroups( r.getMin(), r.getMax() ))
-     {
-      if(stopFlag.get())
-       return TaskState.INTERRUPTED;
-
-      lastId = g.getId();
-      
-      sb.setLength(0);
-
-      ebeyeFmt.exportGroup(g, sb);
-
-      msiTags.clear();
-      int nSmp = g.getSamples().size();
-
-      for(MSI msi : g.getMSIs())
-      {
-       for(DatabaseRefSource db : msi.getDatabases())
-       {
-        String scrNm = sourcesByName ? db.getName() : db.getAcc();
-
-        if(scrNm == null)
-         continue;
-
-        scrNm = scrNm.trim();
-
-        if(scrNm.length() == 0)
-         continue;
-
-        if(msiTags.contains(scrNm))
-         continue;
-
-        msiTags.add(scrNm);
-
-        synchronized(sourcesMap)
-        {
-         Counter c = sourcesMap.get(scrNm);
-
-         if(c == null)
-          sourcesMap.put(scrNm, new Counter(nSmp));
-         else
-          c.add(nSmp);
-        }
-
-       }
-      }
-
-      putIntoQueue(sb.toString());
-
-      if(stopFlag.get())
-       return TaskState.INTERRUPTED;
-
-     }
-
-    }
-    catch(IOException e)
-    {
-     e.printStackTrace();
-
-     putIntoQueue(new PoisonedObject(e));
-
-     return TaskState.IOERROR;
-    }
-    finally
-    {
-     grpq.release();
-    }
-
-    if( lastId == r.getMax() )
-     r = null;
-    else
-     r.setMin(lastId + 1);
-
-    r = rangeMngr.returnAndGetRange(r);
-
-    if(r == null)
-    {
-     putIntoQueue(new PoisonedObject());
-
-     //      System.out.println("Processing finished. Thread: " + Thread.currentThread().getName());
-
-     return TaskState.OK;
-    }
-   }
-
-  
-   return TaskState.OK;
-  }
-
-  public void putIntoQueue( Object o )
-  {
-
-   while(true)
-   {
-    try
-    {
-     resultQueue.put(o);
-    }
-    catch(InterruptedException e)
-    {
-     if( stopFlag.get() )
-      return;
-     
-     continue;
-    }
-    
-    return;
-   }
-
-  }
- }
- 
- enum MessageType
- 
- class Message
- {
-  private 
  }
 
 

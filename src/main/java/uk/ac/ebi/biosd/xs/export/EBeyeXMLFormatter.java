@@ -311,7 +311,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  @Override
  public boolean isSamplesExport()
  {
-  return true;
+  return false;
  }
 
  @Override

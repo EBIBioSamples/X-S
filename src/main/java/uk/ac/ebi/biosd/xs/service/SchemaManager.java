@@ -15,7 +15,7 @@ public class SchemaManager
  public static final String AGEXML2 = "AGE2";
  
 
- public static AbstractXMLFormatter getFormatter( String name, boolean showNS, boolean showAttributes, boolean showAC, SamplesFormat smpfmt )
+ public static AbstractXMLFormatter getFormatter( String name, boolean showAttributes, boolean showAC, SamplesFormat smpfmt )
  {
   
   if( STXML.equals(name) )

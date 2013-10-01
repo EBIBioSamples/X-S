@@ -10,26 +10,19 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
 import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
+import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
+import uk.ac.ebi.biosd.xs.service.RequestConfig.ParamPool;
 
 public class ExportAll extends HttpServlet
 {
- static final String DefaultSchema = SchemaManager.STXML;
-
- static final String SchemaParameter = "schema";
- static final String ProfileParameter = "server";
- static final String LimitParameter = "limit";
- static final String ThreadsParameter = "threads";
- static final String SamplesParameter = "samples";
- static final String SourcesParameter = "sources";
- static final String SourcesByNameParameter = "sourcesByName";
- static final String SinceParameter = "since";
- static final String AttributesParameter = "showAttributes";
- static final String NamespaceParameter = "hideNS";
- static final String NoAccessControlParameter = "noAC";
- 
+ static final String       DefaultSchema                = SchemaManager.STXML;
+ static final boolean      DefaultShowNS                = false;
+ static final boolean      DefaultShowAttributesSummary = true;
+ static final boolean      DefaultShowAccessControl     = false;
+ static final boolean      DefaultShowSources         = true;
+ static final boolean      DefaultSourcesByName         = false;
 
  private static final long serialVersionUID = 1L;
  
@@ -40,91 +33,53 @@ public class ExportAll extends HttpServlet
   *      response)
   */
  @Override
- protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+ protected void doGet(final HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
  {
-  AbstractXMLFormatter formatter=null;
+  XMLFormatter formatter=null;
   
-
+  RequestConfig reqCfg = new RequestConfig();
   
-  long limit=-1;
-  
-  String limP =  request.getParameter(LimitParameter);
-  
-  if( limP != null )
+  reqCfg.loadParameters(new ParamPool()
   {
-   try
+   
+   @Override
+   public String getParameter(String name)
    {
-    limit = Long.parseLong(limP);
+    return request.getParameter(name);
    }
-   catch(Exception e)
-   {
-    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-    response.getWriter().append("<html><body><span color='red'>Invalid "+LimitParameter+" parameter value. Sould be an integer value</span></body></html>");
-    return;
-   }
-  }
+  }, "");
+  
+  long limit=reqCfg.getLimit(Long.MAX_VALUE);
   
   if( limit <=0 )
    limit=Long.MAX_VALUE;
   
-  String thr =  request.getParameter(ThreadsParameter);
-  int threadsNum = 1;
-  
-  if( thr != null )
-  {
-   try
-   {
-    threadsNum = Integer.parseInt(thr);
-   }
-   catch(Exception e)
-   {
-    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-    response.getWriter().append("<html><body><span color='red'>Invalid "+ThreadsParameter+" parameter value. Sould be an integer value</span></body></html>");
-    return;
-   }
-  }
+  int threadsNum = reqCfg.getThreads(1);
   
   if( threadsNum <=0 )
    threadsNum=Runtime.getRuntime().availableProcessors();
   
-  long since=-1;
+  long since=reqCfg.getSince(-1);
   
-  String sinsP =  request.getParameter(SinceParameter);
+  SamplesFormat samplesFormat = SamplesFormat.EMBED;
   
-  if( sinsP != null )
+  String pv = reqCfg.getOutput(null);
+  
+  if( pv != null )
   {
    try
    {
-    since = Long.parseLong(sinsP);
+    samplesFormat = SamplesFormat.valueOf(pv);
    }
    catch(Exception e)
    {
     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-    response.getWriter().append("<html><body><span color='red'>Invalid "+SinceParameter+" parameter value. Sould be an integer value</span></body></html>");
+    response.getWriter().append("<html><body><span color='red'>Invalid "+RequestConfig.SamplesParameter+" parameter value. Sould be one of: "+Arrays.asList(SamplesFormat.values())+"</span></body></html>");
     return;
    }
   }
   
-  
-  SamplesFormat samples = SamplesFormat.EMBED;
-  
-  String smp = request.getParameter(SamplesParameter);
-  
-  if( smp != null )
-  {
-   try
-   {
-    samples = SamplesFormat.valueOf(smp);
-   }
-   catch(Exception e)
-   {
-    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-    response.getWriter().append("<html><body><span color='red'>Invalid "+SamplesParameter+" parameter value. Sould be one of: "+Arrays.asList(SamplesFormat.values())+"</span></body></html>");
-    return;
-   }
-  }
-  
-  String prof = request.getParameter(ProfileParameter);
+  String prof = reqCfg.getServer(null);
   
   EntityManagerFactory emf = null;
   
@@ -147,24 +102,13 @@ public class ExportAll extends HttpServlet
   response.setContentType("text/xml; charset=UTF-8");
   Appendable out = response.getWriter();
   
-  String prm = request.getParameter(NamespaceParameter);
   
-  boolean hideNS = "true".equals( prm ) || "yes".equals( prm ) || "1".equals( prm );
-
-  prm = request.getParameter(NoAccessControlParameter);
-
-  boolean addAC = prm == null || ! ( "true".equals( prm ) || "yes".equals( prm ) || "1".equals( prm ) );
+  String sch = reqCfg.getSchema(DefaultSchema);
   
-  prm = request.getParameter(AttributesParameter);
-  
-  boolean exportAttributes = "true".equals( prm ) || "yes".equals( prm ) || "1".equals( prm );
-  
-  String sch = request.getParameter(SchemaParameter);
-  
-  if( sch == null )
-   sch = DefaultSchema;
-
-  formatter = SchemaManager.getFormatter(sch, ! hideNS, exportAttributes, addAC, samples);
+  formatter = SchemaManager.getFormatter(sch,
+    reqCfg.getShowAttributesSummary(DefaultShowAttributesSummary),
+    reqCfg.getShowAccessControl(DefaultShowAccessControl),
+    samplesFormat);
   
   if( formatter == null )
   {
@@ -173,19 +117,17 @@ public class ExportAll extends HttpServlet
    return;
   }
   
-  prm = request.getParameter(SourcesParameter);
-  boolean exportSources = "true".equals( prm ) || "yes".equals( prm ) || "1".equals( prm );
+  boolean exportSources = reqCfg.getShowSources(DefaultShowSources);
   
-  prm = request.getParameter(SourcesByNameParameter);
-  boolean sourcesByName = "true".equals( prm ) || "yes".equals( prm ) || "1".equals( prm );
+  boolean sourcesByName = reqCfg.getSourcesByName(DefaultSourcesByName);
 
   
   Exporter expt = null;
   
   if( threadsNum == 1 )
-   expt = new ExporterST(emf, formatter, exportSources, sourcesByName, blockSize, ! hideNS );
+   expt = new ExporterST(emf, formatter, exportSources, sourcesByName, blockSize, reqCfg.getShowNamespace(DefaultShowNS) );
   else
-   expt = new ExporterMT(emf, formatter, exportSources, sourcesByName, ! hideNS, threadsNum);
+   expt = new ExporterMT(emf, formatter, exportSources, sourcesByName, reqCfg.getShowNamespace(DefaultShowNS), threadsNum);
  
   System.out.println("Start exporting. Request from: "+request.getRemoteAddr()+" Limit: "+limit+" Time: "+new Date()+" Thread: "+Thread.currentThread().getName());
   

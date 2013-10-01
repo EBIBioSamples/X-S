@@ -1,6 +1,7 @@
 package uk.ac.ebi.biosd.xs.service;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -10,9 +11,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
 import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
+import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
+import uk.ac.ebi.biosd.xs.service.RequestConfig.ParamPool;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.core_model.persistence.dao.hibernate.toplevel.AccessibleDAO;
 
@@ -23,12 +25,10 @@ public class SampleServlet extends HttpServlet
  private static final long serialVersionUID = 1L;
 
  static final String DefaultSchema = SchemaManager.STXML;
+ static final boolean      DefaultShowNS                = false;
 
- static final String SchemaParameter = "schema";
- static final String ProfileParameter = "server";
  static final String IdParameter = "id";
- static final String ShowNSParameter = "showNS";
- 
+
  public SampleServlet()
  {
   super();
@@ -40,9 +40,9 @@ public class SampleServlet extends HttpServlet
   *      response)
   */
  @Override
- protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+ protected void doGet(final HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
  {
-  AbstractXMLFormatter formatter=null;
+  XMLFormatter formatter=null;
   
 
 
@@ -55,7 +55,39 @@ public class SampleServlet extends HttpServlet
    return;
   }
   
-  String prof = request.getParameter(ProfileParameter);
+  
+  RequestConfig reqCfg = new RequestConfig();
+  
+  reqCfg.loadParameters(new ParamPool()
+  {
+   
+   @Override
+   public String getParameter(String name)
+   {
+    return request.getParameter(name);
+   }
+  }, "");
+  
+  
+  SamplesFormat samplesFormat = SamplesFormat.EMBED;
+  
+  String pv = reqCfg.getOutput(null);
+  
+  if( pv != null )
+  {
+   try
+   {
+    samplesFormat = SamplesFormat.valueOf(pv);
+   }
+   catch(Exception e)
+   {
+    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+    response.getWriter().append("<html><body><span color='red'>Invalid "+RequestConfig.SamplesParameter+" parameter value. Sould be one of: "+Arrays.asList(SamplesFormat.values())+"</span></body></html>");
+    return;
+   }
+  }
+  
+  String prof = reqCfg.getServer(null);
   
   EntityManagerFactory emf = null;
   
@@ -74,12 +106,14 @@ public class SampleServlet extends HttpServlet
    return;
   }
   
-  String sch = request.getParameter(SchemaParameter);
+ 
+  response.setContentType("text/xml; charset=UTF-8");
+  Appendable out = response.getWriter();
   
-  if( sch == null )
-   sch = DefaultSchema;
-
-  formatter = SchemaManager.getFormatter(sch, true, true, false, SamplesFormat.NONE);
+  
+  String sch = reqCfg.getSchema(DefaultSchema);
+  
+  formatter = SchemaManager.getFormatter(sch, false, false, samplesFormat);
   
   if( formatter == null )
   {
@@ -88,9 +122,8 @@ public class SampleServlet extends HttpServlet
    return;
   }
   
-  String showNSPrm = request.getParameter(ShowNSParameter);
   
-  boolean showNS = showNSPrm!=null && ("true".equalsIgnoreCase(showNSPrm) || "1".equalsIgnoreCase(showNSPrm) || "yes".equalsIgnoreCase(showNSPrm) );
+  boolean showNS =reqCfg.getShowNamespace( DefaultShowNS );
   
   EntityManager em = emf.createEntityManager();
   
@@ -100,24 +133,30 @@ public class SampleServlet extends HttpServlet
   
   ts.begin ();
   
-  AccessibleDAO<BioSample> smpDAO = new AccessibleDAO<>(BioSample.class, em);
-  
-  BioSample smp = smpDAO.find(sample);
-
-  if( smp == null )
+  try
   {
-   response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-   response.getWriter().append("<html><body><span color='red'>Sample with ID: "+sample+" not found</span></body></html>");
-   return;
+   
+   AccessibleDAO<BioSample> smpDAO = new AccessibleDAO<>(BioSample.class, em);
+   
+   BioSample smp = smpDAO.find(sample);
+   
+   if( smp == null )
+   {
+    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+    response.getWriter().append("<html><body><span color='red'>Sample with ID: "+sample+" not found</span></body></html>");
+    return;
+   }
+   
+   
+   formatter.exportSample(smp, out, showNS);
+  }
+  finally
+  {
+   ts.commit();
+   
+   em.close();
   }
   
-  response.setContentType("text/xml; charset=UTF-8");
-  
-  formatter.exportSample(smp, response.getWriter(), showNS);
-  
-  ts.commit();
-  
-  em.close();
   
  }
 
