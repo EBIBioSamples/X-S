@@ -20,7 +20,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
+import uk.ac.ebi.biosd.xs.export.EBeyeXMLFormatter;
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
+import uk.ac.ebi.biosd.xs.keyword.OWLKeywordExpansion;
 import uk.ac.ebi.biosd.xs.service.RequestConfig;
 import uk.ac.ebi.biosd.xs.service.SchemaManager;
 import uk.ac.ebi.biosd.xs.service.mtexport.ExporterMTControl;
@@ -44,15 +46,14 @@ public class EBeyeExport
  private static final String        auxFileName          = "aux.xml";
  private static final String        auxSamplesTmpFileName= "aux_samples.tmp.xml";
  
- private XMLFormatter ebeyeFmt;
+ private  XMLFormatter ebeyeFmt;
  private final EntityManagerFactory emf;
 
+ private XMLFormatter auxFmt = null;
  private final File outDir;
  private final File tmpDir;
- private File auxOut;
- private XMLFormatter auxFmt = null;
+ private File auxFile;
  private final URL efoURL;
- private final int blockSize  = 500;
  private final RequestConfig auxConfig;
  
  private final AtomicBoolean busy = new AtomicBoolean( false );
@@ -84,12 +85,12 @@ public class EBeyeExport
   
   if( rc.getOutput(null) != null  )
   {
-   auxOut = new File(rc.getOutput(null));
+   auxFile = new File(rc.getOutput(null));
    
-   if( ! auxOut.canWrite() )
+   if( ! auxFile.canWrite() )
    {
-    log.error("Output file is not writable: "+auxOut);
-    auxOut = null;
+    log.error("Output file is not writable: "+auxFile);
+    auxFile = null;
    }
 
 
@@ -108,7 +109,7 @@ public class EBeyeExport
    
   }
   
-  
+
   
  }
  
@@ -129,22 +130,25 @@ public class EBeyeExport
    if(!checkDirs())
     return false;
    
-   PrintStream smplFileOut = null;
+   ebeyeFmt = new EBeyeXMLFormatter(new OWLKeywordExpansion(efoURL));
+
+   
    PrintStream grpFileOut = null;
+   PrintStream smplFileOut = null;
    PrintStream auxFileOut = null;
 
    
-   File smplFile = new File(tmpDir, samplesFileName);
-   File grpFile = new File(tmpDir, groupsFileName);
-   File auxFile = new File(tmpDir, auxFileName);
+   File tmpGrpFile = new File(tmpDir, groupsFileName);
+   File tmpSmplFile = new File(tmpDir, samplesFileName);
+   File tmpAuxFile = new File(tmpDir, auxFileName);
 
-   grpFileOut = new PrintStream(grpFile, "UTF-8");
+   grpFileOut = new PrintStream(tmpGrpFile, "UTF-8");
    
    if( genSamples )
-    smplFileOut = new PrintStream(smplFile, "UTF-8");
+    smplFileOut = new PrintStream(tmpSmplFile, "UTF-8");
    
-   if( auxOut != null )
-    auxFileOut = new PrintStream(auxFile, "UTF-8");
+   if( auxFile != null )
+    auxFileOut = new PrintStream(tmpAuxFile, "UTF-8");
    
    
    if(limit < 0)
@@ -267,22 +271,44 @@ public class EBeyeExport
     
     long rate = stat.getGroupCount()!=0? (endTs-startTs)/stat.getGroupCount():0;
     
-
-    
-    grpFileOut.append("\n<!-- Exported: "+stat.getGroupCount()+" groups in "+threads+" threads. Rate: "+rate+"ms per group -->");
+    String stmsg1="\n<!-- Exported: "+stat.getGroupCount()+" groups in "+threads+" threads. Rate: "+rate+"ms per group -->";
     
     rate = stat.getSampleCount()!=0? (endTs-startTs)/stat.getSampleCount():0;
+    String stmsg2="\n<!-- Samples in groups: "+stat.getSampleCount()+". Rate: "+rate+"ms per sample -->";
     
-    grpFileOut.append("\n<!-- Samples in groups: "+stat.getSampleCount()+". Rate: "+rate+"ms per sample -->");
-
     rate = stat.getUniqSampleCount()!=0? (endTs-startTs)/stat.getUniqSampleCount():0;
+    String stmsg3="\n<!-- Unique samples: "+stat.getUniqSampleCount()+". Rate: "+rate+"ms per unique sample -->";
     
-    grpFileOut.append("\n<!-- Unique samples: "+stat.getUniqSampleCount()+". Rate: "+rate+"ms per unique sample -->");
+    String stmsg4="\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->";
+    String stmsg5="\n<!-- End time: "+simpleDateFormat.format(endTime)+". Time spent: "+StringUtils.millisToString(endTs-startTs)+" -->";
+    String stmsg6="\n<!-- Thank you. Good bye. -->\n";
+    
+    grpFileOut.append(stmsg1);
+    grpFileOut.append(stmsg2);
+    grpFileOut.append(stmsg3);
+    grpFileOut.append(stmsg4);
+    grpFileOut.append(stmsg5);
+    grpFileOut.append(stmsg6);
 
+    if( genSamples )
+    {
+     smplFileOut.append(stmsg1);
+     smplFileOut.append(stmsg2);
+     smplFileOut.append(stmsg3);
+     smplFileOut.append(stmsg4);
+     smplFileOut.append(stmsg5);
+     smplFileOut.append(stmsg6);
+    }
     
-    grpFileOut.append("\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->");
-    grpFileOut.append("\n<!-- End time: "+simpleDateFormat.format(endTime)+". Time spent: "+StringUtils.millisToString(endTs-startTs)+" -->");
-    grpFileOut.append("\n<!-- Thank you. Good bye. -->\n");
+    if( auxFileOut != null )
+    {
+     auxFileOut.append(stmsg1);
+     auxFileOut.append(stmsg2);
+     auxFileOut.append(stmsg3);
+     auxFileOut.append(stmsg4);
+     auxFileOut.append(stmsg5);
+     auxFileOut.append(stmsg6);
+    }
 
 
    }
@@ -293,26 +319,46 @@ public class EBeyeExport
     
     if( tmpAuxSampleFile != null )
      tmpAuxSampleFile.delete();
+    
+    grpFileOut.close();
+
+    if( genSamples )
+     smplFileOut.close();
+    
+    if( auxFileOut != null )
+     auxFileOut.close();
    }
    
    
    cleanDir(tmpDir);
 
-   grpFileOut.close();
+   File grpFile = new File(outDir, groupsFileName);
    
+   if( grpFile.exists() && !grpFile.delete() )
+    log.error("Can't delete file: "+grpFile);
+   
+   if(!tmpGrpFile.renameTo(grpFile))
+    log.error("Moving groups file failed. {} -> {} ", tmpGrpFile.getAbsolutePath(), grpFile.getAbsolutePath());
+
    if( genSamples )
-    smplFileOut.close();
-   
+   {
+    File smpFile = new File(outDir, samplesFileName);
+    
+    if( smpFile.exists() && !smpFile.delete() )
+     log.error("Can't delete file: "+smpFile);
+    
+    if(!tmpSmplFile.renameTo(smpFile))
+     log.error("Moving samples file failed. {} -> {} ", tmpSmplFile.getAbsolutePath(), smpFile.getAbsolutePath());
+   }
+
    if( auxFileOut != null )
-    auxFileOut.close();
-
-   cleanDir(outDir);
-
-   if(!smplFile.renameTo(new File(outDir, samplesFileName)))
-    log.error("Moving samples file failed. {} -> {} ", smplFile.getAbsolutePath(), new File(outDir, samplesFileName).getAbsolutePath());
-
-   if(!grpFile.renameTo(new File(outDir, groupsFileName)))
-    log.error("Moving groups file failed. {} -> {} ", grpFile.getAbsolutePath(), new File(outDir, groupsFileName).getAbsolutePath());
+   {
+    if( auxFile.exists() && !auxFile.delete() )
+     log.error("Can't delete file: "+auxFile);
+    
+    if(!tmpAuxFile.renameTo(auxFile))
+     log.error("Moving aux file failed. {} -> {} ", tmpAuxFile.getAbsolutePath(), auxFile.getAbsolutePath());
+   }
 
   }
   finally
