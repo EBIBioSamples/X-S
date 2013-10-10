@@ -39,9 +39,9 @@ public class STXMLFormatter extends AGE1XMLFormatter
 // public static final String refLayer = "Reference Layer";
  
  
- public STXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ public STXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly)
  {
-  super( showAttributes, showAC, smpfmt);
+  super( showAttributes, showAC, smpfmt, pubOnly);
  }
 
 
@@ -94,6 +94,9 @@ public class STXMLFormatter extends AGE1XMLFormatter
  @Override
  protected boolean exportGroup( final BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC ) throws IOException
  {
+  if( isPublicOnly() && ! ao.isPublic() )
+   return false;
+
   Set<String> attrset = null;
   
   if( showAttributes )
@@ -308,6 +311,10 @@ public class STXMLFormatter extends AGE1XMLFormatter
 
  private boolean exportSample(final BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset, boolean showAC) throws IOException
  {
+  if( isPublicOnly() && ! smp.isPublic() )
+   return false;
+
+  
   out.append("<BioSample ");
   
   if( showNS && ! nsShown )

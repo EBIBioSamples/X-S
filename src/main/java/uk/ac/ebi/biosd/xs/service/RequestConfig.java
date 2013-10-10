@@ -18,9 +18,11 @@ public class RequestConfig
  public static final String SinceParameter             = "since";
  public static final String AttributesSummaryParameter = "attributesSummary";
  public static final String NamespaceParameter         = "showNS";
- public static final String ShowAccessControlParameter       = "showAC";
+ public static final String ShowAccessControlParameter = "showAC";
  public static final String OutputParameter            = "output";
+ public static final String PublicOnlyParameter        = "publicOnly";
 
+ private Boolean     publicOnly;
  private Boolean     showNamespace;
  private Boolean     showSources;
  private Boolean     sourcesByName;
@@ -40,22 +42,15 @@ public class RequestConfig
   if( pfx == null )
    pfx="";
   
-  String pv = params.getParameter(pfx+SchemaParameter);
+  schema = params.getParameter(pfx+SchemaParameter);
   
-  if( pv != null )
-   schema = pv;
+  server = params.getParameter(pfx+ProfileParameter);
   
-  pv = params.getParameter(pfx+ProfileParameter);
+  samplesFormat = params.getParameter(pfx+SamplesParameter);
   
-  if( pv != null )
-   server = pv;
+  output = params.getParameter(pfx+OutputParameter);
   
-  pv = params.getParameter(pfx+SamplesParameter);
-  
-  if( pv != null )
-   samplesFormat = pv;
-
-  pv = params.getParameter(pfx+LimitParameter);
+  String pv = params.getParameter(pfx+LimitParameter);
   
   if( pv != null )
   {
@@ -100,6 +95,14 @@ public class RequestConfig
   {
    showSources = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
   }
+  
+  pv = params.getParameter(pfx+PublicOnlyParameter);
+  
+  if( pv != null  )
+  {
+   publicOnly = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
+  }
+
   
   pv = params.getParameter(pfx+SourcesByNameParameter);
   
@@ -155,6 +158,12 @@ public class RequestConfig
  {
   return showAccessControl!=null?showAccessControl:def;
  }
+ 
+ public Boolean getPublicOnly(boolean def)
+ {
+  return publicOnly!=null?publicOnly:def;
+ }
+
 
  public String getSchema(String def)
  {

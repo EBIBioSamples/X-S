@@ -21,15 +21,17 @@ public abstract class AbstractXMLFormatter implements XMLFormatter
  private final boolean showAttributes;
  private final boolean showAC;
  private final SamplesFormat smpfmt;
+ private final boolean publicOnly;
  
 
  
- public AbstractXMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ public AbstractXMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly)
  {
   super();
   this.showAttributes = showAttributes;
   this.showAC = showAC;
   this.smpfmt = smpfmt;
+  publicOnly = pubOnly;
  }
 
  
@@ -216,6 +218,13 @@ public abstract class AbstractXMLFormatter implements XMLFormatter
  public SamplesFormat getSamplesFormat()
  {
   return smpfmt;
+ }
+
+
+
+ public boolean isPublicOnly()
+ {
+  return publicOnly;
  }
 
 }

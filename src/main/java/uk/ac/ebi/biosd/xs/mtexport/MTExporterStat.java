@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.xs.service.mtexport;
+package uk.ac.ebi.biosd.xs.mtexport;
 
 import java.util.HashMap;
 import java.util.HashSet;

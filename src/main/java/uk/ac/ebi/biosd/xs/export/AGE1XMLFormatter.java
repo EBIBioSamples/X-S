@@ -35,9 +35,9 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
  protected boolean nsShown=false;
  
- public AGE1XMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ public AGE1XMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly)
  {
-  super( showAttributes, showAC, smpfmt );
+  super( showAttributes, showAC, smpfmt, pubOnly );
  }
  
  protected String getNameSpace()
@@ -127,7 +127,8 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
    for(BioSample smp : smpls)
    {
-    exportSample(smp, mainout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
+    if( ! isPublicOnly() || smp.isPublic() )
+     exportSample(smp, mainout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
    }
   
    assert LoggerFactory.getLogger().exit("End procesing sample block", "sblock");
@@ -136,6 +137,10 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  
  protected boolean exportGroup(final BioSampleGroup ao, Appendable mainout, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
  {
+  if( isPublicOnly() && ! ao.isPublic() )
+   return false;
+
+  
   Set<String> attrset = null;
   
   if( showAttributes )
@@ -144,7 +149,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
   if( showNS && ! nsShown )
   {
-   mainout.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+   mainout.append("<?xml version=\"1.1\" encoding=\"UTF-8\"?>\n");
    mainout.append("<SampleGroup xmlns=\""+getNameSpace()+"\" ");
   }
   else
@@ -350,7 +355,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   Date startTime = new java.util.Date();
 
   
-  out.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+  out.append("<?xml version=\"1.1\" encoding=\"UTF-8\"?>\n");
   out.append("<Biosamples");
   
   if( showNS )
@@ -562,10 +567,13 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  
  protected boolean exportSample(final BioSample smp, Appendable mainout, boolean showNS, boolean showAnnt, boolean showGrpId, Set<String> attrset, boolean showAC) throws IOException
  {
+  if( isPublicOnly() && ! smp.isPublic() )
+   return false;
+
    
   if( showNS && ! nsShown )
   {
-   mainout.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+   mainout.append("<?xml version=\"1.1\" encoding=\"UTF-8\"?>\n");
 
    mainout.append( "<Sample xmlns=\"");
    xmlEscaped(getNameSpace(), mainout);

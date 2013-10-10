@@ -31,9 +31,9 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  
  private final OWLKeywordExpansion expander;
  
- public EBeyeXMLFormatter(OWLKeywordExpansion exp)
+ public EBeyeXMLFormatter(OWLKeywordExpansion exp, boolean pubOnly )
  {
-  super(false, false, null);
+  super(false, false, null, pubOnly);
   
   expander=exp;
  }
@@ -43,6 +43,8 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  @Override
  public boolean exportSample(BioSample smp, Appendable out, boolean showNS) throws IOException
  {
+  if( isPublicOnly() && ! smp.isPublic() )
+   return false;
   
   out.append("<entry id=\"");
   xmlEscaped(smp.getAcc(), out);
@@ -116,7 +118,9 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  @Override
  public boolean exportGroup(BioSampleGroup grp, Appendable out, boolean showNS) throws IOException
  {
-  
+  if( isPublicOnly() && ! grp.isPublic() )
+   return false;
+
   out.append("<entry id=\"");
   xmlEscaped(grp.getAcc(), out);
   out.append("\">\n<name>");

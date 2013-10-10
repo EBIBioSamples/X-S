@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import uk.ac.ebi.biosd.xs.service.ebeye.EBeyeExport;
+import uk.ac.ebi.biosd.xs.ebeye.EBeyeExport;
 
 public class ControlServlet extends HttpServlet
 {

@@ -14,9 +14,9 @@ import java.util.Collections;
 import javax.persistence.EntityManagerFactory;
 
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
-import uk.ac.ebi.biosd.xs.service.mtexport.ExporterMTControl;
-import uk.ac.ebi.biosd.xs.service.mtexport.FormattingRequest;
-import uk.ac.ebi.biosd.xs.service.mtexport.MTExporterStat;
+import uk.ac.ebi.biosd.xs.mtexport.ExporterMTControl;
+import uk.ac.ebi.biosd.xs.mtexport.FormattingRequest;
+import uk.ac.ebi.biosd.xs.mtexport.MTExporterStat;
 import uk.ac.ebi.biosd.xs.util.StringUtils;
 
 public class ExporterMT implements Exporter

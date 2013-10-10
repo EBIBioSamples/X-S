@@ -1,8 +1,8 @@
-package uk.ac.ebi.biosd.xs.service.mtexport;
+package uk.ac.ebi.biosd.xs.mtexport;
 
 import java.util.concurrent.BlockingQueue;
 
-import uk.ac.ebi.biosd.xs.service.mtexport.ControlMessage.Type;
+import uk.ac.ebi.biosd.xs.mtexport.ControlMessage.Type;
 
 public class OutputTask implements Runnable
 {

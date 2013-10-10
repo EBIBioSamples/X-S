@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.xs.service.ebeye;
+package uk.ac.ebi.biosd.xs.ebeye;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,11 +23,11 @@ import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
 import uk.ac.ebi.biosd.xs.export.EBeyeXMLFormatter;
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.keyword.OWLKeywordExpansion;
+import uk.ac.ebi.biosd.xs.mtexport.ExporterMTControl;
+import uk.ac.ebi.biosd.xs.mtexport.FormattingRequest;
+import uk.ac.ebi.biosd.xs.mtexport.MTExporterStat;
 import uk.ac.ebi.biosd.xs.service.RequestConfig;
 import uk.ac.ebi.biosd.xs.service.SchemaManager;
-import uk.ac.ebi.biosd.xs.service.mtexport.ExporterMTControl;
-import uk.ac.ebi.biosd.xs.service.mtexport.FormattingRequest;
-import uk.ac.ebi.biosd.xs.service.mtexport.MTExporterStat;
 import uk.ac.ebi.biosd.xs.util.StringUtils;
 
 public class EBeyeExport
@@ -43,7 +43,7 @@ public class EBeyeExport
  
  private static final String        samplesFileName      = "samples.xml";
  private static final String        groupsFileName       = "groups.xml";
- private static final String        auxFileName          = "aux.xml";
+ private static final String        auxFileName          = "aux_out.xml";
  private static final String        auxSamplesTmpFileName= "aux_samples.tmp.xml";
  
  private  XMLFormatter ebeyeFmt;
@@ -87,7 +87,7 @@ public class EBeyeExport
   {
    auxFile = new File(rc.getOutput(null));
    
-   if( ! auxFile.canWrite() )
+   if( ! auxFile.getParentFile().canWrite() )
    {
     log.error("Output file is not writable: "+auxFile);
     auxFile = null;
@@ -100,7 +100,7 @@ public class EBeyeExport
    {
     smpfmt = SamplesFormat.valueOf(rc.getSamplesFormat(DefaultSamplesFormat) );
 
-    auxFmt = SchemaManager.getFormatter(rc.getSchema(DefaultSchema), rc.getShowAttributesSummary(true), rc.getShowAccessControl(true), smpfmt);
+    auxFmt = SchemaManager.getFormatter(rc.getSchema(DefaultSchema), rc.getShowAttributesSummary(true), rc.getShowAccessControl(true), smpfmt, rc.getPublicOnly(false));
    }
    catch(Exception e)
    {
@@ -130,7 +130,7 @@ public class EBeyeExport
    if(!checkDirs())
     return false;
    
-   ebeyeFmt = new EBeyeXMLFormatter(new OWLKeywordExpansion(efoURL));
+   ebeyeFmt = new EBeyeXMLFormatter(new OWLKeywordExpansion(efoURL), pubOnly);
 
    
    PrintStream grpFileOut = null;
@@ -330,7 +330,6 @@ public class EBeyeExport
    }
    
    
-   cleanDir(tmpDir);
 
    File grpFile = new File(outDir, groupsFileName);
    

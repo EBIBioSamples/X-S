@@ -12,9 +12,9 @@ import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 {
  
- public AGE2GSXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt)
+ public AGE2GSXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly)
  {
-  super(showAttributes, showAC, smpfmt);
+  super(showAttributes, showAC, smpfmt, pubOnly);
  }
  
  @Override
@@ -41,15 +41,18 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 
   for(BioSample smp : smpls)
   {
-   assert LoggerFactory.getLogger().checkpoint("Processing sample: " + smp.getAcc() + " " + (scnt++) + " of " + smpls.size(), "sblock");
+   if( isPublicOnly() && ! smp.isPublic() )
+    continue;
 
+   assert LoggerFactory.getLogger().checkpoint("Processing sample: " + smp.getAcc() + " " + (scnt++) + " of " + smpls.size(), "sblock");
+   
    mainout.append("<Id>");
    xmlEscaped(smp.getAcc(), mainout);
    mainout.append("</Id>\n");
 
    
-   if( smpSts != SamplesFormat.NONE )
-    exportSample(smp, mainout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
+//   if( smpSts != SamplesFormat.NONE )
+//    exportSample(smp, mainout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
   }
 
   mainout.append("</SampleIds>\n");

@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.xs.service.mtexport;
+package uk.ac.ebi.biosd.xs.mtexport;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,8 +13,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.persistence.EntityManagerFactory;
 
-import uk.ac.ebi.biosd.xs.service.mtexport.ControlMessage.Type;
-import uk.ac.ebi.biosd.xs.util.RangeManager;
+import uk.ac.ebi.biosd.xs.mtexport.ControlMessage.Type;
+import uk.ac.ebi.biosd.xs.util.SliceManager;
 
 public class ExporterMTControl
 {
@@ -37,14 +37,13 @@ public class ExporterMTControl
  
  public MTExporterStat export( long since, long limit) throws IOException
  {
-  List<MTExporterTask> exporters = new ArrayList<>( threads );
+  List<MTSliceExporterTask> exporters = new ArrayList<>( threads );
   List<OutputTask> outputs = new ArrayList<>( requests.size() * 2);
   
   List<FormattingTask> tasks = new ArrayList<>( requests.size() );
   
-  BlockingQueue<ControlMessage> msgQ = new ArrayBlockingQueue<>(10);
+  BlockingQueue<ControlMessage> msgQ = new ArrayBlockingQueue<>(requests.size()*3+1);
 
-  int nOut = 0;
   
   for( FormattingRequest req : requests )
   {
@@ -65,7 +64,8 @@ public class ExporterMTControl
   ExecutorService tPool = Executors.newFixedThreadPool(threads+outputs.size());
   
   
-  RangeManager rm = new RangeManager(Long.MIN_VALUE,Long.MAX_VALUE,threads);
+//  RangeManager rm = new RangeManager(Long.MIN_VALUE,Long.MAX_VALUE,threads*2);
+  SliceManager sm = new SliceManager();
   
   AtomicBoolean stopFlag = new AtomicBoolean(false);
   
@@ -81,7 +81,7 @@ public class ExporterMTControl
   
   for( int i=0; i < threads; i++ )
   {
-   MTExporterTask et = new MTExporterTask(emf, rm, since, tasks, statistics, msgQ, stopFlag, sourcesByName,limitCnt);
+   MTSliceExporterTask et = new MTSliceExporterTask(emf, sm, since, tasks, statistics, msgQ, stopFlag, sourcesByName,limitCnt);
    
    exporters.add(et);
    
@@ -93,7 +93,7 @@ public class ExporterMTControl
   int tnum = threads;
   int tout = outputs.size();
   
-  IOException exception;
+  IOException exception = null;
   
   while(true)
   {
@@ -108,7 +108,13 @@ public class ExporterMTControl
     continue;
    }
 
-   if(o.getType() == Type.OUTPUT_ERROR || o.getType() == Type.PROCESS_ERROR)
+   if(o.getType() == Type.PROCESS_FINISH)
+    tnum--;
+   else if(o.getType() == Type.OUTPUT_FINISH)
+    tout--;
+
+   
+   if(tnum == 0 || o.getType() == Type.OUTPUT_ERROR || o.getType() == Type.PROCESS_ERROR)
    {
     exception = o.getException();
 
@@ -127,14 +133,10 @@ public class ExporterMTControl
       putIntoQueue(ft.getSampleQueue(),po);
      }
     }
-   }
-   else if(o.getType() == Type.PROCESS_FINISH)
-    tnum--;
-   else if(o.getType() == Type.OUTPUT_FINISH)
-    tout--;
-
-   if(tnum == 0)
+    
     break;
+   }
+
 
    if(tout == 0)
     break;
@@ -156,6 +158,9 @@ public class ExporterMTControl
    {
    }
   }
+  
+  if( exception != null )
+   throw exception;
    
   return statistics;
  }

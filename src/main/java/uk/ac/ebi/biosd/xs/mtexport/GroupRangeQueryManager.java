@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.xs.service;
+package uk.ac.ebi.biosd.xs.mtexport;
 
 import java.sql.Date;
 import java.util.List;
@@ -9,19 +9,19 @@ import javax.persistence.Query;
 
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 
-public class GroupQueryManager
+public class GroupRangeQueryManager
 {
  private int blockSize = 50;
  
  private final EntityManagerFactory factory;
  private EntityManager em;
 
- public GroupQueryManager( EntityManagerFactory fact )
+ public GroupRangeQueryManager( EntityManagerFactory fact )
  {
   factory = fact;
  }
  
- public GroupQueryManager( EntityManagerFactory fact, int blksz )
+ public GroupRangeQueryManager( EntityManagerFactory fact, int blksz )
  {
   factory = fact;
   blockSize = blksz;

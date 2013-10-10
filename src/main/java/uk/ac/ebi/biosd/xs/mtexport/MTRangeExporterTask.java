@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.xs.service.mtexport;
+package uk.ac.ebi.biosd.xs.mtexport;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -10,8 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.persistence.EntityManagerFactory;
 
-import uk.ac.ebi.biosd.xs.service.GroupQueryManager;
-import uk.ac.ebi.biosd.xs.service.mtexport.ControlMessage.Type;
+import uk.ac.ebi.biosd.xs.mtexport.ControlMessage.Type;
 import uk.ac.ebi.biosd.xs.util.RangeManager;
 import uk.ac.ebi.biosd.xs.util.RangeManager.Range;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
@@ -19,7 +18,7 @@ import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
 import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
 
-public class MTExporterTask implements Runnable
+public class MTRangeExporterTask implements Runnable
 {
  /**
   * 
@@ -35,7 +34,7 @@ public class MTExporterTask implements Runnable
  private boolean hasSampleOutput = false;
  private final AtomicLong limit;
  
- public MTExporterTask( EntityManagerFactory emf, RangeManager rMgr, long since, List<FormattingTask> tasks,
+ public MTRangeExporterTask( EntityManagerFactory emf, RangeManager rMgr, long since, List<FormattingTask> tasks,
    MTExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, boolean srcByNm, AtomicLong lim )
  {
   emFactory = emf;
@@ -66,7 +65,7 @@ public class MTExporterTask implements Runnable
  @Override
  public void run()
  {
-  GroupQueryManager grpq = new GroupQueryManager(emFactory);
+  GroupRangeQueryManager grpq = new GroupRangeQueryManager(emFactory);
   
   Range r = rangeMngr.getRange();
 
@@ -80,7 +79,7 @@ public class MTExporterTask implements Runnable
   {
    long lastId = r.getMax();
 
-   System.out.println("Processing range: " + r + " Thread: " + Thread.currentThread().getName());
+   System.out.println("("+Thread.currentThread().getName()+") Processing range: " + r);
    try
    {
 
@@ -99,6 +98,9 @@ public class MTExporterTask implements Runnable
       if( c < 0 )
       {
        putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH,this) );
+       
+       rangeMngr.shutdown();
+
        return;
       }
 
@@ -196,6 +198,12 @@ public class MTExporterTask implements Runnable
     grpq.release();
    }
 
+   if( limit != null && limit.get() < 0 )
+   {
+    putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH,this) );
+    return;
+   }
+   
    if( lastId == r.getMax() )
     r = null;
    else

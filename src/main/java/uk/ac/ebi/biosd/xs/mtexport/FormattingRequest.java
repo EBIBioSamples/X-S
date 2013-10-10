@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.xs.service.mtexport;
+package uk.ac.ebi.biosd.xs.mtexport;
 
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 
@@ -7,7 +7,7 @@ public class FormattingRequest
  private final XMLFormatter          formatter;
  private final Appendable groupOut;
  private final Appendable sampleOut;
- 
+  
  public FormattingRequest(XMLFormatter formatter, Appendable groupOut, Appendable sampleOut)
  {
   super();
@@ -30,4 +30,5 @@ public class FormattingRequest
  {
   return sampleOut;
  }
+
 }

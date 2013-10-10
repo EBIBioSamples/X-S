@@ -19,6 +19,7 @@ import javax.persistence.EntityManagerFactory;
 
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
+import uk.ac.ebi.biosd.xs.mtexport.GroupRangeQueryManager;
 import uk.ac.ebi.biosd.xs.util.Counter;
 import uk.ac.ebi.biosd.xs.util.StringUtils;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
@@ -50,7 +51,7 @@ public class ExporterST implements Exporter
   
   assert LoggerFactory.getLogger().entry("Start exporting", "export");
   
-  GroupQueryManager grpMngr = new GroupQueryManager(emf);
+  GroupRangeQueryManager grpMngr = new GroupRangeQueryManager(emf);
   
   long startID = Long.MIN_VALUE;
   

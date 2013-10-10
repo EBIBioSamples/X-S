@@ -25,13 +25,13 @@ import javax.servlet.ServletContextListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import uk.ac.ebi.biosd.xs.ebeye.EBeyeExport;
 import uk.ac.ebi.biosd.xs.service.RequestConfig;
 import uk.ac.ebi.biosd.xs.service.RequestConfig.ParamPool;
-import uk.ac.ebi.biosd.xs.service.ebeye.EBeyeExport;
 
 public class Init implements ServletContextListener
 {
- static final String EBeyeAuxPrefix = "ebeye.aux.";
+ public static final String EBeyeAuxPrefix = "ebeye.aux.";
  
  static String EBeyeConnectionProfileParam = "ebeye.connectionProfile";
  static String EBeyeOutputPathParam = "ebeye.outputDir";

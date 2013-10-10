@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.xs.service.mtexport;
+package uk.ac.ebi.biosd.xs.mtexport;
 
 import java.util.concurrent.BlockingQueue;
 
@@ -32,4 +32,5 @@ public class FormattingTask
  {
   return sampleQueue;
  }
+
 }

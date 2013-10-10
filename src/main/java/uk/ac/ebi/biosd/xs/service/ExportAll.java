@@ -21,8 +21,9 @@ public class ExportAll extends HttpServlet
  static final boolean      DefaultShowNS                = false;
  static final boolean      DefaultShowAttributesSummary = true;
  static final boolean      DefaultShowAccessControl     = false;
- static final boolean      DefaultShowSources         = true;
+ static final boolean      DefaultShowSources           = true;
  static final boolean      DefaultSourcesByName         = false;
+ static final boolean      DefaultPublicOnly            = false;
 
  private static final long serialVersionUID = 1L;
  
@@ -108,7 +109,9 @@ public class ExportAll extends HttpServlet
   formatter = SchemaManager.getFormatter(sch,
     reqCfg.getShowAttributesSummary(DefaultShowAttributesSummary),
     reqCfg.getShowAccessControl(DefaultShowAccessControl),
-    samplesFormat);
+    samplesFormat,
+    reqCfg.getPublicOnly(DefaultPublicOnly)
+);
   
   if( formatter == null )
   {

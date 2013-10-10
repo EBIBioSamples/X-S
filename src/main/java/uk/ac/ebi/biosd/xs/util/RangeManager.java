@@ -107,6 +107,9 @@ public class RangeManager
     return null;
    }
    
+   System.out.println("("+Thread.currentThread().getName()+") Waiting for free ranges");
+
+   
    while(ranges.size() == 0)
    {
     
@@ -167,6 +170,13 @@ public class RangeManager
   notifyAll();
   
   return r;
+ }
+
+ public synchronized void shutdown()
+ {
+  ranges.clear();
+  requested=0;
+  notifyAll();
  }
  
 }
