@@ -127,7 +127,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
    for(BioSample smp : smpls)
    {
-    if( ! isPublicOnly() || smp.isPublic() )
+    if( ! isPublicOnly() || isSamplePublic(smp) )
      exportSample(smp, mainout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
    }
   
@@ -137,7 +137,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  
  protected boolean exportGroup(final BioSampleGroup ao, Appendable mainout, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
  {
-  if( isPublicOnly() && ! ao.isPublic() )
+  if( isPublicOnly() && ! isGroupPublic(ao) )
    return false;
 
   
@@ -161,7 +161,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     @Override
     public boolean isPublic()
     {
-     return ao.isPublic();
+     return isGroupPublic(ao);
     }
     
     @Override
@@ -567,7 +567,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  
  protected boolean exportSample(final BioSample smp, Appendable mainout, boolean showNS, boolean showAnnt, boolean showGrpId, Set<String> attrset, boolean showAC) throws IOException
  {
-  if( isPublicOnly() && ! smp.isPublic() )
+  if( isPublicOnly() && ! isSamplePublic(smp) )
    return false;
 
    

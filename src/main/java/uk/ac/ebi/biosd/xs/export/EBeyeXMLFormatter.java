@@ -43,7 +43,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  @Override
  public boolean exportSample(BioSample smp, Appendable out, boolean showNS) throws IOException
  {
-  if( isPublicOnly() && ! smp.isPublic() )
+  if( isPublicOnly() && ! isSamplePublic(smp) )
    return false;
   
   out.append("<entry id=\"");
@@ -118,7 +118,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  @Override
  public boolean exportGroup(BioSampleGroup grp, Appendable out, boolean showNS) throws IOException
  {
-  if( isPublicOnly() && ! grp.isPublic() )
+  if( isPublicOnly() && ! isGroupPublic(grp) )
    return false;
 
   out.append("<entry id=\"");
@@ -222,7 +222,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
 
   for( BioSample s : grp.getSamples() )
   {
-   if( ! s.isPublic() )
+   if( ! isSamplePublic(s) )
     continue;
 
    for( ExperimentalPropertyValue<? extends ExperimentalPropertyType> sprop : s.getPropertyValues() )

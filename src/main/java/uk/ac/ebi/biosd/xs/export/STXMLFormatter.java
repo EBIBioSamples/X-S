@@ -94,7 +94,7 @@ public class STXMLFormatter extends AGE1XMLFormatter
  @Override
  protected boolean exportGroup( final BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC ) throws IOException
  {
-  if( isPublicOnly() && ! ao.isPublic() )
+  if( isPublicOnly() && ! isGroupPublic(ao) )
    return false;
 
   Set<String> attrset = null;
@@ -114,7 +114,7 @@ public class STXMLFormatter extends AGE1XMLFormatter
     @Override
     public boolean isPublic()
     {
-     return ao.isPublic();
+     return isGroupPublic(ao);
     }
     
     @Override
@@ -311,7 +311,7 @@ public class STXMLFormatter extends AGE1XMLFormatter
 
  private boolean exportSample(final BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset, boolean showAC) throws IOException
  {
-  if( isPublicOnly() && ! smp.isPublic() )
+  if( isPublicOnly() && ! isSamplePublic(smp) )
    return false;
 
   
@@ -330,7 +330,7 @@ public class STXMLFormatter extends AGE1XMLFormatter
     @Override
     public boolean isPublic()
     {
-     return smp.isPublic();
+     return isSamplePublic(smp);
     }
     
     @Override

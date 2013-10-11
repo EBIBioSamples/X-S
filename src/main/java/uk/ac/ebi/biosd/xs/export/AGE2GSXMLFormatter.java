@@ -41,7 +41,7 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 
   for(BioSample smp : smpls)
   {
-   if( isPublicOnly() && ! smp.isPublic() )
+   if( isPublicOnly() && ! isSamplePublic(smp) )
     continue;
 
    assert LoggerFactory.getLogger().checkpoint("Processing sample: " + smp.getAcc() + " " + (scnt++) + " of " + smpls.size(), "sblock");

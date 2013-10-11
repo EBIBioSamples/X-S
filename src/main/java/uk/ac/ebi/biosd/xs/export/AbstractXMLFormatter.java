@@ -7,6 +7,10 @@ import java.util.Date;
 import java.util.IllegalFormatException;
 import java.util.TimeZone;
 
+import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
+import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
+import uk.ac.ebi.fg.biosd.model.organizational.MSI;
+
 public abstract class AbstractXMLFormatter implements XMLFormatter
 {
  public enum SamplesFormat
@@ -22,6 +26,7 @@ public abstract class AbstractXMLFormatter implements XMLFormatter
  private final boolean showAC;
  private final SamplesFormat smpfmt;
  private final boolean publicOnly;
+ private final Date now = new Date();
  
 
  
@@ -34,6 +39,45 @@ public abstract class AbstractXMLFormatter implements XMLFormatter
   publicOnly = pubOnly;
  }
 
+ protected boolean isSamplePublic( BioSample smp )
+ {
+  if( smp.getPublicFlag() != null )
+   return smp.getPublicFlag();
+  
+  if( smp.getReleaseDate() != null )
+   return smp.getReleaseDate().before(now);
+  
+  if( smp.getMSIs() == null )
+   return false;
+  
+  for( MSI msi : smp.getMSIs() )
+  {
+   if( msi.getReleaseDate() != null && msi.getReleaseDate().before(now) )
+    return true;
+  }
+  
+  return false;
+ }
+ 
+ protected boolean isGroupPublic( BioSampleGroup grp )
+ {
+  if( grp.getPublicFlag() != null )
+   return grp.getPublicFlag();
+  
+  if( grp.getReleaseDate() != null )
+   return grp.getReleaseDate().before(now);
+  
+  if( grp.getMSIs() == null )
+   return false;
+  
+  for( MSI msi : grp.getMSIs() )
+  {
+   if( msi.getReleaseDate() != null && msi.getReleaseDate().before(now) )
+    return true;
+  }
+  
+  return false;
+ }
  
  public static class ReplacePair implements Comparable<ReplacePair>
  {
