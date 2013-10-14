@@ -36,7 +36,7 @@ public class ControlServlet extends HttpServlet
   
   if( CommandForceEBEye.equalsIgnoreCase(command) )
   {
-   EBeyeExport exp = EBeyeExport.getInstance();
+   final EBeyeExport exp = EBeyeExport.getInstance();
    
    if( exp == null )
    {
@@ -64,15 +64,15 @@ public class ControlServlet extends HttpServlet
   
    String genSmpStr =  req.getParameter(GenSamplesParameter);
    
-   boolean genSmp = genSmpStr == null? true : "1".equals(genSmpStr) || "yes".equalsIgnoreCase(genSmpStr) || "on".equalsIgnoreCase(genSmpStr) || "true".equalsIgnoreCase(genSmpStr);
+   final boolean genSmp = genSmpStr == null? true : "1".equals(genSmpStr) || "yes".equalsIgnoreCase(genSmpStr) || "on".equalsIgnoreCase(genSmpStr) || "true".equalsIgnoreCase(genSmpStr);
 
    String expPrvStr =  req.getParameter(ExportPrivateParameter);
    
-   boolean expPrv = expPrvStr == null? false : "1".equals(expPrvStr) || "yes".equalsIgnoreCase(expPrvStr) || "on".equalsIgnoreCase(expPrvStr) || "true".equalsIgnoreCase(expPrvStr);
+   final boolean expPrv = expPrvStr == null? false : "1".equals(expPrvStr) || "yes".equalsIgnoreCase(expPrvStr) || "on".equalsIgnoreCase(expPrvStr) || "true".equalsIgnoreCase(expPrvStr);
    
    String prm = req.getParameter(ThreadsParameter);
    
-   int nThrs = 1;
+   int nThrs = -1;
    
    if( prm != null )
    {
@@ -86,13 +86,34 @@ public class ControlServlet extends HttpServlet
    }
 
    
-   if( ! exp.export(limit, genSmp, ! expPrv, nThrs) )
+   if( exp.isBusy() )
    {
     sendMessage("EBEye export is busy", resp.getOutputStream(), "orange");
     return;
    }
    
-   sendMessage("EBEye export finished", resp.getOutputStream(), "black");
+   final int fLimit = limit;
+   final int fThreads = nThrs;
+   
+   new Thread( new Runnable()
+   {
+    
+    @Override
+    public void run()
+    {
+     try
+     {
+      exp.export(fLimit, genSmp, ! expPrv, fThreads);
+     }
+     catch(IOException e)
+     {
+      e.printStackTrace();
+     }   
+    }
+    }, "Manual EBeye export").start();
+   
+   
+   sendMessage("EBEye export has been initiated", resp.getOutputStream(), "black");
 
   }
  }

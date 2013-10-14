@@ -279,6 +279,8 @@ public class Init implements ServletContextListener
     @Override
     public void run()
     {
+     log.info("Starting scheduled task");
+     
      try
      {
       EBeyeExport.getInstance().export(-1, genSamples, true, threads );
@@ -288,6 +290,7 @@ public class Init implements ServletContextListener
       log.error("Export error: "+e.getMessage());
      }
      
+     log.info("Finishing scheduled task");
     }
    };
    

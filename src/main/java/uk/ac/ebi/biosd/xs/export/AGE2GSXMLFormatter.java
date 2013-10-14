@@ -8,6 +8,8 @@ import java.util.Set;
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
+import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyType;
+import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyValue;
 
 public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 {
@@ -50,6 +52,12 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
    xmlEscaped(smp.getAcc(), mainout);
    mainout.append("</Id>\n");
 
+   if(smp.getPropertyValues() != null &&  attrset != null )
+   {
+    for(ExperimentalPropertyValue<ExperimentalPropertyType> pval : smp.getPropertyValues())
+     attrset.add(pval.getType().getTermText());
+   }
+   
    
 //   if( smpSts != SamplesFormat.NONE )
 //    exportSample(smp, mainout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());

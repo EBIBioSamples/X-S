@@ -83,13 +83,13 @@ public class RangeManager
    
    ranges.add(r);
    
-   System.out.println("("+Thread.currentThread().getName()+") Added to the range queue "+r+", requested: "+requested+" Queue:"+ranges.size());
+//   System.out.println("("+Thread.currentThread().getName()+") Added to the range queue "+r+", requested: "+requested+" Queue:"+ranges.size());
 
   }
   
   Range r = new Range(start, max);
 
-  System.out.println("("+Thread.currentThread().getName()+") Added to the range queue "+r+", requested: "+requested+" Queue:"+ranges.size());
+//  System.out.println("("+Thread.currentThread().getName()+") Added to the range queue "+r+", requested: "+requested+" Queue:"+ranges.size());
   
   ranges.add( r );
  }
@@ -102,12 +102,12 @@ public class RangeManager
   {
    if(requested == 0)
    {
-    System.out.println("("+Thread.currentThread().getName()+") No more ranges, requested: "+requested+" Queue:"+ranges.size());
+//    System.out.println("("+Thread.currentThread().getName()+") No more ranges, requested: "+requested+" Queue:"+ranges.size());
 
     return null;
    }
    
-   System.out.println("("+Thread.currentThread().getName()+") Waiting for free ranges");
+//   System.out.println("("+Thread.currentThread().getName()+") Waiting for free ranges");
 
    
    while(ranges.size() == 0)
@@ -132,7 +132,7 @@ public class RangeManager
   
   Range r = ranges.poll();
   
-  System.out.println("("+Thread.currentThread().getName()+") Getting range "+r+", requested: "+requested+" Queue:"+ranges.size());
+//  System.out.println("("+Thread.currentThread().getName()+") Getting range "+r+", requested: "+requested+" Queue:"+ranges.size());
 
   return r;
   
@@ -154,7 +154,7 @@ public class RangeManager
 
   if( ranges.size() != 0 || r.getMax()-r.getMin() < nWays )
   {
-   System.out.println("("+Thread.currentThread().getName()+") Continue range "+r+", requested: "+requested+" Queue:"+ranges.size());
+//   System.out.println("("+Thread.currentThread().getName()+") Continue range "+r+", requested: "+requested+" Queue:"+ranges.size());
 
    return r;
   }

@@ -113,6 +113,10 @@ public class EBeyeExport
   
  }
  
+ public boolean isBusy()
+ {
+  return busy.get();
+ }
  
  public boolean export( int limit, boolean genSamples, boolean pubOnly, int threads ) throws IOException
  {

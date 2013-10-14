@@ -604,47 +604,43 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
   mainout.append("\">\n");
   
-  if( showAnnt )
+  if(smp.getPropertyValues() != null && (showAnnt || attrset != null))
   {
-
-   if(smp.getPropertyValues() != null)
+   for(ExperimentalPropertyValue<ExperimentalPropertyType> pval : smp.getPropertyValues())
    {
-    for(ExperimentalPropertyValue<ExperimentalPropertyType> pval : smp.getPropertyValues())
-    {
+    if(showAnnt)
      exportPropertyValue(pval, mainout);
 
-     if(attrset != null)
-      attrset.add(pval.getType().getTermText());
-    }
+    if(attrset != null)
+     attrset.add(pval.getType().getTermText());
    }
+  }
 
-   if(smp.getAllDerivedFrom() != null)
+  if(showAnnt && smp.getAllDerivedFrom() != null)
+  {
+   for(Product< ? > p : smp.getAllDerivedFrom())
    {
-    for(Product< ? > p : smp.getAllDerivedFrom())
-    {
-     mainout.append("<relation class=\"derivedFrom\" targetId=\"");
-     xmlEscaped(p.getAcc(), mainout);
-     mainout.append("\" targetClass=\"Sample\" />\n");
-    }
+    mainout.append("<relation class=\"derivedFrom\" targetId=\"");
+    xmlEscaped(p.getAcc(), mainout);
+    mainout.append("\" targetClass=\"Sample\" />\n");
    }
-
-   if(showGrpId)
-   {
-    mainout.append("<GroupIds>\n");
-
-    for(BioSampleGroup sg : smp.getGroups())
-    {
-     mainout.append("<Id>");
-     xmlEscaped(sg.getAcc(), mainout);
-     mainout.append("</Id>\n");
-    }
-
-    mainout.append("</GroupIds>\n");
-
-   }
-
   }
   
+  if(showGrpId)
+  {
+   mainout.append("<GroupIds>\n");
+   
+   for(BioSampleGroup sg : smp.getGroups())
+   {
+    mainout.append("<Id>");
+    xmlEscaped(sg.getAcc(), mainout);
+    mainout.append("</Id>\n");
+   }
+   
+   mainout.append("</GroupIds>\n");
+   
+  }
+
   mainout.append("</Sample>\n");
  
   return true;

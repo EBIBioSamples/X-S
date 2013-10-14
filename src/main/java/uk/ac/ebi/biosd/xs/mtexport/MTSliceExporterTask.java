@@ -11,6 +11,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.persistence.EntityManagerFactory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import uk.ac.ebi.biosd.xs.init.Init;
 import uk.ac.ebi.biosd.xs.mtexport.ControlMessage.Type;
 import uk.ac.ebi.biosd.xs.util.Slice;
 import uk.ac.ebi.biosd.xs.util.SliceManager;
@@ -34,6 +38,9 @@ public class MTSliceExporterTask implements Runnable
  private final boolean sourcesByName;
  private boolean hasSampleOutput = false;
  private final AtomicLong limit;
+ 
+ private final Logger log = LoggerFactory.getLogger(Init.class);
+
  
  public MTSliceExporterTask( EntityManagerFactory emf, SliceManager slMgr, long since, List<FormattingTask> tasks,
    MTExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, boolean srcByNm, AtomicLong lim )
@@ -79,7 +86,7 @@ public class MTSliceExporterTask implements Runnable
   {
    Slice sl = sliceMngr.getSlice();
    
-   System.out.println("("+Thread.currentThread().getName()+") Processing slice: " + sl);
+   log.debug("("+Thread.currentThread().getName()+") Processing slice: " + sl);
 
    try
    {
