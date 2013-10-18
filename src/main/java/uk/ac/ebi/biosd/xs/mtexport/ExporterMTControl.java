@@ -35,7 +35,7 @@ public class ExporterMTControl
  }
 
  
- public MTExporterStat export( long since, long limit) throws IOException
+ public MTExporterStat export( long since, long limit) throws Throwable
  {
   List<MTSliceExporterTask> exporters = new ArrayList<>( threads );
   List<OutputTask> outputs = new ArrayList<>( requests.size() * 2);
@@ -93,7 +93,7 @@ public class ExporterMTControl
   int tnum = threads;
   int tout = outputs.size();
   
-  IOException exception = null;
+  Throwable exception = null;
   
   while(true)
   {

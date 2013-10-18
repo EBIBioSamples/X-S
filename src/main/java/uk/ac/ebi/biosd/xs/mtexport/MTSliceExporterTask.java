@@ -1,6 +1,5 @@
 package uk.ac.ebi.biosd.xs.mtexport;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -196,7 +195,7 @@ public class MTSliceExporterTask implements Runnable
     }
 
    }
-   catch(IOException e)
+   catch(Throwable e)
    {
     e.printStackTrace();
 

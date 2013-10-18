@@ -142,6 +142,10 @@ public class ExporterMT implements Exporter
 
 
   }
+  catch(Throwable e)
+  {
+   e.printStackTrace();
+  }
   finally
   {
    if(sampleOut != null )

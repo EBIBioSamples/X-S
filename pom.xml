@@ -104,6 +104,18 @@
 		<scope>provided</scope>
 	</dependency>
 
+	<dependency>
+		<groupId>c3p0</groupId>
+		<artifactId>c3p0</artifactId>
+		<version>0.9.1.2</version>
+	</dependency>
+	
+	<dependency>
+		<groupId>org.hibernate</groupId>
+		<artifactId>hibernate-c3p0</artifactId>
+		<version>4.2.6.Final</version>
+	</dependency>
+
 	</dependencies>
 
 </project>

@@ -2,7 +2,6 @@ package uk.ac.ebi.biosd.xs.ebeye;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.Reader;
@@ -118,7 +117,7 @@ public class EBeyeExport
   return busy.get();
  }
  
- public boolean export( int limit, boolean genSamples, boolean pubOnly, int threads ) throws IOException
+ public boolean export( int limit, boolean genSamples, boolean pubOnly, int threads ) throws Throwable
  {
   if( ! busy.compareAndSet(false, true) )
   {

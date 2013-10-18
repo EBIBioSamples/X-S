@@ -1,6 +1,5 @@
 package uk.ac.ebi.biosd.xs.mtexport;
 
-import java.io.IOException;
 
 public class ControlMessage
 {
@@ -14,7 +13,7 @@ public class ControlMessage
 
  private final Type      type;
  private final Object    subject;
- private IOException exception;
+ private Throwable exception;
 
  public ControlMessage(Type type, Object subject)
  {
@@ -23,7 +22,7 @@ public class ControlMessage
   this.subject = subject;
  }
 
- public ControlMessage(Type type, Object subject, IOException exception)
+ public ControlMessage(Type type, Object subject, Throwable exception)
  {
   super();
   this.type = type;
@@ -41,7 +40,7 @@ public class ControlMessage
   return subject;
  }
 
- public IOException getException()
+ public Throwable getException()
  {
   return exception;
  }

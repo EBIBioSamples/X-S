@@ -615,6 +615,17 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
      attrset.add(pval.getType().getTermText());
    }
   }
+  
+  
+  if( smp.getDatabases() != null )
+  {
+   mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+
+   for(DatabaseRefSource c : smp.getDatabases())
+    exportDatabase(c, mainout);
+
+   mainout.append("</attribute>\n");
+  }
 
   if(showAnnt && smp.getAllDerivedFrom() != null)
   {
@@ -639,6 +650,16 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    
    mainout.append("</GroupIds>\n");
    
+  }
+  
+  if( smp.getDatabases() != null )
+  {
+   mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+
+   for(DatabaseRefSource c : smp.getDatabases())
+    exportDatabase(c, mainout);
+
+   mainout.append("</attribute>\n");
   }
 
   mainout.append("</Sample>\n");

@@ -1,7 +1,6 @@
 package uk.ac.ebi.biosd.xs.init;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Calendar;
@@ -285,7 +284,7 @@ public class Init implements ServletContextListener
      {
       EBeyeExport.getInstance().export(-1, genSamples, true, threads );
      }
-     catch(IOException e)
+     catch(Throwable e)
      {
       log.error("Export error: "+e.getMessage());
      }

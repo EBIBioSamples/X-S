@@ -5,13 +5,20 @@ import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.EntityTransaction;
 import javax.persistence.Query;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.biosd.xs.util.Slice;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 
 public class GroupSliceQueryManager
 {
+ private static final boolean useTransaction = false;
+ private static final Logger log = LoggerFactory.getLogger(GroupSliceQueryManager.class);
+
  private final EntityManagerFactory factory;
  private EntityManager em;
 
@@ -27,8 +34,16 @@ public class GroupSliceQueryManager
  {
   Query listQuery = null;
   
-  EntityManager em = factory.createEntityManager();
+  if( em != null )
+  {
+   log.warn("Entity manager was not closed");
+   em.close();
+  }
   
+  em = factory.createEntityManager();
+  
+  if( useTransaction )
+   em.getTransaction().begin();
   
   if( since < 0 )
   {
@@ -51,6 +66,23 @@ public class GroupSliceQueryManager
  {
   if( em == null )
    return;
+  
+  if( useTransaction )
+  {
+   EntityTransaction trn = em.getTransaction();
+
+   if( trn.isActive() && ! trn.getRollbackOnly() )
+   {
+    try
+    {
+     trn.commit();
+    }
+    catch(Exception e)
+    {
+     e.printStackTrace();
+    }
+   }
+  }
   
   em.close();
   em=null;

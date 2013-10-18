@@ -37,7 +37,7 @@ public class GroupRangeQueryManager
  {
   Query listQuery = null;
   
-  EntityManager em = factory.createEntityManager();
+  em = factory.createEntityManager();
   
   
   if( since < 0 )

@@ -105,7 +105,7 @@ public class ControlServlet extends HttpServlet
      {
       exp.export(fLimit, genSmp, ! expPrv, fThreads);
      }
-     catch(IOException e)
+     catch(Throwable e)
      {
       e.printStackTrace();
      }   
