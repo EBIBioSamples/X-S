@@ -616,12 +616,13 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    }
   }
   
+  Collection<DatabaseRefSource> dbs = smp.getDatabases();
   
-  if( smp.getDatabases() != null )
+  if( dbs != null && dbs.size() > 0 )
   {
    mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
-   for(DatabaseRefSource c : smp.getDatabases())
+   for( DatabaseRefSource c : dbs )
     exportDatabase(c, mainout);
 
    mainout.append("</attribute>\n");
@@ -652,16 +653,6 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    
   }
   
-  if( smp.getDatabases() != null )
-  {
-   mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
-
-   for(DatabaseRefSource c : smp.getDatabases())
-    exportDatabase(c, mainout);
-
-   mainout.append("</attribute>\n");
-  }
-
   mainout.append("</Sample>\n");
  
   return true;
