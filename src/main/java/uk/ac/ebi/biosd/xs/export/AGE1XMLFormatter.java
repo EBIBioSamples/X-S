@@ -1,10 +1,12 @@
 package uk.ac.ebi.biosd.xs.export;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -323,8 +325,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   
   if( ao.getPropertyValues() != null )
   {
-   for( ExperimentalPropertyValue<ExperimentalPropertyType> pval : ao.getPropertyValues() )
-    exportPropertyValue(pval,mainout);
+   exportPropertyValues(ao.getPropertyValues(), mainout, null);
   }
   
 
@@ -606,14 +607,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   
   if(smp.getPropertyValues() != null && (showAnnt || attrset != null))
   {
-   for(ExperimentalPropertyValue<ExperimentalPropertyType> pval : smp.getPropertyValues())
-   {
-    if(showAnnt)
-     exportPropertyValue(pval, mainout);
-
-    if(attrset != null)
-     attrset.add(pval.getType().getTermText());
-   }
+   exportPropertyValues(smp.getPropertyValues(), mainout, attrset);
   }
   
   Collection<DatabaseRefSource> dbs = smp.getDatabases();
@@ -658,11 +652,50 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   return true;
  }
 
-
- private void exportPropertyValue( ExperimentalPropertyValue<? extends ExperimentalPropertyType> val,  Appendable out) throws IOException
+ 
+ @SuppressWarnings({ "unchecked", "rawtypes" })
+ private void exportPropertyValues( Collection<ExperimentalPropertyValue> orgVals,  Appendable out, Set<String> attrset ) throws IOException
  {
-  boolean isChar = ( val instanceof BioCharacteristicValue );
-  boolean isComm = ( val instanceof SampleCommentValue );
+  ArrayList<ExperimentalPropertyValue> vals = new ArrayList<>( orgVals );
+  ArrayList<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> procV = new ArrayList<>( vals.size() );
+  
+  for( int i=0; i < vals.size(); i++ )
+  {
+   procV.clear();
+   
+   ExperimentalPropertyValue<ExperimentalPropertyType> v = vals.get(i);
+   
+   if( v == null )
+    continue;
+   
+   procV.add( v );
+   
+   for( int j = i+1; j < vals.size(); j++ )
+   {
+    ExperimentalPropertyValue<ExperimentalPropertyType> nv = vals.get(j);
+    
+    if( nv.getType().getTermText().equals( v.getType().getTermText() ) )
+    {
+     procV.add( nv );
+     vals.set(j, null);
+    }
+   }
+   
+   exportPropertyValue(procV, out);
+   
+   if(attrset != null)
+    attrset.add(v.getType().getTermText());
+
+  }
+  
+ }
+
+ private void exportPropertyValue( List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> vals,  Appendable out) throws IOException
+ {
+  ExperimentalPropertyValue<? extends ExperimentalPropertyType> val0 = vals.get(0);
+  
+  boolean isChar = ( val0 instanceof BioCharacteristicValue );
+  boolean isComm = ( val0 instanceof SampleCommentValue );
   
   out.append("<attribute classDefined=\"false\" dataType=\"STRING\" ");
   
@@ -672,46 +705,45 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    out.append("comment=\"true\" ");
 
   out.append("class=\"");
-  xmlEscaped(val.getType().getTermText(),out);
+  xmlEscaped(val0.getType().getTermText(),out);
   out.append("\">\n");
   
-  
-  exportSimpleValuePefix(out);
-  
-  exportSimpleValueStringPefix(out);
-  xmlEscaped(val.getTermText(),out);
-  exportSimpleValueStringPostfix(out);
-
-
-  if( val.getUnit() != null )
+  for(  ExperimentalPropertyValue<? extends ExperimentalPropertyType> pv : vals  )
   {
-   out.append("<attribute classDefined=\"true\" dataType=\"OBJECT\" class=\"Unit\">\n");
    exportSimpleValuePefix(out);
+
    exportSimpleValueStringPefix(out);
-   xmlEscaped(val.getUnit().getTermText(),out);
+   xmlEscaped(pv.getTermText(), out);
    exportSimpleValueStringPostfix(out);
-   exportSimpleValuePostfix(out);
 
-   Collection<OntologyEntry> unitont = val.getUnit().getOntologyTerms();
-   
-   if( unitont != null )
+   if(pv.getUnit() != null)
    {
-    for( OntologyEntry oe: unitont )
-     exportOntologyEntry( oe, out );
+    out.append("<attribute classDefined=\"true\" dataType=\"OBJECT\" class=\"Unit\">\n");
+    exportSimpleValuePefix(out);
+    exportSimpleValueStringPefix(out);
+    xmlEscaped(pv.getUnit().getTermText(), out);
+    exportSimpleValueStringPostfix(out);
+    exportSimpleValuePostfix(out);
+
+    Collection<OntologyEntry> unitont = pv.getUnit().getOntologyTerms();
+
+    if(unitont != null)
+    {
+     for(OntologyEntry oe : unitont)
+      exportOntologyEntry(oe, out);
+    }
+
+    out.append("</attribute>\n");
    }
-   
 
-   out.append("</attribute>\n");
+   if(pv.getOntologyTerms() != null)
+   {
+    for(OntologyEntry oe : pv.getOntologyTerms())
+     exportOntologyEntry(oe, out);
+   }
+
+   exportSimpleValuePostfix(out);
   }
-  
-  if( val.getOntologyTerms() != null )
-  {
-   for( OntologyEntry oe: val.getOntologyTerms() )
-    exportOntologyEntry( oe, out );
-  }
-
-  exportSimpleValuePostfix(out);
-
   out.append("</attribute>\n");
  }
  
