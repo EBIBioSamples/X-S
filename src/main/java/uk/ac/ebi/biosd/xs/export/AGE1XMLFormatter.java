@@ -674,6 +674,9 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    {
     ExperimentalPropertyValue<ExperimentalPropertyType> nv = vals.get(j);
     
+    if( nv == null )
+     continue;
+    
     if( nv.getType().getTermText().equals( v.getType().getTermText() ) )
     {
      procV.add( nv );

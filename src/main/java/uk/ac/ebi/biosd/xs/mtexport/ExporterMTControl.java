@@ -13,11 +13,16 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.persistence.EntityManagerFactory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import uk.ac.ebi.biosd.xs.mtexport.ControlMessage.Type;
 import uk.ac.ebi.biosd.xs.util.SliceManager;
 
 public class ExporterMTControl
 {
+ private final Logger log = LoggerFactory.getLogger(ExporterMTControl.class);
+ 
  private final EntityManagerFactory emf;
  final  List<FormattingRequest> requests;
  private final boolean exportSources;
@@ -90,10 +95,12 @@ public class ExporterMTControl
   
   int count=0;
   
-  int tnum = threads;
+  int tproc = threads;
   int tout = outputs.size();
   
   Throwable exception = null;
+  
+  boolean termGoes=false;
   
   while(true)
   {
@@ -109,18 +116,38 @@ public class ExporterMTControl
    }
 
    if(o.getType() == Type.PROCESS_FINISH)
-    tnum--;
+    tproc--;
    else if(o.getType() == Type.OUTPUT_FINISH)
+   {
     tout--;
+   }
+   else if( o.getType() == Type.OUTPUT_ERROR )
+   {
+    log.warn("Got output error. Sending termination to processing threads");
+
+    tout--;
+    stopFlag.set(true);
+    
+    ((OutputTask)(o.getSubject())).getIncomingQueue().clear(); // To unlock processing tasks to see the stop flag.
+   }
+   else if( o.getType() == Type.PROCESS_ERROR )
+   {
+    log.warn("Got processing error. Sending termination to other processing threads");
+
+    tproc--;
+    stopFlag.set(true);
+   }
 
    
-   if(tnum == 0 || o.getType() == Type.OUTPUT_ERROR || o.getType() == Type.PROCESS_ERROR)
+   if( tproc == 0 && ! termGoes )
    {
+    log.debug("All processing thread finished. Initiating outputters shutdown");
+    
+    termGoes = true;
+    
     exception = o.getException();
 
     PoisonedObject po = new PoisonedObject();
-
-    stopFlag.set(true);
 
     for(FormattingTask ft : tasks)
     {
@@ -133,8 +160,7 @@ public class ExporterMTControl
       putIntoQueue(ft.getSampleQueue(),po);
      }
     }
-    
-    break;
+
    }
 
 

@@ -60,6 +60,11 @@ public class OutputTask implements Runnable
   
  }
 
+ public BlockingQueue<Object> getIncomingQueue()
+ {
+  return inQueue;
+ }
+ 
  void  putIntoQueue( ControlMessage o )
  {
 

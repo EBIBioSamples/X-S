@@ -99,7 +99,7 @@ public class MTSliceExporterTask implements Runnable
      return;
     }
     
-    for(BioSampleGroup g : grpq.getGroups( since, sl ))
+    for(BioSampleGroup g : grps)
     {
      if(stopFlag.get())
      {

@@ -113,7 +113,7 @@ public class SampleServlet extends HttpServlet
   
   String sch = reqCfg.getSchema(DefaultSchema);
   
-  formatter = SchemaManager.getFormatter(sch, false, false, samplesFormat,false);
+  formatter = SchemaManager.getFormatter(sch, true, false, samplesFormat, false);
   
   if( formatter == null )
   {

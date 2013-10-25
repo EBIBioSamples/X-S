@@ -286,7 +286,7 @@ public class Init implements ServletContextListener
      }
      catch(Throwable e)
      {
-      log.error("Export error: "+e.getMessage());
+      log.error("Export error: "+(e.getMessage()!=null?e.getMessage():e.getClass().getName()));
      }
      
      log.info("Finishing scheduled task");
