@@ -462,7 +462,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   exportObjectValuePrefix( out );
   out.append("\n<object id=\"");
   out.append( String.valueOf(cnt.getId()) );
-  out.append("\" class=\"Organization\" classDefined=\"true\">\n");
+  out.append("\" class=\"Person\" classDefined=\"true\">\n");
   
   String s = null;
   

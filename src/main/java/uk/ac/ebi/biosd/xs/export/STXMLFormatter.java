@@ -370,6 +370,12 @@ public class STXMLFormatter extends AGE1XMLFormatter
    }
   }
   
+  if( smp.getDatabases() != null )
+  {
+   for( DatabaseRefSource c : smp.getDatabases() )
+    exportDatabase(c, out);
+  }
+  
   if( smp.getAllDerivedFrom() != null )
   {
    for( Product<?> p : smp.getAllDerivedFrom() )
