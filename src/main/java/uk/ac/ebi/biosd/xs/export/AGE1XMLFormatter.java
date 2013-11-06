@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -14,14 +14,17 @@ import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.biosd.xs.util.Counter;
 import uk.ac.ebi.fg.biosd.model.access_control.User;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
+import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentType;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
 import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
 import uk.ac.ebi.fg.core_model.expgraph.Product;
+import uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicType;
 import uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicValue;
 import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyType;
 import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyValue;
+import uk.ac.ebi.fg.core_model.expgraph.properties.Unit;
 import uk.ac.ebi.fg.core_model.organizational.Contact;
 import uk.ac.ebi.fg.core_model.organizational.ContactRole;
 import uk.ac.ebi.fg.core_model.organizational.Organization;
@@ -117,7 +120,8 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("\" ");
  }
 
- protected void exportSamples(BioSampleGroup ao, Appendable mainout, SamplesFormat smpSts, Set<String> attrset) throws IOException
+ protected void exportSamples(BioSampleGroup ao, Appendable mainout, SamplesFormat smpSts,
+   Map<String,List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>> attrset) throws IOException
  {
   if( smpSts != SamplesFormat.NONE && ao.getSamples() != null )
   {
@@ -143,10 +147,10 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    return false;
 
   
-  Set<String> attrset = null;
+  Map<String,List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>> attrset = null;
   
   if( showAttributes )
-   attrset = new HashSet<>();
+   attrset = new HashMap<>();
   
 
   if( showNS && ! nsShown )
@@ -290,7 +294,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     mainout.append("</attribute>\n");
    }
 
-   if( msi.getContacts() != null )
+   if( msi.getContacts() != null && msi.getContacts().size() > 0 )
    {
     mainout.append("<attribute class=\"Persons\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
@@ -300,7 +304,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     mainout.append("</attribute>\n");
    }
    
-   if( msi.getDatabases() != null )
+   if( msi.getDatabases() != null && msi.getDatabases().size() > 0 )
    {
     mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
@@ -310,7 +314,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     mainout.append("</attribute>\n");
    }
    
-   if( msi.getPublications() != null )
+   if( msi.getPublications() != null &&  msi.getPublications().size() > 0 )
    {
     mainout.append("<attribute class=\"Publications\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
@@ -325,7 +329,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   
   if( ao.getPropertyValues() != null )
   {
-   exportPropertyValues(ao.getPropertyValues(), mainout, null);
+   exportPropertyValues(ao.getPropertyValues(), mainout, null, false);
   }
   
 
@@ -335,11 +339,29 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   {
    mainout.append("<SampleAttributes>\n");
 
-   for(String attNm : attrset)
+   for(Map.Entry<String, List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>> attE : attrset.entrySet() )
    {
-    mainout.append("<attribute class=\"");
-    xmlEscaped(attNm, mainout);
-    mainout.append("\" classDefined=\"true\" dataType=\"STRING\"/>\n");
+    if( attE.getValue() == null || attE.getValue().size() ==0 )
+    {
+     boolean chr = attE.getKey().charAt(0) == 'X';
+     boolean comm= attE.getKey().charAt(1) == 'K';
+     
+     String className = attE.getKey().substring(2);
+     
+     mainout.append("<attribute classDefined=\"false\" dataType=\"STRING\" ");
+     
+     if( chr )
+      mainout.append("characteristic=\"true\" ");
+     else if( comm )
+      mainout.append("comment=\"true\" ");
+
+     mainout.append("class=\"");
+     xmlEscaped(className,mainout);
+     mainout.append("\"/>\n");
+    }
+    else
+     exportPropertyValue(attE.getValue(), mainout);
+
    }
 
    mainout.append("</SampleAttributes>\n");
@@ -566,7 +588,8 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("</attribute>\n");
  }
  
- protected boolean exportSample(final BioSample smp, Appendable mainout, boolean showNS, boolean showAnnt, boolean showGrpId, Set<String> attrset, boolean showAC) throws IOException
+ protected boolean exportSample(final BioSample smp, Appendable mainout, boolean showNS, boolean showAnnt,
+   boolean showGrpId, Map<String,List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>> attrset, boolean showAC) throws IOException
  {
   if( isPublicOnly() && ! isSamplePublic(smp) )
    return false;
@@ -605,9 +628,10 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
   mainout.append("\">\n");
   
+  
   if(smp.getPropertyValues() != null && (showAnnt || attrset != null))
   {
-   exportPropertyValues(smp.getPropertyValues(), mainout, attrset);
+   exportPropertyValues(smp.getPropertyValues(), mainout, attrset, false);
   }
   
   Collection<DatabaseRefSource> dbs = smp.getDatabases();
@@ -654,14 +678,20 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
  
  @SuppressWarnings({ "unchecked", "rawtypes" })
- private void exportPropertyValues( Collection<ExperimentalPropertyValue> orgVals,  Appendable out, Set<String> attrset ) throws IOException
+ protected void exportPropertyValues( Collection<? extends ExperimentalPropertyValue> orgVals,  Appendable out, 
+   Map<String,List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>> attrset, boolean collectOnly ) throws IOException
  {
   ArrayList<ExperimentalPropertyValue> vals = new ArrayList<>( orgVals );
-  ArrayList<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> procV = new ArrayList<>( vals.size() );
+  ArrayList<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> procV;
+  
+  boolean firstObject = false;
+  
+  if( attrset!= null && attrset.size() == 0 )
+   firstObject = true;
   
   for( int i=0; i < vals.size(); i++ )
   {
-   procV.clear();
+   procV= new ArrayList<>( vals.size() );
    
    ExperimentalPropertyValue<ExperimentalPropertyType> v = vals.get(i);
    
@@ -670,29 +700,193 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    
    procV.add( v );
    
+   String propName = v.getType().getTermText();
+   String strVal = v.getTermText();
+   
+   if( strVal == null || strVal.length() == 0 )
+    continue;
+   
    for( int j = i+1; j < vals.size(); j++ )
    {
     ExperimentalPropertyValue<ExperimentalPropertyType> nv = vals.get(j);
     
-    if( nv == null )
+    if( nv == null  )
      continue;
     
-    if( nv.getType().getTermText().equals( v.getType().getTermText() ) )
+    String nvStrVal = nv.getTermText();
+    
+    if( nvStrVal == null || nvStrVal.length() == 0 )
+     continue;
+    
+    
+    if( nv.getType().getTermText().equals( propName ) 
+      && ( v.getType() instanceof BioCharacteristicType) == ( nv.getType() instanceof BioCharacteristicType ) 
+      && ( v.getType() instanceof SampleCommentType) == ( nv.getType() instanceof SampleCommentType ) )
     {
      procV.add( nv );
      vals.set(j, null);
+     
+     if( ! nvStrVal.equals(strVal) )
+      strVal = null;
     }
    }
    
-   exportPropertyValue(procV, out);
+   if( ! collectOnly )
+    exportPropertyValue(procV, out);
    
    if(attrset != null)
-    attrset.add(v.getType().getTermText());
-
+   {
+    if( firstObject )
+    {
+     attrset.put(makeTypeId(v.getType()),procV);
+    }
+    else
+    {
+     String typId = makeTypeId(v.getType());
+     
+     List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> cval = attrset.get(typId);
+     
+     if( cval != null && ! isPropCollectionEqual(procV, cval) )
+      attrset.put(typId,null);
+    } 
+   }
   }
   
  }
+ 
+ private String makeTypeId( ExperimentalPropertyType t1 )
+ {
+  return (( t1 instanceof BioCharacteristicType )?"X":"0")+(( t1 instanceof SampleCommentType)?"K":"0")+t1.getTermText();
+ }
+ 
+ @SuppressWarnings("unused")
+ private boolean isTypesEqual(ExperimentalPropertyType t1, ExperimentalPropertyType t2)
+ {
+  return isStringsEqual(t1.getTermText(), t2.getTermText()) 
+    && ( t1 instanceof BioCharacteristicType ) == ( t2 instanceof BioCharacteristicType )
+    && ( t1 instanceof SampleCommentType)      == ( t2 instanceof SampleCommentType ) ;
+ }
+ 
+ private boolean isStringsEqual( String s1, String s2 )
+ {
+  if( s1 == null )
+   return s2==null;
+  
+  return s1.equals( s2 );
+ }
+ 
+ private boolean isPropCollectionEqual( List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> c1, List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> c2)
+ {
+  if( c1.size() != c2.size() )
+   return false;
+  
+  if( c1.size() == 1 )
+   return isPropsEqual( c1.get(0), c2.get(0) );
+  
+  ArrayList<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> c2l = new ArrayList<>( c2 );
+  
+  for( int i=0; i < c1.size(); i++ )
+  {
+   ExperimentalPropertyValue<? extends ExperimentalPropertyType> p1 = c1.get(i);
+   
+   boolean found=false;
 
+   for( int j=0; j < c2l.size(); j++ )
+   {
+    ExperimentalPropertyValue<? extends ExperimentalPropertyType> p2 = c2l.get(j);
+    
+   
+    if( p2 != null && isPropsEqual( p1, p2 ) )
+    {
+     found = true;
+     
+     c2l.set(j,null);
+     
+     break;
+    }
+   }
+   
+   if( ! found )
+    return false;
+   
+  }
+
+  return true;
+ }
+ 
+ private boolean isPropsEqual( ExperimentalPropertyValue<? extends ExperimentalPropertyType> p1, ExperimentalPropertyValue<? extends ExperimentalPropertyType> p2 )
+ {
+  return isStringsEqual(p1.getType().getTermText(),p2.getType().getTermText()) 
+    && isStringsEqual(p1.getTermText(),p2.getTermText()) 
+    && isUnitsEqual(p1.getUnit(), p2.getUnit())
+    && isOTsEqual(p1.getOntologyTerms(), p2.getOntologyTerms());
+ }
+ 
+ private boolean isUnitsEqual( Unit u1, Unit u2 )
+ {
+  if( u1 == null )
+   return u2 == null;
+  
+  if( u2 == null )
+   return false;
+  
+  return isStringsEqual(u1.getTermText(), u2.getTermText()) && isOTsEqual(u1.getOntologyTerms(), u2.getOntologyTerms());
+ }
+ 
+ private boolean isOTsEqual( Set<OntologyEntry> ts1, Set<OntologyEntry> ts2 )
+ {
+  if( ts1 == null )
+   return ts2 == null;
+  
+  if( ts2 == null )
+   return false;
+  
+  if( ts1.size() != ts2.size() )
+   return false;
+  
+  ArrayList<OntologyEntry> s2l = new ArrayList<>( ts2 );
+  
+  for( OntologyEntry e1 : ts1 )
+  {
+   boolean found=false;
+   
+   for( int i=0; i < s2l.size(); i++ )
+   {
+    OntologyEntry e2 = s2l.get(i);
+    
+    if( e2 != null && isOntologyEntriesEqual(e1,e2) )
+    {
+     found = true;
+     s2l.set(i, null);
+     break;
+    }
+   }
+  
+   if( ! found )
+    return false;
+  }
+  
+  return true;
+ }
+ 
+ private boolean isOntologyEntriesEqual( OntologyEntry e1, OntologyEntry e2 )
+ {
+  return isStringsEqual(e1.getLabel(),e2.getLabel()) && isRefSourcesEqual(e1.getSource(),e2.getSource());
+ }
+
+ private boolean isRefSourcesEqual( ReferenceSource sr1, ReferenceSource sr2 )
+ {
+  if( sr1 == null )
+   return sr2 == null;
+  
+  if( sr2 == null )
+   return false;
+  
+  return isStringsEqual(sr1.getName(),sr2.getName()) && isStringsEqual(sr1.getUrl(), sr2.getUrl()) && isStringsEqual(sr1.getVersion(),sr2.getVersion());
+ }
+ 
+ 
+ 
  private void exportPropertyValue( List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> vals,  Appendable out) throws IOException
  {
   ExperimentalPropertyValue<? extends ExperimentalPropertyType> val0 = vals.get(0);
@@ -721,7 +915,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
    if(pv.getUnit() != null)
    {
-    out.append("<attribute classDefined=\"true\" dataType=\"OBJECT\" class=\"Unit\">\n");
+    out.append("<attribute classDefined=\"true\" dataType=\"STRING\" class=\"Unit\">\n");
     exportSimpleValuePefix(out);
     exportSimpleValueStringPefix(out);
     xmlEscaped(pv.getUnit().getTermText(), out);

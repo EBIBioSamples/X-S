@@ -21,7 +21,7 @@ public class AGE2XMLFormatter extends AGE1XMLFormatter
  @Override
  protected void exportSimpleValuePefix( Appendable out ) throws IOException
  {
-  out.append("<simpleValue>");
+  out.append("<simpleValue>\n");
  }
 
  @Override
@@ -45,7 +45,7 @@ public class AGE2XMLFormatter extends AGE1XMLFormatter
  @Override
  protected void exportObjectValuePrefix( Appendable out ) throws IOException
  {
-  out.append("<objectValue>");
+  out.append("<objectValue>\n");
  }
 
  @Override

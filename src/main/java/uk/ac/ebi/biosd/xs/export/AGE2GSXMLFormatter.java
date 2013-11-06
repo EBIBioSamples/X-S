@@ -3,7 +3,8 @@ package uk.ac.ebi.biosd.xs.export;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
@@ -26,7 +27,7 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  }
  
  @Override
- protected void exportSamples(BioSampleGroup ao, Appendable mainout, SamplesFormat smpSts, Set<String> attrset) throws IOException
+ protected void exportSamples(BioSampleGroup ao, Appendable mainout, SamplesFormat smpSts, Map<String,List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>> attrset) throws IOException
  {
   if(ao.getSamples() == null)
    return;
@@ -54,8 +55,7 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 
    if(smp.getPropertyValues() != null &&  attrset != null )
    {
-    for(ExperimentalPropertyValue<ExperimentalPropertyType> pval : smp.getPropertyValues())
-     attrset.add(pval.getType().getTermText());
+    exportPropertyValues(smp.getPropertyValues(), mainout, attrset, true);
    }
    
    
