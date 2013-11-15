@@ -52,7 +52,7 @@ public class ExporterMT implements Exporter
   
   out.append("<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n");
 
-  formatter.exportGroupHeader(out, false);
+  formatter.exportGroupHeader(out, false, -1);
 
   File tmpFile = null;
   PrintStream sampleOut=null;
@@ -86,7 +86,7 @@ public class ExporterMT implements Exporter
 
     sampleOut = null;
 
-    formatter.exportSampleHeader(out, false);
+    formatter.exportSampleHeader(out, false, -1);
 
     Reader rd = new InputStreamReader(new FileInputStream(tmpFile), Charset.forName("utf-8"));
 

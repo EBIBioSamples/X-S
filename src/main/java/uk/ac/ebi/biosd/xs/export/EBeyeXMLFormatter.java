@@ -98,9 +98,9 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
    }
   }
   
-  out.append("</description>\n<keywords>\n");
+  out.append("</description>\n\n<additional_fields>\n<field name=\"searchwords\">\n");
   
-  kw.remove( null );
+  kw = cleanKeywords(kw);
   
   for( String w : kw )
   {
@@ -108,12 +108,54 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
    out.append(' ');
   }
   
-  out.append("\n</keywords>\n</entry>\n");
+  out.append("\n</field>\n</additional_fields>\n</entry>\n"); 
 
  
   return true;
  }
  
+ 
+ private Set<String> cleanKeywords( Set<String> kw )
+ {
+  Set<String> nkw = new HashSet<>();
+
+  kw.remove(null);
+
+  for(String w : kw)
+  {
+   int l = w.length();
+
+   int begin = -1;
+
+   int i = 0;
+
+   while(i < l)
+   {
+    char ch = w.charAt(i);
+    if(Character.isLetterOrDigit(ch) || ch > 255)
+    {
+     if(begin == -1)
+      begin = i;
+    }
+    else
+    {
+     if(begin != -1)
+     {
+      nkw.add(w.substring(begin, i));
+      begin = -1;
+     }
+    }
+    
+    i++;
+   }
+   
+   if( begin != -1 )
+    nkw.add(w.substring(begin));
+  }
+
+  return nkw;
+  
+ }
 
  @Override
  public boolean exportGroup(BioSampleGroup grp, Appendable out, boolean showNS) throws IOException
@@ -253,9 +295,9 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
    }
   }
   
-  out.append("\n<keywords>\n");
+  out.append("\n<additional_fields>\n<field name=\"searchwords\">\n");
 
-  kw.remove(null);
+  kw = cleanKeywords(kw);
   
   for( String w : kw )
   {
@@ -263,15 +305,15 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
    out.append(' ');
   }
   
-  out.append("\n</keywords>\n</entry>\n"); 
+  out.append("\n</field>\n</additional_fields>\n</entry>\n"); 
  
   return true;
  }
 
  @Override
- public void exportSampleHeader(Appendable out, boolean showNS) throws IOException
+ public void exportSampleHeader(Appendable out, boolean showNS, int n) throws IOException
  {
-  exportHeader(-1, out, showNS);
+  header(-1, out, showNS, n);
  }
 
 
@@ -282,8 +324,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
   exportFooter(out);
  }
  
- @Override
- public void exportHeader( long since, Appendable out, boolean showNS ) throws IOException
+ private void header( long since, Appendable out, boolean showNS, int n ) throws IOException
  {
   Date d = new Date();
   
@@ -291,13 +332,24 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
   out.append("<database>\n<name>BioSamples database</name>\n<release_date>");
   out.append(df.format(d));
   out.append("</release_date>\n");
+  
+  if( n >= 0 )
+   out.append("<entry_count>"+n+"</entry_count>\n");
+  
+  out.append("<entries>\n");
 
+ }
+ 
+ @Override
+ public void exportHeader( long since, Appendable out, boolean showNS ) throws IOException
+ {
+  header(since, out, showNS, -1);
  }
 
  @Override
  public void exportFooter(Appendable out) throws IOException
  {
-  out.append("</database>");
+  out.append("</entries>\n</database>");
  }
 
  @Override
@@ -319,14 +371,16 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  }
 
  @Override
- public void exportGroupHeader(Appendable out, boolean showNS) throws IOException
+ public void exportGroupHeader(Appendable out, boolean showNS, int n) throws IOException
  {
+  header(-1, out, showNS, n);
  }
 
  
  @Override
  public void exportGroupFooter(Appendable out) throws IOException
  {
+  exportFooter(out);
  }
 
 

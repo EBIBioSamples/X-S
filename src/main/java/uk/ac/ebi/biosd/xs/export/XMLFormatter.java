@@ -18,8 +18,8 @@ public interface XMLFormatter
  boolean exportGroup( BioSampleGroup ao, Appendable out, boolean showNS ) throws IOException;
 
  void exportHeader(long since, Appendable out, boolean showNS) throws IOException;
- void exportGroupHeader(Appendable out, boolean showNS) throws IOException;
- void exportSampleHeader(Appendable out, boolean showNS) throws IOException;
+ void exportGroupHeader(Appendable out, boolean showNS, int n) throws IOException;
+ void exportSampleHeader(Appendable out, boolean showNS, int n) throws IOException;
 
   
  void exportFooter(Appendable out) throws IOException;

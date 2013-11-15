@@ -13,7 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.Query;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -157,8 +159,16 @@ public class EBeyeExport
    if(limit < 0)
     limit = Integer.MAX_VALUE;
     
+   EntityManager em  = emf.createEntityManager();
+   
+   Query query=em.createQuery("SELECT COUNT(p.id) FROM BioSample p");
+   Number sampleCount=(Number) query.getSingleResult();
 
-
+   query=em.createQuery("SELECT COUNT(p.id) FROM BioSampleGroup p");
+   Number groupCount=(Number) query.getSingleResult();
+   
+   em.close();
+   
    log.debug("Start exporting EBeye XML files");
 
    
@@ -167,10 +177,10 @@ public class EBeyeExport
    java.util.Date startTime = new java.util.Date();
    long startTs = startTime.getTime();
 
-   ebeyeFmt.exportGroupHeader(  grpFileOut, true );
+   ebeyeFmt.exportGroupHeader(  grpFileOut, true, groupCount.intValue() );
 
    if( genSamples )
-    ebeyeFmt.exportSampleHeader( smplFileOut, true );
+    ebeyeFmt.exportSampleHeader( smplFileOut, true, sampleCount.intValue() );
    
    if( auxFileOut != null )
     auxFmt.exportHeader(-1, auxFileOut, auxConfig.getShowNamespace(DefaultShowNS) );
@@ -186,7 +196,7 @@ public class EBeyeExport
    {
     auxFileOut.append(commStr);
    
-    auxFmt.exportGroupHeader(auxFileOut, false);
+    auxFmt.exportGroupHeader(auxFileOut, false, groupCount.intValue());
    }
 
    File tmpAuxSampleFile = null;
@@ -234,7 +244,7 @@ public class EBeyeExport
       
       tmpAuxSampleOut = null;
       
-      auxFmt.exportSampleHeader(auxFileOut, false);
+      auxFmt.exportSampleHeader(auxFileOut, false, sampleCount.intValue());
       
       Reader rd = new InputStreamReader(new FileInputStream(tmpAuxSampleFile), Charset.forName("utf-8"));
       

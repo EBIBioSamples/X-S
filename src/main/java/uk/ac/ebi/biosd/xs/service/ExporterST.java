@@ -74,7 +74,7 @@ public class ExporterST implements Exporter
   
   out.append("<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n");
 
-  formatter.exportGroupHeader( out, false );
+  formatter.exportGroupHeader( out, false, -1 );
   
   if( formatter.isSamplesExport() )
   {
@@ -86,7 +86,7 @@ public class ExporterST implements Exporter
    
    smpStream = new PrintStream(tmpFile,"utf-8");
    
-   formatter.exportSampleHeader( smpStream, false );
+   formatter.exportSampleHeader( smpStream, false, -1 );
   }
 
   long groupCount = 0;

@@ -95,12 +95,15 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  }
  
  @Override
- public void exportGroupHeader(Appendable out, boolean showNS) throws IOException
+ public void exportGroupHeader(Appendable out, boolean showNS, int n) throws IOException
  {
 
   if( showNS )
    out.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
   
+  if( n >= 0 )
+   out.append("<!-- Group entries: "+n+" -->\n");   
+
   out.append("<SampleGroups");
   
   if( showNS )
@@ -126,12 +129,15 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  }
  
  @Override
- public void exportSampleHeader(Appendable out, boolean showNS) throws IOException
+ public void exportSampleHeader(Appendable out, boolean showNS, int n) throws IOException
  {
 
   if( showNS )
    out.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
   
+  if( n >= 0 )
+   out.append("<!-- Sample entries: "+n+" -->\n");   
+
   out.append("<Samples");
   
   if( showNS )

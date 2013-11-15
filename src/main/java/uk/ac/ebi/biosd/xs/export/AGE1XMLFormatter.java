@@ -1029,14 +1029,20 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  }
 
  @Override
- public void exportGroupHeader(Appendable out, boolean showNS) throws IOException
+ public void exportGroupHeader(Appendable out, boolean showNS, int n) throws IOException
  {
+  if( n >= 0 )
+   out.append("<!-- Group entries: "+n+" -->\n");   
+   
   return;
  }
 
  @Override
- public void exportSampleHeader(Appendable out, boolean showNS) throws IOException
+ public void exportSampleHeader(Appendable out, boolean showNS, int n) throws IOException
  {
+  if( n >= 0 )
+   out.append("<!-- Sample entries: "+n+" -->\n");   
+   
   return;
  }
 
