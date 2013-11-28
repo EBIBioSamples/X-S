@@ -52,7 +52,9 @@ public class OutputTask implements Runnable
    }
    catch(Exception e)
    {
-    putIntoQueue(new ControlMessage(Type.OUTPUT_ERROR, this));
+    e.printStackTrace();
+    
+    putIntoQueue(new ControlMessage(Type.OUTPUT_ERROR, this,e));
     return;
    }
    

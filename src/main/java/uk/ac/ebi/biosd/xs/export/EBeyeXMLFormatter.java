@@ -30,12 +30,14 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  static final String DESCRIPTION_PROPERTY = "Description";
  
  private final OWLKeywordExpansion expander;
+ private final Map<String, String> ebeyeSrcMap;
  
- public EBeyeXMLFormatter(OWLKeywordExpansion exp, boolean pubOnly )
+ public EBeyeXMLFormatter(OWLKeywordExpansion exp, Map<String, String> ebeyeSrcMap, boolean pubOnly )
  {
   super(false, false, null, pubOnly);
   
   expander=exp;
+  this.ebeyeSrcMap = ebeyeSrcMap;
  }
 
  static DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
@@ -87,18 +89,51 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
      kw.add(pVal);
 
     
-    if( isChar )
-     xmlEscaped("Characteristic["+pName+"]",out);
-    else if( isComm )
-     xmlEscaped("Comment["+pName+"]",out);
-    else
+//    if( isChar )
+//     xmlEscaped("Characteristic["+pName+"]",out);
+//    else if( isComm )
+//     xmlEscaped("Comment["+pName+"]",out);
+//    else
      xmlEscaped(pName,out);
 
     xmlEscaped(": "+pVal+"\n", out);
    }
   }
   
-  out.append("</description>\n\n<additional_fields>\n<field name=\"searchwords\">\n");
+  out.append("</description>");
+  
+  StringBuilder sb = new StringBuilder();
+  
+  for( DatabaseRefSource db : smp.getDatabases() )
+  {
+   kw.add( db.getDescription() );
+   kw.add(db.getName());
+   
+   if( ebeyeSrcMap != null && db.getName() != null && db.getAcc() != null )
+   {
+    String dbTag = ebeyeSrcMap.get(db.getName());
+    
+    if( dbTag != null )
+    {
+     sb.append("\n<ref dbkey=\"");
+     xmlEscaped(db.getAcc(), sb);
+     sb.append("\" dbname=\""); 
+     xmlEscaped(dbTag, sb);
+     sb.append("\" />\n");
+    }
+   }
+   
+  }
+  
+  if( sb.length() != 0 )
+  {
+   out.append("\n<cross_references>");
+   out.append(sb.toString());
+   out.append("</cross_references>");
+  }
+  
+  
+  out.append("\n<additional_fields>\n<field name=\"searchwords\">\n");
   
   kw = cleanKeywords(kw);
   
@@ -211,6 +246,15 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
      kw.addAll(terms);
     else
      kw.add(msi.getDescription());
+    
+    if( ! hasDescription )
+    {
+     out.append("\n<description>\n");
+     xmlEscaped(msi.getDescription(), out);
+     out.append("\n</description>");
+     
+     hasDescription = true;
+    }
    }
    
 
@@ -241,10 +285,34 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
     kw.add( ct.getLastName() );
    }
    
+   StringBuilder sb = new StringBuilder();
+   
    for( DatabaseRefSource db : msi.getDatabases() )
    {
     kw.add( db.getDescription() );
     kw.add(db.getName());
+    
+    if( ebeyeSrcMap != null && db.getName() != null && db.getAcc() != null )
+    {
+     String dbTag = ebeyeSrcMap.get(db.getName());
+     
+     if( dbTag != null )
+     {
+      sb.append("\n<ref dbkey=\"");
+      xmlEscaped(db.getAcc(), sb);
+      sb.append("\" dbname=\""); 
+      xmlEscaped(dbTag, sb);
+      sb.append("\" />\n");
+     }
+    }
+    
+   }
+   
+   if( sb.length() != 0 )
+   {
+    out.append("\n<cross_references>");
+    out.append(sb.toString());
+    out.append("</cross_references>");
    }
 
    for( Organization org : msi.getOrganizations() )

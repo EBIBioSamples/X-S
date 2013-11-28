@@ -93,8 +93,6 @@ public class ExporterMTControl
    tPool.submit( et );
   }
   
-  int count=0;
-  
   int tproc = threads;
   int tout = outputs.size();
   
@@ -123,7 +121,9 @@ public class ExporterMTControl
    }
    else if( o.getType() == Type.OUTPUT_ERROR )
    {
-    log.warn("Got output error. Sending termination to processing threads");
+    log.error("Got output error. Sending termination to processing threads");
+
+    logException(o);
 
     tout--;
     stopFlag.set(true);
@@ -132,8 +132,10 @@ public class ExporterMTControl
    }
    else if( o.getType() == Type.PROCESS_ERROR )
    {
-    log.warn("Got processing error. Sending termination to other processing threads");
+    log.error("Got processing error. Sending termination to other processing threads");
 
+    logException(o);
+    
     tproc--;
     stopFlag.set(true);
    }
@@ -233,5 +235,19 @@ public class ExporterMTControl
 
  }
  
+ private void logException( ControlMessage o )
+ {
+  if(o.getException() == null)
+   return;
 
+  log.error("Exception class: " + o.getException().getClass().getName());
+
+  if(o.getException().getMessage() != null && o.getException().getMessage().length() > 0)
+   log.error("Exception message: " + o.getException().getMessage());
+
+  log.error(o.getException().getStackTrace()[0].toString());
+
+  o.getException().printStackTrace();
+ }
+ 
 }

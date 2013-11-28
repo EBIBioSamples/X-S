@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -152,7 +153,6 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   if( showAttributes )
    attrset = new HashMap<>();
   
-
   if( showNS && ! nsShown )
   {
    mainout.append("<?xml version=\"1.1\" encoding=\"UTF-8\"?>\n");
@@ -273,6 +273,13 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     mainout.append("</attribute>\n");
    }
 
+   mainout.append("<attribute class=\"Submission Reference Layer\" classDefined=\"true\" dataType=\"STRING\">\n");
+   exportSimpleValuePefix(mainout);
+   exportSimpleValueStringPefix(mainout);
+   xmlEscaped(ao.isInReferenceLayer()?"true":"false", mainout);
+   exportSimpleValueStringPostfix(mainout);
+   exportSimpleValuePostfix(mainout);
+   mainout.append("</attribute>\n");
    
    if( msi.getReferenceSources() != null && msi.getReferenceSources().size() > 0 )
    {
@@ -594,7 +601,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   if( isPublicOnly() && ! isSamplePublic(smp) )
    return false;
 
-   
+  
   if( showNS && ! nsShown )
   {
    mainout.append("<?xml version=\"1.1\" encoding=\"UTF-8\"?>\n");
@@ -689,6 +696,8 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   if( attrset!= null && attrset.size() == 0 )
    firstObject = true;
   
+  Set<String> attrNames = new HashSet<>();
+  
   for( int i=0; i < vals.size(); i++ )
   {
    procV= new ArrayList<>( vals.size() );
@@ -697,6 +706,8 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    
    if( v == null )
     continue;
+   
+   attrNames.add(makeTypeId(v.getType()));
    
    procV.add( v );
    
@@ -748,6 +759,13 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
      
      if( cval != null && ! isPropCollectionEqual(procV, cval) )
       attrset.put(typId,null);
+     
+     for( String key : attrset.keySet() )
+     {
+      if( ! attrNames.contains(key) )
+       attrset.put(key, null);
+     }
+
     } 
    }
   }

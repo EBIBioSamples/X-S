@@ -2,6 +2,7 @@ package uk.ac.ebi.biosd.xs.ebeye;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.Reader;
@@ -11,11 +12,10 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.Query;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +44,10 @@ public class EBeyeExport
  
  private static final String        samplesFileName      = "samples.xml";
  private static final String        groupsFileName       = "groups.xml";
+ 
+ private static final String        samplesHdrFileName      = "samples.hdr.xml";
+ private static final String        groupsHdrFileName       = "groups.hdr.xml";
+
  private static final String        auxFileName          = "aux_out.xml";
  private static final String        auxSamplesTmpFileName= "aux_samples.tmp.xml";
  
@@ -56,6 +60,7 @@ public class EBeyeExport
  private File auxFile;
  private final URL efoURL;
  private final RequestConfig auxConfig;
+ private final Map<String, String> ebeyeSrcMap;
  
  private final AtomicBoolean busy = new AtomicBoolean( false );
  
@@ -72,12 +77,13 @@ public class EBeyeExport
   EBeyeExport.instance = instance;
  }
  
- public EBeyeExport(EntityManagerFactory emf, File outDir, File tmpDir, URL efoURL, RequestConfig rc)
+ public EBeyeExport(EntityManagerFactory emf, File outDir, File tmpDir, URL efoURL, RequestConfig rc,  Map<String, String> ebeyeSrcMap)
  {
   log = LoggerFactory.getLogger(EBeyeExport.class);
 
   this.emf=emf;
   
+  this.ebeyeSrcMap = ebeyeSrcMap;
   this.outDir = outDir;
   this.tmpDir = tmpDir;
   this.efoURL = efoURL;
@@ -113,7 +119,8 @@ public class EBeyeExport
 
   
  }
- 
+
+
  public boolean isBusy()
  {
   return busy.get();
@@ -135,22 +142,33 @@ public class EBeyeExport
    if(!checkDirs())
     return false;
    
-   ebeyeFmt = new EBeyeXMLFormatter(new OWLKeywordExpansion(efoURL), pubOnly);
+   ebeyeFmt = new EBeyeXMLFormatter(new OWLKeywordExpansion(efoURL), ebeyeSrcMap, pubOnly);
 
    
    PrintStream grpFileOut = null;
+   PrintStream grpHdrFileOut = null;
+
    PrintStream smplFileOut = null;
+   PrintStream smplHdrFileOut = null;
+
    PrintStream auxFileOut = null;
 
    
+   File tmpHdrGrpFile = new File(tmpDir, groupsHdrFileName);
+   File tmpHdrSmplFile = new File(tmpDir, samplesHdrFileName);
+
    File tmpGrpFile = new File(tmpDir, groupsFileName);
    File tmpSmplFile = new File(tmpDir, samplesFileName);
    File tmpAuxFile = new File(tmpDir, auxFileName);
 
    grpFileOut = new PrintStream(tmpGrpFile, "UTF-8");
+   grpHdrFileOut = new PrintStream(tmpHdrGrpFile, "UTF-8");
    
    if( genSamples )
+   {
     smplFileOut = new PrintStream(tmpSmplFile, "UTF-8");
+    smplHdrFileOut = new PrintStream(tmpHdrSmplFile, "UTF-8");
+   }
    
    if( auxFile != null )
     auxFileOut = new PrintStream(tmpAuxFile, "UTF-8");
@@ -159,15 +177,15 @@ public class EBeyeExport
    if(limit < 0)
     limit = Integer.MAX_VALUE;
     
-   EntityManager em  = emf.createEntityManager();
-   
-   Query query=em.createQuery("SELECT COUNT(p.id) FROM BioSample p");
-   Number sampleCount=(Number) query.getSingleResult();
-
-   query=em.createQuery("SELECT COUNT(p.id) FROM BioSampleGroup p");
-   Number groupCount=(Number) query.getSingleResult();
-   
-   em.close();
+//   EntityManager em  = emf.createEntityManager();
+//   
+//   Query query=em.createQuery("SELECT COUNT(p.id) FROM BioSample p");
+//   Number sampleCount=(Number) query.getSingleResult();
+//
+//   query=em.createQuery("SELECT COUNT(p.id) FROM BioSampleGroup p");
+//   Number groupCount=(Number) query.getSingleResult();
+//   
+//   em.close();
    
    log.debug("Start exporting EBeye XML files");
 
@@ -177,26 +195,21 @@ public class EBeyeExport
    java.util.Date startTime = new java.util.Date();
    long startTs = startTime.getTime();
 
-   ebeyeFmt.exportGroupHeader(  grpFileOut, true, groupCount.intValue() );
-
-   if( genSamples )
-    ebeyeFmt.exportSampleHeader( smplFileOut, true, sampleCount.intValue() );
-   
    if( auxFileOut != null )
     auxFmt.exportHeader(-1, auxFileOut, auxConfig.getShowNamespace(DefaultShowNS) );
    
    String commStr = "<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n";
    
-   grpFileOut.append(commStr);
+   grpHdrFileOut.append(commStr);
 
    if( genSamples )
-    smplFileOut.append(commStr);
+    smplHdrFileOut.append(commStr);
 
    if( auxFileOut != null )
    {
     auxFileOut.append(commStr);
    
-    auxFmt.exportGroupHeader(auxFileOut, false, groupCount.intValue());
+    auxFmt.exportGroupHeader(auxFileOut, false, -1);
    }
 
    File tmpAuxSampleFile = null;
@@ -231,12 +244,15 @@ public class EBeyeExport
      ebeyeFmt.exportSampleFooter( smplFileOut );
     
     
+    ebeyeFmt.exportGroupHeader(  grpHdrFileOut, true, stat.getGroupCount() );
+
+    if( genSamples )
+     ebeyeFmt.exportSampleHeader( smplHdrFileOut, true, stat.getUniqSampleCount() );
+    
     if(auxFileOut != null )
     {
      auxFmt.exportGroupFooter(auxFileOut);
      
-     if( auxConfig.getShowSources(DefaultShowSources))
-      auxFmt.exportSources(stat.getSourcesMap(), auxFileOut);
 
      if(auxFmt.isSamplesExport())
      {
@@ -244,38 +260,29 @@ public class EBeyeExport
       
       tmpAuxSampleOut = null;
       
-      auxFmt.exportSampleHeader(auxFileOut, false, sampleCount.intValue());
+      auxFmt.exportSampleHeader(auxFileOut, false, stat.getUniqSampleCount());
       
-      Reader rd = new InputStreamReader(new FileInputStream(tmpAuxSampleFile), Charset.forName("utf-8"));
-      
-      try
-      {
-       
-       CharBuffer buf = CharBuffer.allocate(4096);
-       
-       while(rd.read(buf) != -1)
-       {
-        String str = new String(buf.array(), 0, buf.position());
-        
-        auxFileOut.append(str);
-        
-        buf.clear();
-       }
-       
-      }
-      finally
-      {
-       rd.close();
-      }
-      
+      appendFile(auxFileOut, tmpAuxSampleFile);
       
       auxFmt.exportSampleFooter(auxFileOut);
       
      }
 
+     if( auxConfig.getShowSources(DefaultShowSources))
+      auxFmt.exportSources(stat.getSourcesMap(), auxFileOut);
+
+     
      auxFmt.exportFooter(auxFileOut);
     }
     
+    grpFileOut.close();
+    appendFile(grpHdrFileOut, tmpGrpFile);
+    
+    if( genSamples )
+    {
+     smplFileOut.close();
+     appendFile(smplHdrFileOut, tmpSmplFile);
+    }
 
     
     java.util.Date endTime = new java.util.Date();
@@ -296,21 +303,21 @@ public class EBeyeExport
     String stmsg5="\n<!-- End time: "+simpleDateFormat.format(endTime)+". Time spent: "+StringUtils.millisToString(endTs-startTs)+" -->";
     String stmsg6="\n<!-- Thank you. Good bye. -->\n";
     
-    grpFileOut.append(stmsg1);
-    grpFileOut.append(stmsg2);
-    grpFileOut.append(stmsg3);
-    grpFileOut.append(stmsg4);
-    grpFileOut.append(stmsg5);
-    grpFileOut.append(stmsg6);
+    grpHdrFileOut.append(stmsg1);
+    grpHdrFileOut.append(stmsg2);
+    grpHdrFileOut.append(stmsg3);
+    grpHdrFileOut.append(stmsg4);
+    grpHdrFileOut.append(stmsg5);
+    grpHdrFileOut.append(stmsg6);
 
     if( genSamples )
     {
-     smplFileOut.append(stmsg1);
-     smplFileOut.append(stmsg2);
-     smplFileOut.append(stmsg3);
-     smplFileOut.append(stmsg4);
-     smplFileOut.append(stmsg5);
-     smplFileOut.append(stmsg6);
+     smplHdrFileOut.append(stmsg1);
+     smplHdrFileOut.append(stmsg2);
+     smplHdrFileOut.append(stmsg3);
+     smplHdrFileOut.append(stmsg4);
+     smplHdrFileOut.append(stmsg5);
+     smplHdrFileOut.append(stmsg6);
     }
     
     if( auxFileOut != null )
@@ -333,10 +340,15 @@ public class EBeyeExport
     if( tmpAuxSampleFile != null )
      tmpAuxSampleFile.delete();
     
-    grpFileOut.close();
+    tmpGrpFile.delete();
+    
+    grpHdrFileOut.close();
 
     if( genSamples )
-     smplFileOut.close();
+    {
+     tmpSmplFile.delete();
+     smplHdrFileOut.close();
+    }
     
     if( auxFileOut != null )
      auxFileOut.close();
@@ -349,8 +361,8 @@ public class EBeyeExport
    if( grpFile.exists() && !grpFile.delete() )
     log.error("Can't delete file: "+grpFile);
    
-   if(!tmpGrpFile.renameTo(grpFile))
-    log.error("Moving groups file failed. {} -> {} ", tmpGrpFile.getAbsolutePath(), grpFile.getAbsolutePath());
+   if(!tmpHdrGrpFile.renameTo(grpFile))
+    log.error("Moving groups file failed. {} -> {} ", tmpHdrGrpFile.getAbsolutePath(), grpFile.getAbsolutePath());
 
    if( genSamples )
    {
@@ -359,8 +371,8 @@ public class EBeyeExport
     if( smpFile.exists() && !smpFile.delete() )
      log.error("Can't delete file: "+smpFile);
     
-    if(!tmpSmplFile.renameTo(smpFile))
-     log.error("Moving samples file failed. {} -> {} ", tmpSmplFile.getAbsolutePath(), smpFile.getAbsolutePath());
+    if(!tmpHdrSmplFile.renameTo(smpFile))
+     log.error("Moving samples file failed. {} -> {} ", tmpHdrSmplFile.getAbsolutePath(), smpFile.getAbsolutePath());
    }
 
    if( auxFileOut != null )
@@ -427,6 +439,31 @@ public class EBeyeExport
   }
   
  }
+  private void appendFile(Appendable out, File f) throws IOException
+  {
+   Reader rd = new InputStreamReader(new FileInputStream(f), Charset.forName("utf-8"));
+   
+   try
+   {
+    
+    CharBuffer buf = CharBuffer.allocate(4096);
+    
+    while(rd.read(buf) != -1)
+    {
+     String str = new String(buf.array(), 0, buf.position());
+     
+     out.append(str);
+     
+     buf.clear();
+    }
+    
+   }
+   finally
+   {
+    rd.close();
+   }
+  }
+
 
 
 }

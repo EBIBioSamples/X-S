@@ -39,7 +39,11 @@ public class Init implements ServletContextListener
  static String EBeyeEfoURLParam = "ebeye.efoURL";
  static String EBeyeGenSamples = "ebeye.generateSamples";
  static String EBeyeThreads = "ebeye.threads";
+ static String EBeyeSources = "ebeye.sources";
 
+ static final String ebeyeSrcSeparator = ";";
+ static final String ebeyeSrcSubstSeparator = ":";
+ 
  static String PersistParamPrefix = "persist";
  static String DefaultProfileParam = PersistParamPrefix+".defaultProfile";
 
@@ -161,6 +165,30 @@ public class Init implements ServletContextListener
    return;
   }
  
+
+  Map<String,String> ebeyeSrcMap = null;
+  String str = servletContext.getInitParameter( EBeyeSources );
+  
+  if( str != null )
+  {
+   ebeyeSrcMap = new HashMap<>();
+   
+   String[] srcs = str.split(ebeyeSrcSeparator);
+   
+   for( String s : srcs )
+   {
+    s=s.trim();
+    
+    String[] mp = s.split(ebeyeSrcSubstSeparator);
+    
+    if( mp.length > 1 )
+     ebeyeSrcMap.put(mp[0].trim(), mp[1].trim());
+    else
+     ebeyeSrcMap.put(s, s);
+   }
+   
+  }
+
   String efoURLStr = servletContext.getInitParameter( EBeyeEfoURLParam );
   
   if( efoURLStr == null )
@@ -238,7 +266,7 @@ public class Init implements ServletContextListener
    
   }
   
-  String str = servletContext.getInitParameter(EBeyeThreads);
+  str = servletContext.getInitParameter(EBeyeThreads);
   
   int t=0;
   
@@ -268,7 +296,7 @@ public class Init implements ServletContextListener
   }, EBeyeAuxPrefix);
   
   
-  EBeyeExport.setInstance( new EBeyeExport(emf, new File(outPath), new File(tempPath), efoURL, reqCfg ) );
+  EBeyeExport.setInstance( new EBeyeExport(emf, new File(outPath), new File(tempPath), efoURL, reqCfg, ebeyeSrcMap ) );
   
   if( hour != -1 )
   {

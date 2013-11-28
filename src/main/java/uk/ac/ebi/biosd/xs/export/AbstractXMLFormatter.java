@@ -163,10 +163,12 @@ public abstract class AbstractXMLFormatter implements XMLFormatter
      out.append( s.substring(0, i) );
      escaping=true;
     }
-    
-    int rem = ch%16;
-    
-    out.append("&#").append( (ch > 15)?'1':'0' ).append( (char)(rem > 9?(rem-10+'A'):(rem+'0')) ).append(';');
+
+  // These characters are invalid in a XML document. Just ommiting them.
+
+//    int rem = ch%16;
+//    
+//    out.append("&#").append( (ch > 15)?'1':'0' ).append( (char)(rem > 9?(rem-10+'A'):(rem+'0')) ).append(';');
    }
    else
    {
