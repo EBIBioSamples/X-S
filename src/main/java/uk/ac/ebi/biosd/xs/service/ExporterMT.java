@@ -10,6 +10,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Date;
 
 import javax.persistence.EntityManagerFactory;
 
@@ -68,12 +69,16 @@ public class ExporterMT implements Exporter
 
   FormattingRequest freq = new FormattingRequest(formatter, out, sampleOut);
 
+  Date now = new Date();
+  
+  formatter.setNowDate(now);
+  
   ExporterMTControl mtc = new ExporterMTControl(emf, Collections.singletonList(freq), exportSources, sourcesByName, threads);
 
   try
   {
 
-   MTExporterStat stat = mtc.export(since, limit);
+   MTExporterStat stat = mtc.export(since, limit, now);
 
    formatter.exportGroupFooter(out);
 

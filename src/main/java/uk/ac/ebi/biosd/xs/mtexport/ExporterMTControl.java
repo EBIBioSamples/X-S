@@ -2,6 +2,7 @@ package uk.ac.ebi.biosd.xs.mtexport;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -29,7 +30,7 @@ public class ExporterMTControl
  final boolean sourcesByName;
  private final int threads;
  
- public ExporterMTControl(EntityManagerFactory emf, List<FormattingRequest> ftasks, boolean exportSources, boolean sourcesByName, int thN)
+ public ExporterMTControl(EntityManagerFactory emf, List<FormattingRequest> ftasks, boolean exportSources, boolean sourcesByName, int thN )
  {
   super();
   this.emf = emf;
@@ -40,7 +41,7 @@ public class ExporterMTControl
  }
 
  
- public MTExporterStat export( long since, long limit) throws Throwable
+ public MTExporterStat export( long since, long limit, Date now) throws Throwable
  {
   List<MTSliceExporterTask> exporters = new ArrayList<>( threads );
   List<OutputTask> outputs = new ArrayList<>( requests.size() * 2);
@@ -74,7 +75,7 @@ public class ExporterMTControl
   
   AtomicBoolean stopFlag = new AtomicBoolean(false);
   
-  MTExporterStat statistics = new MTExporterStat();
+  MTExporterStat statistics = new MTExporterStat( now );
   
   for( OutputTask ot : outputs )
    tPool.submit(ot);

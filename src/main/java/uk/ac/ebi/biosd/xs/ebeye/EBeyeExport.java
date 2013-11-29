@@ -11,6 +11,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -107,7 +108,7 @@ public class EBeyeExport
    {
     smpfmt = SamplesFormat.valueOf(rc.getSamplesFormat(DefaultSamplesFormat) );
 
-    auxFmt = SchemaManager.getFormatter(rc.getSchema(DefaultSchema), rc.getShowAttributesSummary(true), rc.getShowAccessControl(true), smpfmt, rc.getPublicOnly(false));
+    auxFmt = SchemaManager.getFormatter(rc.getSchema(DefaultSchema), rc.getShowAttributesSummary(true), rc.getShowAccessControl(true), smpfmt, rc.getPublicOnly(false), new Date());
    }
    catch(Exception e)
    {
@@ -142,7 +143,11 @@ public class EBeyeExport
    if(!checkDirs())
     return false;
    
-   ebeyeFmt = new EBeyeXMLFormatter(new OWLKeywordExpansion(efoURL), ebeyeSrcMap, pubOnly);
+   Date now = new Date();
+   
+   ebeyeFmt = new EBeyeXMLFormatter(new OWLKeywordExpansion(efoURL), ebeyeSrcMap, pubOnly, now);
+   
+   auxFmt.setNowDate(now);
 
    
    PrintStream grpFileOut = null;
@@ -236,7 +241,7 @@ public class EBeyeExport
    try
    {
 
-    MTExporterStat stat = mtc.export(-1, limit);
+    MTExporterStat stat = mtc.export(-1, limit, now);
 
     ebeyeFmt.exportGroupFooter( grpFileOut );
 
@@ -244,10 +249,10 @@ public class EBeyeExport
      ebeyeFmt.exportSampleFooter( smplFileOut );
     
     
-    ebeyeFmt.exportGroupHeader(  grpHdrFileOut, true, stat.getGroupCount() );
+    ebeyeFmt.exportGroupHeader(  grpHdrFileOut, true, stat.getGroupPublicCount() );
 
     if( genSamples )
-     ebeyeFmt.exportSampleHeader( smplHdrFileOut, true, stat.getUniqSampleCount() );
+     ebeyeFmt.exportSampleHeader( smplHdrFileOut, true, stat.getSamplePublicUniqCount() );
     
     if(auxFileOut != null )
     {
@@ -292,20 +297,25 @@ public class EBeyeExport
     long rate = stat.getGroupCount()!=0? (endTs-startTs)/stat.getGroupCount():0;
     
     String stmsg1="\n<!-- Exported: "+stat.getGroupCount()+" groups in "+threads+" threads. Rate: "+rate+"ms per group -->";
+    String stmsg1a="\n<!-- Public groups: "+stat.getGroupPublicCount()+" -->";
     
     rate = stat.getSampleCount()!=0? (endTs-startTs)/stat.getSampleCount():0;
     String stmsg2="\n<!-- Samples in groups: "+stat.getSampleCount()+". Rate: "+rate+"ms per sample -->";
     
     rate = stat.getUniqSampleCount()!=0? (endTs-startTs)/stat.getUniqSampleCount():0;
     String stmsg3="\n<!-- Unique samples: "+stat.getUniqSampleCount()+". Rate: "+rate+"ms per unique sample -->";
+
+    String stmsg3a="\n<!-- Public unique samples: "+stat.getSamplePublicUniqCount()+" -->";
     
     String stmsg4="\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->";
     String stmsg5="\n<!-- End time: "+simpleDateFormat.format(endTime)+". Time spent: "+StringUtils.millisToString(endTs-startTs)+" -->";
     String stmsg6="\n<!-- Thank you. Good bye. -->\n";
     
     grpHdrFileOut.append(stmsg1);
+    grpHdrFileOut.append(stmsg1a);
     grpHdrFileOut.append(stmsg2);
     grpHdrFileOut.append(stmsg3);
+    grpHdrFileOut.append(stmsg3a);
     grpHdrFileOut.append(stmsg4);
     grpHdrFileOut.append(stmsg5);
     grpHdrFileOut.append(stmsg6);
@@ -313,8 +323,10 @@ public class EBeyeExport
     if( genSamples )
     {
      smplHdrFileOut.append(stmsg1);
+     smplHdrFileOut.append(stmsg1a);
      smplHdrFileOut.append(stmsg2);
      smplHdrFileOut.append(stmsg3);
+     smplHdrFileOut.append(stmsg3a);
      smplHdrFileOut.append(stmsg4);
      smplHdrFileOut.append(stmsg5);
      smplHdrFileOut.append(stmsg6);
@@ -323,8 +335,10 @@ public class EBeyeExport
     if( auxFileOut != null )
     {
      auxFileOut.append(stmsg1);
+     auxFileOut.append(stmsg1a);
      auxFileOut.append(stmsg2);
      auxFileOut.append(stmsg3);
+     auxFileOut.append(stmsg3a);
      auxFileOut.append(stmsg4);
      auxFileOut.append(stmsg5);
      auxFileOut.append(stmsg6);

@@ -13,6 +13,7 @@ import javax.persistence.EntityManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
 import uk.ac.ebi.biosd.xs.init.Init;
 import uk.ac.ebi.biosd.xs.mtexport.ControlMessage.Type;
 import uk.ac.ebi.biosd.xs.util.Slice;
@@ -126,6 +127,9 @@ public class MTSliceExporterTask implements Runnable
      stat.incGroupCounter();
      stat.addSampleCounter(g.getSamples().size());
      
+     if( AbstractXMLFormatter.isGroupPublic(g, stat.getNowDate()) )
+      stat.incGroupPublicCounter();
+     
      for(MSI msi : g.getMSIs())
      {
       for(DatabaseRefSource db : msi.getDatabases())
@@ -169,7 +173,10 @@ public class MTSliceExporterTask implements Runnable
         continue;
        
        stat.incUniqSampleCounter();
-       
+
+       if( AbstractXMLFormatter.isSamplePublic(s, stat.getNowDate()) )
+        stat.incSamplePublicUniqCounter();
+      
        for( FormattingTask ft : tasks )
        {
         if( ft.getSampleQueue() == null )

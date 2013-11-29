@@ -1,14 +1,15 @@
 package uk.ac.ebi.biosd.xs.export;
 
 import java.io.IOException;
+import java.util.Date;
 
 public class AGE2XMLFormatter extends AGE1XMLFormatter
 {
  private static String nameSpace = "http://www.ebi.ac.uk/biosamples/SampleGroupExportV2";
 
- public AGE2XMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly)
+ public AGE2XMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now)
  {
-  super( showAttributes, showAC, smpfmt, pubOnly );
+  super( showAttributes, showAC, smpfmt, pubOnly, now );
  }
 
  

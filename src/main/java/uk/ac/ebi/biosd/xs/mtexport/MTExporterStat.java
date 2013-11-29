@@ -1,5 +1,6 @@
 package uk.ac.ebi.biosd.xs.mtexport;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -11,10 +12,18 @@ public class MTExporterStat
 {
  private int groupCount=0;
  private int sampleCount=0;
+ private int groupPublicCount=0;
+ private int samplePublicUniqCount=0;
  private  int uniqSampleCount=0;
+ private final Date now;
  
  private final Set<String> sampleSet = new HashSet<>();
  private final Map<String, Counter> srcMap = new HashMap<String, Counter>();
+ 
+ public MTExporterStat( Date now )
+ {
+  this.now = now;
+ }
  
  public void reset()
  {
@@ -23,6 +32,11 @@ public class MTExporterStat
   uniqSampleCount=0;
   
   sampleSet.clear();
+ }
+ 
+ public Date getNowDate()
+ {
+  return now;
  }
  
  public synchronized void addGroupCounter( int n )
@@ -95,5 +109,26 @@ public class MTExporterStat
  {
   return srcMap;
  }
+
+ public int getGroupPublicCount()
+ {
+  return groupPublicCount;
+ }
+
+ public int getSamplePublicUniqCount()
+ {
+  return samplePublicUniqCount;
+ }
+ 
+ public synchronized void incGroupPublicCounter()
+ {
+  groupPublicCount++;
+ }
+ 
+ public synchronized void incSamplePublicUniqCounter()
+ {
+  samplePublicUniqCount++;
+ }
+
 
 }

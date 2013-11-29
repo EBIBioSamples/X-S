@@ -2,6 +2,7 @@ package uk.ac.ebi.biosd.xs.service;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -113,7 +114,7 @@ public class SampleServlet extends HttpServlet
   
   String sch = reqCfg.getSchema(DefaultSchema);
   
-  formatter = SchemaManager.getFormatter(sch, true, false, samplesFormat, false);
+  formatter = SchemaManager.getFormatter(sch, true, false, samplesFormat, false, new Date());
   
   if( formatter == null )
   {

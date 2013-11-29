@@ -26,20 +26,25 @@ public abstract class AbstractXMLFormatter implements XMLFormatter
  private final boolean showAC;
  private final SamplesFormat smpfmt;
  private final boolean publicOnly;
- private final Date now = new Date();
+ private Date now;
  
 
  
- public AbstractXMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly)
+ public AbstractXMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now)
  {
   super();
   this.showAttributes = showAttributes;
   this.showAC = showAC;
   this.smpfmt = smpfmt;
   publicOnly = pubOnly;
+  
+  if( now != null )
+   this.now = now;
+  else
+   this.now = new Date();
  }
 
- protected boolean isSamplePublic( BioSample smp )
+ public static boolean isSamplePublic( BioSample smp, Date now )
  {
   if( smp.getPublicFlag() != null )
    return smp.getPublicFlag();
@@ -59,7 +64,13 @@ public abstract class AbstractXMLFormatter implements XMLFormatter
   return false;
  }
  
- protected boolean isGroupPublic( BioSampleGroup grp )
+ protected boolean isSamplePublic( BioSample smp )
+ {
+  return isSamplePublic(smp, now);
+ }
+
+ 
+ public static boolean isGroupPublic( BioSampleGroup grp, Date now )
  {
   if( grp.getPublicFlag() != null )
    return grp.getPublicFlag();
@@ -78,6 +89,24 @@ public abstract class AbstractXMLFormatter implements XMLFormatter
   
   return false;
  }
+ 
+ @Override
+ public Date getNowDate()
+ {
+  return now;
+ }
+ 
+ @Override
+ public void setNowDate( Date dt )
+ {
+  now = dt;
+ }
+ 
+ protected boolean isGroupPublic( BioSampleGroup grp )
+ {
+  return isGroupPublic(grp, now);
+ }
+
  
  public static class ReplacePair implements Comparable<ReplacePair>
  {

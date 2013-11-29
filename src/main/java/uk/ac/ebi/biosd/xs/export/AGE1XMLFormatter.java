@@ -41,9 +41,9 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
  protected boolean nsShown=false;
  
- public AGE1XMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly)
+ public AGE1XMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now)
  {
-  super( showAttributes, showAC, smpfmt, pubOnly );
+  super( showAttributes, showAC, smpfmt, pubOnly, now );
  }
  
  protected String getNameSpace()
@@ -704,7 +704,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    
    ExperimentalPropertyValue<ExperimentalPropertyType> v = vals.get(i);
    
-   if( v == null )
+   if( v == null || v.getTermText() == null || v.getTermText().trim().length() == 0 )
     continue;
    
    attrNames.add(makeTypeId(v.getType()));
@@ -760,16 +760,16 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
      if( cval != null && ! isPropCollectionEqual(procV, cval) )
       attrset.put(typId,null);
      
-     for( String key : attrset.keySet() )
-     {
-      if( ! attrNames.contains(key) )
-       attrset.put(key, null);
-     }
-
     } 
    }
   }
   
+  for( String key : attrset.keySet() )
+  {
+   if( ! attrNames.contains(key) )
+    attrset.put(key, null);
+  }
+
  }
  
  private String makeTypeId( ExperimentalPropertyType t1 )

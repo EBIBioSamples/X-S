@@ -110,7 +110,8 @@ public class ExportAll extends HttpServlet
     reqCfg.getShowAttributesSummary(DefaultShowAttributesSummary),
     reqCfg.getShowAccessControl(DefaultShowAccessControl),
     samplesFormat,
-    reqCfg.getPublicOnly(DefaultPublicOnly)
+    reqCfg.getPublicOnly(DefaultPublicOnly),
+    new Date()
 );
   
   if( formatter == null )

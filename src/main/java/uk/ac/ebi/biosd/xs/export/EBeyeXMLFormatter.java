@@ -32,9 +32,9 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  private final OWLKeywordExpansion expander;
  private final Map<String, String> ebeyeSrcMap;
  
- public EBeyeXMLFormatter(OWLKeywordExpansion exp, Map<String, String> ebeyeSrcMap, boolean pubOnly )
+ public EBeyeXMLFormatter(OWLKeywordExpansion exp, Map<String, String> ebeyeSrcMap, boolean pubOnly, Date now )
  {
-  super(false, false, null, pubOnly);
+  super(false, false, null, pubOnly, now);
   
   expander=exp;
   this.ebeyeSrcMap = ebeyeSrcMap;

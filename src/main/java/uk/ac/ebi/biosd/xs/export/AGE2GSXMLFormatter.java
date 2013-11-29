@@ -15,9 +15,9 @@ import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyValue;
 public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 {
  
- public AGE2GSXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly)
+ public AGE2GSXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now)
  {
-  super(showAttributes, showAC, smpfmt, pubOnly);
+  super(showAttributes, showAC, smpfmt, pubOnly, now);
  }
  
  @Override

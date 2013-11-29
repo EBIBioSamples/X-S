@@ -1,6 +1,7 @@
 package uk.ac.ebi.biosd.xs.export;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.Map;
 
 import uk.ac.ebi.biosd.xs.util.Counter;
@@ -27,5 +28,8 @@ public interface XMLFormatter
  void exportSampleFooter(Appendable out) throws IOException;
 
  void exportSources(Map<String, Counter> srcMap, Appendable out) throws IOException;
+ 
+ Date getNowDate();
+ void setNowDate( Date now );
  
 }
