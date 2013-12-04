@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -122,7 +121,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  }
 
  protected void exportSamples(BioSampleGroup ao, Appendable mainout, SamplesFormat smpSts,
-   Map<String,List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>> attrset) throws IOException
+   AttributesSummary attrset) throws IOException
  {
   if( smpSts != SamplesFormat.NONE && ao.getSamples() != null )
   {
@@ -148,10 +147,10 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    return false;
 
   
-  Map<String,List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>> attrset = null;
+  AttributesSummary attrset = null;
   
   if( showAttributes )
-   attrset = new HashMap<>();
+   attrset = new AttributesSummary();
   
   if( showNS && ! nsShown )
   {
@@ -369,6 +368,16 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     else
      exportPropertyValue(attE.getValue(), mainout);
 
+   }
+   
+   if( attrset.getDatabases() != null )
+   {
+    mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
+
+    for( DatabaseRefSource c : attrset.getDatabases() )
+     exportDatabase(c, mainout);
+
+    mainout.append("</attribute>\n");
    }
 
    mainout.append("</SampleAttributes>\n");
@@ -596,7 +605,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  }
  
  protected boolean exportSample(final BioSample smp, Appendable mainout, boolean showNS, boolean showAnnt,
-   boolean showGrpId, Map<String,List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>> attrset, boolean showAC) throws IOException
+   boolean showGrpId, AttributesSummary attrset, boolean showAC) throws IOException
  {
   if( isPublicOnly() && ! isSamplePublic(smp) )
    return false;
@@ -636,13 +645,24 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   mainout.append("\">\n");
   
   
+  
+  Collection<DatabaseRefSource> dbs = smp.getDatabases();
+  
+  
+  
+  if( attrset!= null )
+  {
+   if( attrset.size() == 0 )
+    attrset.setDatabases(dbs);
+   else if( ! compareDatabaseColls(attrset.getDatabases(),dbs) )
+    attrset.setDatabases(null);
+  }
+  
   if(smp.getPropertyValues() != null && (showAnnt || attrset != null))
   {
    exportPropertyValues(smp.getPropertyValues(), mainout, attrset, false);
   }
-  
-  Collection<DatabaseRefSource> dbs = smp.getDatabases();
-  
+
   if( dbs != null && dbs.size() > 0 )
   {
    mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
@@ -652,6 +672,9 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
    mainout.append("</attribute>\n");
   }
+
+  
+  
 
   if(showAnnt && smp.getAllDerivedFrom() != null)
   {
@@ -683,10 +706,66 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   return true;
  }
 
+ protected boolean compareDatabaseColls( Collection<DatabaseRefSource> set1, Collection<DatabaseRefSource> set2o )
+ {
+  if( set1 == null )
+   return set2o == null;
+  
+  if( set2o == null )
+   return set1 == null;
+  
+  if( set1.size() != set2o.size() )
+   return false;
+  
+  List<DatabaseRefSource> set2 = new ArrayList<>( set2o );
+  
+  set1loop: for( DatabaseRefSource db1 : set1 )
+  {
+   for( int i=0; i < set2.size(); i++)
+   {
+    DatabaseRefSource db2 = set2.get(i);
+    
+    if( compareDatabases(db1,db2) )
+    {
+     set2.set(i, null);
+     continue set1loop;
+    }
+   }
+   
+   return false;
+  }
+  
+  return true;
+  
+ }
+ 
+ private boolean compareDatabases(DatabaseRefSource db1, DatabaseRefSource db2)
+ {
+  if( db1 == null )
+   return db2 == null;
+  
+  if( db2 == null )
+   return db1 == null;
+  
+  if( ! isStringsEqual(db1.getName(), db2.getName()) )
+   return false;
+
+  if( ! isStringsEqual(db1.getUrl(), db2.getUrl()) )
+   return false;
+
+  if( ! isStringsEqual(db1.getVersion(), db2.getVersion()) )
+   return false;
+
+  if( ! isStringsEqual(db1.getDescription(), db2.getDescription()) )
+   return false;
+
+  return true;
+ }
+ 
  
  @SuppressWarnings({ "unchecked", "rawtypes" })
  protected void exportPropertyValues( Collection<? extends ExperimentalPropertyValue> orgVals,  Appendable out, 
-   Map<String,List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>> attrset, boolean collectOnly ) throws IOException
+   AttributesSummary attrset, boolean collectOnly ) throws IOException
  {
   ArrayList<ExperimentalPropertyValue> vals = new ArrayList<>( orgVals );
   ArrayList<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> procV;
@@ -749,25 +828,28 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    {
     if( firstObject )
     {
-     attrset.put(makeTypeId(v.getType()),procV);
+     attrset.setAttribute(makeTypeId(v.getType()),procV);
     }
     else
     {
      String typId = makeTypeId(v.getType());
      
-     List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> cval = attrset.get(typId);
+     List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> cval = attrset.getAttributeValue(typId);
      
      if( cval != null && ! isPropCollectionEqual(procV, cval) )
-      attrset.put(typId,null);
+      attrset.setAttribute(typId,null);
      
     } 
    }
   }
   
-  for( String key : attrset.keySet() )
+  if( attrset != null )
   {
-   if( ! attrNames.contains(key) )
-    attrset.put(key, null);
+   for(String key : attrset.getAttributeNames())
+   {
+    if(!attrNames.contains(key))
+     attrset.setAttribute(key, null);
+   }
   }
 
  }

@@ -3,14 +3,11 @@ package uk.ac.ebi.biosd.xs.export;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
 
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
-import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyType;
-import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyValue;
+import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
 
 public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 {
@@ -27,7 +24,7 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  }
  
  @Override
- protected void exportSamples(BioSampleGroup ao, Appendable mainout, SamplesFormat smpSts, Map<String,List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>> attrset) throws IOException
+ protected void exportSamples(BioSampleGroup ao, Appendable mainout, SamplesFormat smpSts, AttributesSummary attrset) throws IOException
  {
   if(ao.getSamples() == null)
    return;
@@ -55,6 +52,16 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 
    if(smp.getPropertyValues() != null &&  attrset != null )
    {
+    Collection<DatabaseRefSource> dbs = smp.getDatabases();
+    
+    if( attrset!= null )
+    {
+     if( attrset.size() == 0 )
+      attrset.setDatabases(dbs);
+     else if( ! compareDatabaseColls(attrset.getDatabases(),dbs) )
+      attrset.setDatabases(null);
+    }
+    
     exportPropertyValues(smp.getPropertyValues(), mainout, attrset, true);
    }
    
