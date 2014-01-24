@@ -115,7 +115,7 @@ public class GroupServlet extends HttpServlet
   
   String sch = reqCfg.getSchema(DefaultSchema);
   
-  formatter = SchemaManager.getFormatter(sch, false, false, samplesFormat,false, new Date());
+  formatter = SchemaManager.getFormatter(sch, reqCfg.getShowAttributesSummary(false), reqCfg.getShowAccessControl(false), samplesFormat,false, new Date());
   
   if( formatter == null )
   {

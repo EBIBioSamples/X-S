@@ -43,7 +43,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  static DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 
  @Override
- public boolean exportSample(BioSample smp, Appendable out, boolean showNS) throws IOException
+ public boolean exportSample(BioSample smp,  Appendable out, boolean showNS) throws IOException
  {
   if( isPublicOnly() && ! isSamplePublic(smp) )
    return false;
@@ -133,7 +133,13 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
   }
   
   
-  out.append("\n<additional_fields>\n<field name=\"searchwords\">\n");
+  out.append("\n<additional_fields>\n");
+
+  out.append("<field name=\"id\">");
+  xmlEscaped(smp.getAcc(), out);
+  out.append("</field>\n");
+  
+  out.append("<field name=\"searchwords\">\n");
   
   kw = cleanKeywords(kw);
   
@@ -142,6 +148,8 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
    xmlEscaped(w, out);
    out.append(' ');
   }
+  
+  xmlEscaped(smp.getAcc(), out);
   
   out.append("\n</field>\n</additional_fields>\n</entry>\n"); 
 
@@ -363,7 +371,13 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
    }
   }
   
-  out.append("\n<additional_fields>\n<field name=\"searchwords\">\n");
+  out.append("\n<additional_fields>\n");
+
+  out.append("<field name=\"id\">");
+  xmlEscaped(grp.getAcc(), out);
+  out.append("</field>\n");
+  
+  out.append("<field name=\"searchwords\">\n");
 
   kw = cleanKeywords(kw);
   
@@ -372,6 +386,8 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
    xmlEscaped(w, out);
    out.append(' ');
   }
+  
+  xmlEscaped(grp.getAcc(), out);
   
   out.append("\n</field>\n</additional_fields>\n</entry>\n"); 
  

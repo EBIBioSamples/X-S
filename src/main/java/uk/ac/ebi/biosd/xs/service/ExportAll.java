@@ -137,7 +137,7 @@ public class ExportAll extends HttpServlet
   
   try
   {
-   expt.export(since, out, limit);
+   expt.export(since, out, limit,reqCfg.getGroupMultiplier(null),reqCfg.getSampleMultiplier(null));
   }
   catch( IOException e )
   {

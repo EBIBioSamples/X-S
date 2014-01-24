@@ -80,7 +80,7 @@ public class STXMLFormatter extends AGE1XMLFormatter
  }
  
  @Override
- public boolean exportSample(BioSample smp,  Appendable out, boolean showNS) throws IOException
+ public boolean exportSample(BioSample smp, Appendable out, boolean showNS) throws IOException
  {
   return exportSample(smp, out, showNS, true, null, null, isShowAC() );
  }
@@ -309,7 +309,7 @@ public class STXMLFormatter extends AGE1XMLFormatter
  
 
 
- private boolean exportSample(final BioSample smp,  Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset, boolean showAC) throws IOException
+ private boolean exportSample(final BioSample smp, Appendable out, boolean showNS, boolean showAnnt, String grpId, Set<String> attrset, boolean showAC) throws IOException
  {
   if( isPublicOnly() && ! isSamplePublic(smp) )
    return false;

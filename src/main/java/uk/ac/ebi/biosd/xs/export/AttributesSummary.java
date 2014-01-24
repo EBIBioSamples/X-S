@@ -20,6 +20,11 @@ public class AttributesSummary
   attributes.put(name, vals);
  }
  
+ public boolean hasName( String name )
+ {
+  return attributes.containsKey(name);
+ }
+ 
  public List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> getAttributeValue( String nm )
  {
   return attributes.get(nm);

@@ -241,7 +241,7 @@ public class EBeyeExport
    try
    {
 
-    MTExporterStat stat = mtc.export(-1, limit, now);
+    MTExporterStat stat = mtc.export(-1, limit, now, auxConfig.getGroupMultiplier(null), auxConfig.getSampleMultiplier(null) );
 
     ebeyeFmt.exportGroupFooter( grpFileOut );
 

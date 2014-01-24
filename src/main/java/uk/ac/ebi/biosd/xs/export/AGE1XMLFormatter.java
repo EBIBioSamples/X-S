@@ -836,9 +836,13 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
      
      List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> cval = attrset.getAttributeValue(typId);
      
-     if( cval != null && ! isPropCollectionEqual(procV, cval) )
-      attrset.setAttribute(typId,null);
-     
+     if( cval != null )
+     {
+      if( ! isPropCollectionEqual(procV, cval) )
+       attrset.setAttribute(typId,null);
+     }
+     else if( ! attrset.hasName(typId) )
+      attrset.setAttribute(typId,procV);
     } 
    }
   }

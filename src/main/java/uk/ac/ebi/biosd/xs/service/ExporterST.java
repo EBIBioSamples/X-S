@@ -21,6 +21,7 @@ import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.biosd.xs.mtexport.GroupRangeQueryManager;
 import uk.ac.ebi.biosd.xs.util.Counter;
+import uk.ac.ebi.biosd.xs.util.GroupSampleUtil;
 import uk.ac.ebi.biosd.xs.util.StringUtils;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
@@ -46,6 +47,12 @@ public class ExporterST implements Exporter
  
  @Override
  public void export( long since, Appendable out, long limit) throws IOException
+ {
+  export(since, out, limit, null, null);
+ }
+
+ @Override
+ public void export( long since, Appendable out, long limit, Double grpMul, Double smpMul) throws IOException
  {
   SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
   
@@ -93,6 +100,16 @@ public class ExporterST implements Exporter
   int uniqSampleCount=0;
   int sampleCount=0;
   
+  int grpMulFloor = 1;
+  double grpMulFrac = 0;
+  
+  if( grpMul != null )
+  {
+   grpMulFloor = (int)Math.floor(grpMul);
+   grpMulFrac = grpMul-grpMulFloor;
+  }
+  
+ 
   try
   {
 
@@ -111,63 +128,78 @@ public class ExporterST implements Exporter
 
      for(BioSampleGroup g : result)
      {
-      groupCount++;
-      i++;
+      
+      int nRep = grpMulFloor;
 
-      formatter.exportGroup(g, out, false);
+      if( grpMul != null && grpMulFrac > 0.005 )
+       nRep += Math.random() < grpMulFrac ? 1 : 0;
 
-      msiTags.clear();
-      int nSmp = g.getSamples().size();
-      sampleCount += nSmp;
-
-      assert LoggerFactory.getLogger().entry("Start processing MSIs", "msi");
-
-      for(MSI msi : g.getMSIs())
+      for(int grpRep = 1; grpRep <= nRep; grpRep++)
       {
-       for(DatabaseRefSource db : msi.getDatabases())
+       groupCount++;
+       i++;
+
+       BioSampleGroup ng = g;
+       
+       if( grpMul != null )
+        ng = GroupSampleUtil.cloneGroup(g, g.getAcc()+"-R"+grpRep, smpMul);
+       
+       formatter.exportGroup(ng, out, false);
+
+       msiTags.clear();
+       int nSmp = ng.getSamples().size();
+       sampleCount += nSmp;
+
+       assert LoggerFactory.getLogger().entry("Start processing MSIs", "msi");
+
+       for(MSI msi : ng.getMSIs())
        {
-        String scrNm = sourcesByName ? db.getName() : db.getAcc();
-
-        if(scrNm == null)
-         continue;
-
-        scrNm = scrNm.trim();
-
-        if(scrNm.length() == 0)
-         continue;
-
-        if(msiTags.contains(scrNm))
-         continue;
-
-        msiTags.add(scrNm);
-
-        Counter c = srcMap.get(scrNm);
-
-        if(c == null)
-         srcMap.put(scrNm, new Counter(nSmp));
-        else
-         c.add(nSmp);
-
-       }
-      }
-
-      assert LoggerFactory.getLogger().exit("END processing MSIs", "msi");
-
-      if(formatter.isSamplesExport())
-      {
-       for(BioSample smp : g.getSamples())
-
-        if(sampleSet.add(smp.getAcc()))
+        for(DatabaseRefSource db : msi.getDatabases())
         {
-         formatter.exportSample(smp, smpStream, false);
+         String scrNm = sourcesByName ? db.getName() : db.getAcc();
+
+         if(scrNm == null)
+          continue;
+
+         scrNm = scrNm.trim();
+
+         if(scrNm.length() == 0)
+          continue;
+
+         if(msiTags.contains(scrNm))
+          continue;
+
+         msiTags.add(scrNm);
+
+         Counter c = srcMap.get(scrNm);
+
+         if(c == null)
+          srcMap.put(scrNm, new Counter(nSmp));
+         else
+          c.add(nSmp);
+
+        }
+       }
+
+       assert LoggerFactory.getLogger().exit("END processing MSIs", "msi");
+
+       if(formatter.isSamplesExport())
+       {
+        for(BioSample smp : ng.getSamples())
+        {
+         if(!sampleSet.add(smp.getAcc()))
+          continue;
+
+         formatter.exportSample(smp,smpStream, false);
          uniqSampleCount++;
         }
+       }
+
+       startID = g.getId() + 1;
+
+       if(groupCount >= limit)
+        break blockLoop;
       }
-
-      startID = g.getId() + 1;
-
-      if(groupCount >= limit)
-       break blockLoop;
      }
 
     }

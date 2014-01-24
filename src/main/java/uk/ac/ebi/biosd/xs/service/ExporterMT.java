@@ -40,9 +40,15 @@ public class ExporterMT implements Exporter
   this.showNS = showNS;
  }
 
+ @Override
+ public void export( long since, Appendable out, long limit ) throws IOException
+ {
+  export(since, out, limit, null, null);
+ }
+
  
  @Override
- public void export( long since, Appendable out, long limit) throws IOException
+ public void export( long since, Appendable out, long limit, Double grpMul, Double smpMul ) throws IOException
  {
   SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -78,7 +84,7 @@ public class ExporterMT implements Exporter
   try
   {
 
-   MTExporterStat stat = mtc.export(since, limit, now);
+   MTExporterStat stat = mtc.export(since, limit, now, grpMul, smpMul);
 
    formatter.exportGroupFooter(out);
 

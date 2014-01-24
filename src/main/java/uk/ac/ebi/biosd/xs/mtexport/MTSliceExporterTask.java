@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter;
 import uk.ac.ebi.biosd.xs.init.Init;
 import uk.ac.ebi.biosd.xs.mtexport.ControlMessage.Type;
+import uk.ac.ebi.biosd.xs.util.GroupSampleUtil;
 import uk.ac.ebi.biosd.xs.util.Slice;
 import uk.ac.ebi.biosd.xs.util.SliceManager;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
@@ -38,12 +39,15 @@ public class MTSliceExporterTask implements Runnable
  private final boolean sourcesByName;
  private boolean hasSampleOutput = false;
  private final AtomicLong limit;
+
+ private final Double grpMul;
+ private final Double smpMul;
  
  private final Logger log = LoggerFactory.getLogger(Init.class);
 
  
  public MTSliceExporterTask( EntityManagerFactory emf, SliceManager slMgr, long since, List<FormattingTask> tasks,
-   MTExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, boolean srcByNm, AtomicLong lim )
+   MTExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, boolean srcByNm, AtomicLong lim, Double grpMul, Double smpMul )
  {
   emFactory = emf;
   sliceMngr = slMgr;
@@ -53,6 +57,9 @@ public class MTSliceExporterTask implements Runnable
   this.stat = stat;
   this.controlQueue = controlQueue;
 
+  this.grpMul = grpMul;
+  this.smpMul = smpMul;
+  
   stopFlag = stf;
   
   sourcesByName = srcByNm;
@@ -76,7 +83,14 @@ public class MTSliceExporterTask implements Runnable
   GroupSliceQueryManager grpq = new GroupSliceQueryManager(emFactory);
   
 
-
+  int grpMulFloor = 1;
+  double grpMulFrac = 0;
+  
+  if( grpMul != null )
+  {
+   grpMulFloor = (int)Math.floor(grpMul);
+   grpMulFrac = grpMul-grpMulFloor;
+  }
 
   Set<String> msiTags = new HashSet<String>();
 
@@ -102,104 +116,117 @@ public class MTSliceExporterTask implements Runnable
     
     for(BioSampleGroup g : grps)
     {
-     if(stopFlag.get())
-     {
-      putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH,this) );
-      return;
-     }
-     
-     if( limit != null )
-     {
-      long c = limit.decrementAndGet();
-      
-      if( c < 0 )
-      {
-       putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH,this) );
+     int nRep = grpMulFloor;
 
+     if( grpMul != null && grpMulFrac > 0.005 )
+      nRep += Math.random() < grpMulFrac ? 1 : 0;
+
+     for(int grpRep = 1; grpRep <= nRep; grpRep++)
+     {
+
+      if(stopFlag.get())
+      {
+       putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
        return;
       }
 
-     }
-     
-     msiTags.clear();
-     int nSmp = g.getSamples().size();
-     
-     stat.incGroupCounter();
-     stat.addSampleCounter(g.getSamples().size());
-     
-     if( AbstractXMLFormatter.isGroupPublic(g, stat.getNowDate()) )
-      stat.incGroupPublicCounter();
-     
-     for(MSI msi : g.getMSIs())
-     {
-      for(DatabaseRefSource db : msi.getDatabases())
+      if(limit != null)
       {
-       String scrNm = sourcesByName ? db.getName() : db.getAcc();
+       long c = limit.decrementAndGet();
 
-       if(scrNm == null)
-        continue;
+       if(c < 0)
+       {
+        putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
 
-       scrNm = scrNm.trim();
-
-       if(scrNm.length() == 0)
-        continue;
-
-       if(msiTags.contains(scrNm))
-        continue;
-
-       msiTags.add(scrNm);
-
-       stat.addToSource(scrNm, nSmp);
+        return;
+       }
 
       }
-     }
-     
-     for( FormattingTask ft : tasks )
-     {
-      sb.setLength(0);
 
-      ft.getFormatter().exportGroup(g, sb, false);
+      BioSampleGroup ng = g;
       
-      putIntoQueue(ft.getGroupQueue(), sb.toString());
-      
+      if( grpMul != null )
+       ng = GroupSampleUtil.cloneGroup(g, g.getAcc()+"-R"+grpRep, smpMul);
 
-     }
-     
-     if( hasSampleOutput )
-     {
-      for( BioSample s : g.getSamples() )
+      
+      msiTags.clear();
+      int nSmp = ng.getSamples().size();
+
+      stat.incGroupCounter();
+      stat.addSampleCounter(nSmp);
+
+      if(AbstractXMLFormatter.isGroupPublic(ng, stat.getNowDate()))
+       stat.incGroupPublicCounter();
+
+      for(MSI msi : ng.getMSIs())
       {
-       if( ! stat.addSample( s.getAcc() ) )
-        continue;
-       
-       stat.incUniqSampleCounter();
-
-       if( AbstractXMLFormatter.isSamplePublic(s, stat.getNowDate()) )
-        stat.incSamplePublicUniqCounter();
-      
-       for( FormattingTask ft : tasks )
+       for(DatabaseRefSource db : msi.getDatabases())
        {
-        if( ft.getSampleQueue() == null )
-         continue;
-        
-        sb.setLength(0);
+        String scrNm = sourcesByName ? db.getName() : db.getAcc();
 
-        ft.getFormatter().exportSample(s, sb, false);
-        
-        putIntoQueue(ft.getSampleQueue(), sb.toString());
+        if(scrNm == null)
+         continue;
+
+        scrNm = scrNm.trim();
+
+        if(scrNm.length() == 0)
+         continue;
+
+        if(msiTags.contains(scrNm))
+         continue;
+
+        msiTags.add(scrNm);
+
+        stat.addToSource(scrNm, nSmp);
+
        }
       }
-     }
 
 
+      for(FormattingTask ft : tasks)
+      {
+       sb.setLength(0);
 
-     if(stopFlag.get())
-     {
-      putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH,this) );
-      return;
-     }
+       ft.getFormatter().exportGroup(ng, sb, false);
 
-    }
+       putIntoQueue(ft.getGroupQueue(), sb.toString());
+
+      }
+
+      if(hasSampleOutput)
+      {
+       for(BioSample s : ng.getSamples())
+       {
+        if(!stat.addSample(s.getAcc()))
+         continue;
+
+        stat.incUniqSampleCounter();
+
+        if(AbstractXMLFormatter.isSamplePublic(s, stat.getNowDate()))
+         stat.incSamplePublicUniqCounter();
+
+        for(FormattingTask ft : tasks)
+        {
+         if(ft.getSampleQueue() == null)
+          continue;
+
+         sb.setLength(0);
+
+         ft.getFormatter().exportSample(s, sb, false);
+
+         putIntoQueue(ft.getSampleQueue(), sb.toString());
+        }
+        
+       }
+      }
+
+      if(stopFlag.get())
+      {
+       putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
+       return;
+      }
+
+     }}
 
    }
    catch(Throwable e)

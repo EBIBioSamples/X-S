@@ -41,7 +41,7 @@ public class ExporterMTControl
  }
 
  
- public MTExporterStat export( long since, long limit, Date now) throws Throwable
+ public MTExporterStat export( long since, long limit, Date now, Double grpMul, Double smpMul) throws Throwable
  {
   List<MTSliceExporterTask> exporters = new ArrayList<>( threads );
   List<OutputTask> outputs = new ArrayList<>( requests.size() * 2);
@@ -87,7 +87,7 @@ public class ExporterMTControl
   
   for( int i=0; i < threads; i++ )
   {
-   MTSliceExporterTask et = new MTSliceExporterTask(emf, sm, since, tasks, statistics, msgQ, stopFlag, sourcesByName,limitCnt);
+   MTSliceExporterTask et = new MTSliceExporterTask(emf, sm, since, tasks, statistics, msgQ, stopFlag, sourcesByName,limitCnt, grpMul, smpMul);
    
    exporters.add(et);
    

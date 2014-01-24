@@ -21,6 +21,8 @@ public class RequestConfig
  public static final String ShowAccessControlParameter = "showAC";
  public static final String OutputParameter            = "output";
  public static final String PublicOnlyParameter        = "publicOnly";
+ public static final String GroupMultiplierParameter   = "groupMultiplier";
+ public static final String SampleMultiplierParameter  = "sampleMultiplier";
 
  private Boolean     publicOnly;
  private Boolean     showNamespace;
@@ -35,6 +37,8 @@ public class RequestConfig
  private Integer     threads;
  private Long        limit;
  private Long        since;
+ private Double      groupMultiplier;
+ private Double      sampleMultiplier;
 
  
  public void loadParameters(ParamPool params, String pfx)
@@ -132,6 +136,33 @@ public class RequestConfig
    showAccessControl = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
   }
 
+  pv = params.getParameter(pfx+GroupMultiplierParameter);
+  
+  if( pv != null  )
+  {
+   try
+   {
+    groupMultiplier = Double.parseDouble(pv);
+   }
+   catch(Exception e)
+   {
+   }
+  }
+
+  pv = params.getParameter(pfx+SampleMultiplierParameter);
+  
+  if( pv != null  )
+  {
+   try
+   {
+    sampleMultiplier = Double.parseDouble(pv);
+   }
+   catch(Exception e)
+   {
+   }
+  }
+
+  
  }
  
  public Boolean getShowNamespace(boolean def)
@@ -198,6 +229,16 @@ public class RequestConfig
  public String getOutput(String def)
  {
   return output!=null?output:def;
+ }
+ 
+ public Double getGroupMultiplier( Double def )
+ {
+  return groupMultiplier!=null?groupMultiplier:def;
+ }
+
+ public Double getSampleMultiplier( Double def )
+ {
+  return sampleMultiplier!=null?sampleMultiplier:def;
  }
 
 }
