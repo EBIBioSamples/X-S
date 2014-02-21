@@ -13,7 +13,7 @@ import javax.persistence.Persistence;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
-import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
+import uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef;
 import uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicType;
 import uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicValue;
 import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyType;
@@ -99,11 +99,10 @@ public class LoadTest
    
    msi.addPublication( new Publication("doiA "+seq+" "+i, "pubmed"+seq+" "+i) );
 
-   DatabaseRefSource db = new DatabaseRefSource("dbacc"+seq+" "+i,"ver1");
-   db.setName("DBName"+seq+" "+i);
+   DatabaseRecordRef db = new DatabaseRecordRef("DBName"+seq+" "+i,"dbacc"+seq+" "+i,"ver1");
    db.setUrl("DBUrl"+seq+" "+i);
   
-   msi.addDatabase(db);
+   msi.addDatabaseRecordRef(db);
    
    ReferenceSource ref = new ReferenceSource("TSR"+seq+" "+i, "ver1");
    

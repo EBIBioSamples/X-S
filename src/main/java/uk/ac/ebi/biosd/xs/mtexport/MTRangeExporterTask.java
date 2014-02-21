@@ -16,7 +16,7 @@ import uk.ac.ebi.biosd.xs.util.RangeManager.Range;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
-import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
+import uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef;
 
 public class MTRangeExporterTask implements Runnable
 {
@@ -116,9 +116,9 @@ public class MTRangeExporterTask implements Runnable
      
      for(MSI msi : g.getMSIs())
      {
-      for(DatabaseRefSource db : msi.getDatabases())
+      for(DatabaseRecordRef db : msi.getDatabaseRecordRefs())
       {
-       String scrNm = sourcesByName ? db.getName() : db.getAcc();
+       String scrNm = sourcesByName ? db.getDbName() : db.getAcc();
 
        if(scrNm == null)
         continue;

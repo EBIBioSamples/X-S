@@ -18,7 +18,7 @@ import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentType;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
-import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
+import uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef;
 import uk.ac.ebi.fg.core_model.expgraph.Product;
 import uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicType;
 import uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicValue;
@@ -310,11 +310,11 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     mainout.append("</attribute>\n");
    }
    
-   if( msi.getDatabases() != null && msi.getDatabases().size() > 0 )
+   if( msi.getDatabaseRecordRefs() != null && msi.getDatabaseRecordRefs().size() > 0 )
    {
     mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
-    for( DatabaseRefSource c : msi.getDatabases() )
+    for( DatabaseRecordRef c : msi.getDatabaseRecordRefs() )
      exportDatabase(c, mainout);
 
     mainout.append("</attribute>\n");
@@ -374,7 +374,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    {
     mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
-    for( DatabaseRefSource c : attrset.getDatabases() )
+    for( DatabaseRecordRef c : attrset.getDatabases() )
      exportDatabase(c, mainout);
 
     mainout.append("</attribute>\n");
@@ -548,7 +548,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   exportObjectValuePostfix( out );
  }
  
- private void exportDatabase( DatabaseRefSource cnt, Appendable out ) throws IOException
+ private void exportDatabase( DatabaseRecordRef cnt, Appendable out ) throws IOException
  {
   exportObjectValuePrefix( out );
   out.append("\n<object id=\"");
@@ -557,7 +557,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   
   String s = null;
   
-  s = cnt.getName();
+  s = cnt.getDbName();
   if( s != null && s.length() > 0 )
    exportAttribute("Database Name", s, out);
 
@@ -646,7 +646,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   
   
   
-  Collection<DatabaseRefSource> dbs = smp.getDatabases();
+  Collection<DatabaseRecordRef> dbs = smp.getDatabaseRecordRefs();
   
   
   
@@ -667,7 +667,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   {
    mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
-   for( DatabaseRefSource c : dbs )
+   for( DatabaseRecordRef c : dbs )
     exportDatabase(c, mainout);
 
    mainout.append("</attribute>\n");
@@ -706,7 +706,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   return true;
  }
 
- protected boolean compareDatabaseColls( Collection<DatabaseRefSource> set1, Collection<DatabaseRefSource> set2o )
+ protected boolean compareDatabaseColls( Collection<DatabaseRecordRef> set1, Collection<DatabaseRecordRef> set2o )
  {
   if( set1 == null )
    return set2o == null;
@@ -717,13 +717,13 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   if( set1.size() != set2o.size() )
    return false;
   
-  List<DatabaseRefSource> set2 = new ArrayList<>( set2o );
+  List<DatabaseRecordRef> set2 = new ArrayList<>( set2o );
   
-  set1loop: for( DatabaseRefSource db1 : set1 )
+  set1loop: for( DatabaseRecordRef db1 : set1 )
   {
    for( int i=0; i < set2.size(); i++)
    {
-    DatabaseRefSource db2 = set2.get(i);
+    DatabaseRecordRef db2 = set2.get(i);
     
     if( compareDatabases(db1,db2) )
     {
@@ -739,7 +739,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   
  }
  
- private boolean compareDatabases(DatabaseRefSource db1, DatabaseRefSource db2)
+ private boolean compareDatabases(DatabaseRecordRef db1, DatabaseRecordRef db2)
  {
   if( db1 == null )
    return db2 == null;
@@ -747,7 +747,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   if( db2 == null )
    return db1 == null;
   
-  if( ! isStringsEqual(db1.getName(), db2.getName()) )
+  if( ! isStringsEqual(db1.getDbName(), db2.getDbName()) )
    return false;
 
   if( ! isStringsEqual(db1.getUrl(), db2.getUrl()) )
@@ -756,7 +756,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   if( ! isStringsEqual(db1.getVersion(), db2.getVersion()) )
    return false;
 
-  if( ! isStringsEqual(db1.getDescription(), db2.getDescription()) )
+  if( ! isStringsEqual(db1.getTitle(), db2.getTitle()) )
    return false;
 
   return true;

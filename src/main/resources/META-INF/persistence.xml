@@ -8,7 +8,7 @@
 <class>uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue</class>
 <class>uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup</class>
 <class>uk.ac.ebi.fg.biosd.model.organizational.MSI</class>
-<class>uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource</class>
+<class>uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef</class>
 <class>uk.ac.ebi.fg.core_model.expgraph.BioMaterial</class>
 <class>uk.ac.ebi.fg.core_model.expgraph.BioMaterialProcessing</class>
 <class>uk.ac.ebi.fg.core_model.expgraph.Data</class>

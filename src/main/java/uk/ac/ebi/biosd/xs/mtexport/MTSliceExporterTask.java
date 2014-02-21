@@ -22,7 +22,7 @@ import uk.ac.ebi.biosd.xs.util.SliceManager;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
-import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
+import uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef;
 
 public class MTSliceExporterTask implements Runnable
 {
@@ -146,7 +146,7 @@ public class MTSliceExporterTask implements Runnable
       BioSampleGroup ng = g;
       
       if( grpMul != null )
-       ng = GroupSampleUtil.cloneGroup(g, g.getAcc()+"-R"+grpRep, smpMul);
+       ng = GroupSampleUtil.cloneGroup(g, g.getAcc()+"00"+grpRep, smpMul);
 
       
       msiTags.clear();
@@ -160,9 +160,9 @@ public class MTSliceExporterTask implements Runnable
 
       for(MSI msi : ng.getMSIs())
       {
-       for(DatabaseRefSource db : msi.getDatabases())
+       for(DatabaseRecordRef db : msi.getDatabaseRecordRefs())
        {
-        String scrNm = sourcesByName ? db.getName() : db.getAcc();
+        String scrNm = sourcesByName ? db.getDbName() : db.getAcc();
 
         if(scrNm == null)
          continue;

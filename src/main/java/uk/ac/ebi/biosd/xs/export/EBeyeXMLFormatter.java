@@ -17,7 +17,7 @@ import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
-import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
+import uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef;
 import uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicValue;
 import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyType;
 import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyValue;
@@ -104,14 +104,14 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
   
   StringBuilder sb = new StringBuilder();
   
-  for( DatabaseRefSource db : smp.getDatabases() )
+  for( DatabaseRecordRef db : smp.getDatabaseRecordRefs() )
   {
-   kw.add( db.getDescription() );
-   kw.add(db.getName());
+   kw.add( db.getTitle() );
+   kw.add(db.getDbName());
    
-   if( ebeyeSrcMap != null && db.getName() != null && db.getAcc() != null )
+   if( ebeyeSrcMap != null && db.getDbName() != null && db.getAcc() != null )
    {
-    String dbTag = ebeyeSrcMap.get(db.getName());
+    String dbTag = ebeyeSrcMap.get(db.getDbName());
     
     if( dbTag != null )
     {
@@ -135,7 +135,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
   
   out.append("\n<additional_fields>\n");
 
-  out.append("<field name=\"id\">");
+  out.append("<field name=\"acc\">");
   xmlEscaped(smp.getAcc(), out);
   out.append("</field>\n");
   
@@ -295,14 +295,14 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
    
    StringBuilder sb = new StringBuilder();
    
-   for( DatabaseRefSource db : msi.getDatabases() )
+   for( DatabaseRecordRef db : msi.getDatabaseRecordRefs() )
    {
-    kw.add( db.getDescription() );
-    kw.add(db.getName());
+    kw.add( db.getTitle() );
+    kw.add(db.getDbName());
     
-    if( ebeyeSrcMap != null && db.getName() != null && db.getAcc() != null )
+    if( ebeyeSrcMap != null && db.getDbName() != null && db.getAcc() != null )
     {
-     String dbTag = ebeyeSrcMap.get(db.getName());
+     String dbTag = ebeyeSrcMap.get(db.getDbName());
      
      if( dbTag != null )
      {
@@ -373,7 +373,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
   
   out.append("\n<additional_fields>\n");
 
-  out.append("<field name=\"id\">");
+  out.append("<field name=\"acc\">");
   xmlEscaped(grp.getAcc(), out);
   out.append("</field>\n");
   

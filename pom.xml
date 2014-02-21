@@ -54,7 +54,7 @@
 		<dependency>
 			<groupId>uk.ac.ebi.fg</groupId>
 			<artifactId>biosd_model</artifactId>
-			<version>2.0-SNAPSHOT</version>
+			<version>2.0.1-SNAPSHOT</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>geronimo-jpa_3.0_spec</artifactId>

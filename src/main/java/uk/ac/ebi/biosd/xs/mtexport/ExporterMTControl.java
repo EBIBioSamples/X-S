@@ -188,6 +188,8 @@ public class ExporterMTControl
    }
   }
   
+  System.gc();
+  
   if( exception != null )
    throw exception;
    

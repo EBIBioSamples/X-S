@@ -7,7 +7,7 @@ import java.util.Date;
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
-import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
+import uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef;
 
 public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 {
@@ -52,7 +52,7 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 
    if(smp.getPropertyValues() != null &&  attrset != null )
    {
-    Collection<DatabaseRefSource> dbs = smp.getDatabases();
+    Collection<DatabaseRecordRef> dbs = smp.getDatabaseRecordRefs();
     
     if( attrset!= null )
     {

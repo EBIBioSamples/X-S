@@ -7,7 +7,7 @@ import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
-import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
+import uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef;
 import uk.ac.ebi.fg.core_model.expgraph.Product;
 import uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicValue;
 import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyType;
@@ -271,13 +271,13 @@ public class OM2XMLconverter
 
  }
  
- private static void exportDatabase( DatabaseRefSource cnt, Appendable out ) throws IOException
+ private static void exportDatabase( DatabaseRecordRef cnt, Appendable out ) throws IOException
  {
   out.append("<Database>\n");
   
   String s = null;
   
-  s = cnt.getName();
+  s = cnt.getDbName();
   if( s != null && s.length() > 0 )
   {
    out.append("<Name>");
@@ -285,7 +285,7 @@ public class OM2XMLconverter
    out.append("</Name>\n");
   }
   
-  s = cnt.getDescription();
+  s = cnt.getTitle();
   if( s != null && s.length() > 0 )
   {
    out.append("<Description>");
@@ -585,9 +585,9 @@ public class OM2XMLconverter
      exportContact(c, out);
    }
    
-   if( msi.getDatabases() != null )
+   if( msi.getDatabaseRecordRefs() != null )
    {
-    for( DatabaseRefSource c : msi.getDatabases() )
+    for( DatabaseRecordRef c : msi.getDatabaseRecordRefs() )
      exportDatabase(c, out);
    }
    

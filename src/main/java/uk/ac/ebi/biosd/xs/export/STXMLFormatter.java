@@ -15,7 +15,7 @@ import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.expgraph.properties.SampleCommentValue;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
-import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
+import uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef;
 import uk.ac.ebi.fg.core_model.expgraph.Product;
 import uk.ac.ebi.fg.core_model.expgraph.properties.BioCharacteristicValue;
 import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyType;
@@ -211,9 +211,9 @@ public class STXMLFormatter extends AGE1XMLFormatter
      exportPerson(c, out);
    }
    
-   if( msi.getDatabases() != null )
+   if( msi.getDatabaseRecordRefs() != null )
    {
-    for( DatabaseRefSource c : msi.getDatabases() )
+    for( DatabaseRecordRef c : msi.getDatabaseRecordRefs() )
      exportDatabase(c, out);
    }
    
@@ -370,9 +370,9 @@ public class STXMLFormatter extends AGE1XMLFormatter
    }
   }
   
-  if( smp.getDatabases() != null )
+  if( smp.getDatabaseRecordRefs() != null )
   {
-   for( DatabaseRefSource c : smp.getDatabases() )
+   for( DatabaseRecordRef c : smp.getDatabaseRecordRefs() )
     exportDatabase(c, out);
   }
   
@@ -522,13 +522,13 @@ public class STXMLFormatter extends AGE1XMLFormatter
 
  }
  
- private static void exportDatabase( DatabaseRefSource cnt, Appendable out ) throws IOException
+ private static void exportDatabase( DatabaseRecordRef cnt, Appendable out ) throws IOException
  {
   out.append("<Database>\n");
   
   String s = null;
   
-  s = cnt.getName();
+  s = cnt.getDbName();
   if( s != null && s.length() > 0 )
   {
    out.append("<Name>");

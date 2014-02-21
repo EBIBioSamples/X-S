@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import uk.ac.ebi.fg.biosd.model.xref.DatabaseRefSource;
+import uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef;
 import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyType;
 import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyValue;
 
 public class AttributesSummary
 {
  private final Map<String,List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>> attributes = new HashMap<String, List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>>>();
- private Collection<DatabaseRefSource> databases;
+ private Collection<DatabaseRecordRef> databases;
  
  public void setAttribute(String name, List<ExperimentalPropertyValue<? extends ExperimentalPropertyType>> vals )
  {
@@ -40,12 +40,12 @@ public class AttributesSummary
   return attributes.keySet();
  }
 
- public Collection<DatabaseRefSource> getDatabases()
+ public Collection<DatabaseRecordRef> getDatabases()
  {
   return databases;
  }
 
- public void setDatabases(Collection<DatabaseRefSource> databases)
+ public void setDatabases(Collection<DatabaseRecordRef> databases)
  {
   this.databases = databases;
  }
