@@ -2,6 +2,7 @@ package uk.ac.ebi.biosd.xs.export;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
@@ -57,9 +58,12 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
     if( attrset!= null )
     {
      if( attrset.size() == 0 )
-      attrset.setDatabases(dbs);
+     {
+      if( dbs != null && dbs.size() > 0 )
+       attrset.setDatabases(dbs);
+     }
      else if( ! compareDatabaseColls(attrset.getDatabases(),dbs) )
-      attrset.setDatabases(null);
+      attrset.setDatabases(Collections.<DatabaseRecordRef>emptyList());
     }
     
     exportPropertyValues(smp.getPropertyValues(), mainout, attrset, true);

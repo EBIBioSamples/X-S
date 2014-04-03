@@ -3,6 +3,7 @@ package uk.ac.ebi.biosd.xs.export;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -653,9 +654,12 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   if( attrset!= null )
   {
    if( attrset.size() == 0 )
-    attrset.setDatabases(dbs);
+   {
+    if( dbs != null && dbs.size() > 0 )
+     attrset.setDatabases(dbs);
+   }
    else if( ! compareDatabaseColls(attrset.getDatabases(),dbs) )
-    attrset.setDatabases(null);
+    attrset.setDatabases(Collections.<DatabaseRecordRef>emptyList());
   }
   
   if(smp.getPropertyValues() != null && (showAnnt || attrset != null))
@@ -709,10 +713,10 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  protected boolean compareDatabaseColls( Collection<DatabaseRecordRef> set1, Collection<DatabaseRecordRef> set2o )
  {
   if( set1 == null )
-   return set2o == null;
+   return set2o == null || set2o.size() == 0;
   
   if( set2o == null )
-   return set1 == null;
+   return set1 == null|| set1.size() == 0;
   
   if( set1.size() != set2o.size() )
    return false;
@@ -724,6 +728,9 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    for( int i=0; i < set2.size(); i++)
    {
     DatabaseRecordRef db2 = set2.get(i);
+    
+    if( db2 == null )
+     continue;
     
     if( compareDatabases(db1,db2) )
     {
