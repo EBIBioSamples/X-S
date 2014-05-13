@@ -23,16 +23,18 @@ import uk.ac.ebi.biosd.xs.util.StringUtils;
 public class ExporterMT implements Exporter
 {
  private final EntityManagerFactory emf;
+ private final EntityManagerFactory myeqemf;
  private final XMLFormatter formatter;
  private final boolean exportSources;
  private final boolean sourcesByName;
  private final int threads;
  private final boolean showNS;
  
- public ExporterMT(EntityManagerFactory emf, XMLFormatter formatter, boolean exportSources, boolean sourcesByName, boolean showNS, int thN)
+ public ExporterMT(EntityManagerFactory emf, EntityManagerFactory myeqemf, XMLFormatter formatter, boolean exportSources, boolean sourcesByName, boolean showNS, int thN)
  {
   super();
   this.emf = emf;
+  this.myeqemf = myeqemf;
   this.formatter = formatter;
   this.exportSources = exportSources;
   this.sourcesByName = sourcesByName;
@@ -79,7 +81,7 @@ public class ExporterMT implements Exporter
   
   formatter.setNowDate(now);
   
-  ExporterMTControl mtc = new ExporterMTControl(emf, Collections.singletonList(freq), exportSources, sourcesByName, threads);
+  ExporterMTControl mtc = new ExporterMTControl(emf,myeqemf, Collections.singletonList(freq), exportSources, sourcesByName, threads);
 
   try
   {

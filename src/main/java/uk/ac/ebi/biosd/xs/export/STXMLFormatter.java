@@ -80,19 +80,19 @@ public class STXMLFormatter extends AGE1XMLFormatter
  }
  
  @Override
- public boolean exportSample(BioSample smp, Appendable out, boolean showNS) throws IOException
+ public boolean exportSample(BioSample smp, AuxInfo aux, Appendable out, boolean showNS) throws IOException
  {
   return exportSample(smp, out, showNS, true, null, null, isShowAC() );
  }
  
  @Override
- public boolean exportGroup( BioSampleGroup ao, Appendable out, boolean showNS ) throws IOException
+ public boolean exportGroup( BioSampleGroup ao, AuxInfo aux, Appendable out, boolean showNS ) throws IOException
  {
-  return exportGroup(ao, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
+  return exportGroup(ao, aux, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
  }
 
  @Override
- protected boolean exportGroup( final BioSampleGroup ao, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC ) throws IOException
+ protected boolean exportGroup( final BioSampleGroup ao, AuxInfo aux, Appendable out, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC ) throws IOException
  {
   if( isPublicOnly() && ! isGroupPublic(ao) )
    return false;

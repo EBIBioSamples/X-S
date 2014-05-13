@@ -3,6 +3,7 @@ package uk.ac.ebi.biosd.xs.service;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Enumeration;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -13,9 +14,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
+import uk.ac.ebi.biosd.xs.export.AuxInfo;
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
-import uk.ac.ebi.biosd.xs.service.RequestConfig.ParamPool;
+import uk.ac.ebi.biosd.xs.util.ParamPool;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.core_model.persistence.dao.hibernate.toplevel.AccessibleDAO;
 
@@ -61,6 +63,11 @@ public class SampleServlet extends HttpServlet
   
   reqCfg.loadParameters(new ParamPool()
   {
+   @Override
+   public Enumeration<String> getNames()
+   {
+    return request.getParameterNames();
+   }
    
    @Override
    public String getParameter(String name)
@@ -107,7 +114,15 @@ public class SampleServlet extends HttpServlet
    return;
   }
   
- 
+  
+  EntityManagerFactory myEqEmf = null;
+  
+  String str = reqCfg.getMyEq(null);
+  
+  if( str != null )
+   myEqEmf = EMFManager.getMyEqFactory( str );
+  
+  
   response.setContentType("text/xml; charset=UTF-8");
   Appendable out = response.getWriter();
   
@@ -134,8 +149,13 @@ public class SampleServlet extends HttpServlet
   
   ts.begin ();
   
+  AuxInfo auxInf = null;
+  
   try
   {
+   
+   if( myEqEmf != null )
+    auxInf = new AuxInfoImpl(myEqEmf);
    
    AccessibleDAO<BioSample> smpDAO = new AccessibleDAO<>(BioSample.class, em);
    
@@ -149,13 +169,16 @@ public class SampleServlet extends HttpServlet
    }
    
    
-   formatter.exportSample(smp, out, showNS);
+   formatter.exportSample(smp, auxInf, out, showNS);
   }
   finally
   {
    ts.commit();
    
    em.close();
+   
+   if(auxInf != null)
+    auxInf.destroy();
   }
   
   

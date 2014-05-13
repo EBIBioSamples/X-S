@@ -3,6 +3,7 @@ package uk.ac.ebi.biosd.xs.service;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Enumeration;
 
 import javax.persistence.EntityManagerFactory;
 import javax.servlet.ServletException;
@@ -13,7 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
-import uk.ac.ebi.biosd.xs.service.RequestConfig.ParamPool;
+import uk.ac.ebi.biosd.xs.util.ParamPool;
 
 public class ExportAll extends HttpServlet
 {
@@ -42,6 +43,11 @@ public class ExportAll extends HttpServlet
   
   reqCfg.loadParameters(new ParamPool()
   {
+   @Override
+   public Enumeration<String> getNames()
+   {
+    return request.getParameterNames();
+   }
    
    @Override
    public String getParameter(String name)
@@ -99,7 +105,13 @@ public class ExportAll extends HttpServlet
    return;
   }
   
- 
+  EntityManagerFactory myEqEmf = null;
+  
+  String str = reqCfg.getMyEq(null);
+  
+  if( str != null )
+   myEqEmf = EMFManager.getMyEqFactory( str );
+  
   response.setContentType("text/xml; charset=UTF-8");
   Appendable out = response.getWriter();
   
@@ -129,9 +141,9 @@ public class ExportAll extends HttpServlet
   Exporter expt = null;
   
   if( threadsNum == 1 )
-   expt = new ExporterST(emf, formatter, exportSources, sourcesByName, blockSize, reqCfg.getShowNamespace(DefaultShowNS) );
+   expt = new ExporterST(emf, myEqEmf, formatter, exportSources, sourcesByName, blockSize, reqCfg.getShowNamespace(DefaultShowNS) );
   else
-   expt = new ExporterMT(emf, formatter, exportSources, sourcesByName, reqCfg.getShowNamespace(DefaultShowNS), threadsNum);
+   expt = new ExporterMT(emf, myEqEmf, formatter, exportSources, sourcesByName, reqCfg.getShowNamespace(DefaultShowNS), threadsNum);
  
   System.out.println("Start exporting. Request from: "+request.getRemoteAddr()+" Limit: "+limit+" Time: "+new Date()+" Thread: "+Thread.currentThread().getName());
   

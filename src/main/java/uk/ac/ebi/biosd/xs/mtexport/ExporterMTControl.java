@@ -25,15 +25,17 @@ public class ExporterMTControl
  private final Logger log = LoggerFactory.getLogger(ExporterMTControl.class);
  
  private final EntityManagerFactory emf;
+ private final EntityManagerFactory myEqFact;
  final  List<FormattingRequest> requests;
  private final boolean exportSources;
  final boolean sourcesByName;
  private final int threads;
  
- public ExporterMTControl(EntityManagerFactory emf, List<FormattingRequest> ftasks, boolean exportSources, boolean sourcesByName, int thN )
+ public ExporterMTControl(EntityManagerFactory emf, EntityManagerFactory myEqFact, List<FormattingRequest> ftasks, boolean exportSources, boolean sourcesByName, int thN )
  {
   super();
   this.emf = emf;
+  this.myEqFact=myEqFact;
   this.requests = ftasks;
   this.exportSources = exportSources;
   this.sourcesByName = sourcesByName;
@@ -87,7 +89,7 @@ public class ExporterMTControl
   
   for( int i=0; i < threads; i++ )
   {
-   MTSliceExporterTask et = new MTSliceExporterTask(emf, sm, since, tasks, statistics, msgQ, stopFlag, sourcesByName,limitCnt, grpMul, smpMul);
+   MTSliceExporterTask et = new MTSliceExporterTask(emf, myEqFact, sm, since, tasks, statistics, msgQ, stopFlag, sourcesByName,limitCnt, grpMul, smpMul);
    
    exporters.add(et);
    

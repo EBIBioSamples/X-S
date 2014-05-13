@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>uk.ac.ebi.fg</groupId>
   <artifactId>X-S</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0.6-SNAPSHOT</version>
   <packaging>war</packaging>
   <name>X-S</name>
   <description>XML services for BioSD</description>
@@ -47,6 +47,13 @@
 			<enabled>true</enabled>
 		</snapshots>
 	</repository>
+
+	<repository>
+		<id>ebi-repo</id>
+		<name>EBI repo</name>
+		<url>http://www.ebi.ac.uk/~maven/m2repo</url>
+	</repository>
+    
     </repositories>
 
 	<dependencies>
@@ -61,6 +68,12 @@
 					<groupId>org.apache.geronimo.specs</groupId>
 				</exclusion>
 			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>uk.ac.ebi.fg</groupId>
+			<artifactId>myequivalents-db</artifactId>
+			<version>0.3-SNAPSHOT</version>
 		</dependency>
         
         <dependency>
@@ -104,12 +117,13 @@
 		<scope>provided</scope>
 	</dependency>
 
+<!-- 
 	<dependency>
 		<groupId>c3p0</groupId>
 		<artifactId>c3p0</artifactId>
-		<version>0.9.1.2</version>
+		<version>[0.9,)</version>
 	</dependency>
-	
+-->	
 	<dependency>
 		<groupId>org.hibernate</groupId>
 		<artifactId>hibernate-c3p0</artifactId>

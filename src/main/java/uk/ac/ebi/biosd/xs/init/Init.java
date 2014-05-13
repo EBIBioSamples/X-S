@@ -7,6 +7,8 @@ import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -17,7 +19,6 @@ import java.util.regex.Pattern;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
@@ -26,26 +27,32 @@ import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.biosd.xs.ebeye.EBeyeExport;
 import uk.ac.ebi.biosd.xs.service.RequestConfig;
-import uk.ac.ebi.biosd.xs.service.RequestConfig.ParamPool;
+import uk.ac.ebi.biosd.xs.util.ParamPool;
+import uk.ac.ebi.biosd.xs.util.ResourceBundleParamPool;
+import uk.ac.ebi.biosd.xs.util.ServletContextParamPool;
 
 public class Init implements ServletContextListener
 {
- public static final String EBeyeAuxPrefix = "ebeye.aux.";
+ public static final String EBeyeRequestPrefix = "ebeye.request.";
  
- static String EBeyeConnectionProfileParam = "ebeye.connectionProfile";
+// static String EBeyeConnectionProfileParam = "ebeye.connectionProfile";
+// static String EBeyeMyEqProfileParam = "ebeye.myeqProfile";
+// static String EBeyeThreads = "ebeye.threads";
+
  static String EBeyeOutputPathParam = "ebeye.outputDir";
  static String EBeyeTempPathParam = "ebeye.tempDir";
  static String EBeyeUpdateHourParam = "ebeye.updateTime";
  static String EBeyeEfoURLParam = "ebeye.efoURL";
  static String EBeyeGenSamples = "ebeye.generateSamples";
- static String EBeyeThreads = "ebeye.threads";
  static String EBeyeSources = "ebeye.sources";
 
  static final String ebeyeSrcSeparator = ";";
  static final String ebeyeSrcSubstSeparator = ":";
  
- static String PersistParamPrefix = "persist";
- static String DefaultProfileParam = PersistParamPrefix+".defaultProfile";
+ static String BioSDDBParamPrefix = "biosddb";
+ static String MyEQDBParamPrefix = "myeqdb";
+ 
+ static String DefaultProfileParam = BioSDDBParamPrefix+".defaultProfile";
 
  private final Logger log = LoggerFactory.getLogger(Init.class);
  private final Timer timer = new Timer("Timer", true);
@@ -55,19 +62,38 @@ public class Init implements ServletContextListener
  public void contextInitialized(ServletContextEvent ctx)
  {
   Map<String, Map<String,Object>> profMap = new HashMap<>();
+  Map<String, Map<String,Object>> myEqMap = new HashMap<>();
+
   Map<String,Object> defaultProfile=null;
   String defProfName = null;
   
-  Matcher mtch = Pattern.compile("^"+PersistParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
+  Matcher prstMtch = Pattern.compile("^"+BioSDDBParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
+  Matcher myeqMtch = Pattern.compile("^"+MyEQDBParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
   
-  final ServletContext servletContext = ctx.getServletContext();
+  ParamPool config = null;
+
+  ResourceBundle rb = null;
   
-  Enumeration<?> pNames = servletContext.getInitParameterNames();
+  try
+  {
+   rb = ResourceBundle.getBundle("testconfig");
+  }
+  catch(MissingResourceException ex)
+  {}
+  
+  if( rb != null )
+   config = new ResourceBundleParamPool(rb);
+  else
+   config = new ServletContextParamPool(ctx.getServletContext());
+  
+//  final ServletContext servletContext = ctx.getServletContext();
+  
+  Enumeration<String> pNames = config.getNames();
   
   while( pNames.hasMoreElements() )
   {
-   String key = pNames.nextElement().toString();
-   String val = servletContext.getInitParameter(key); 
+   String key = pNames.nextElement();
+   String val = config.getParameter(key);
   
    if( key.equals(DefaultProfileParam) )
    {
@@ -75,21 +101,21 @@ public class Init implements ServletContextListener
     continue;
    }
    
-   mtch.reset( key );
+   prstMtch.reset( key );
    
-   if( ! mtch.matches() )
+   if( ! prstMtch.matches() )
     continue;
 
    String profile = null;
    String param = null;
 
-   if( mtch.groupCount() == 3 )
+   if( prstMtch.groupCount() == 3 )
    {
-    profile = mtch.group(2);
-    param = mtch.group(3);
+    profile = prstMtch.group(2);
+    param = prstMtch.group(3);
    }
    else
-    param = mtch.group(mtch.groupCount());
+    param = prstMtch.group(prstMtch.groupCount());
    
 
    
@@ -116,6 +142,40 @@ public class Init implements ServletContextListener
     defaultProfile = namedDP;
   }
   
+  pNames = config.getNames();
+  
+  while( pNames.hasMoreElements() )
+  {
+   String key = pNames.nextElement().toString();
+   String val = config.getParameter(key); 
+  
+   
+   myeqMtch.reset( key );
+   
+   if( ! myeqMtch.matches() )
+    continue;
+
+   String profile = null;
+   String param = null;
+
+   if( myeqMtch.groupCount() == 3 )
+   {
+    profile = myeqMtch.group(2);
+    param = myeqMtch.group(3);
+   }
+   else
+    log.warn("Invalid parameter {} will be ignored.", key);
+    
+
+   
+   Map<String,Object> cm = myEqMap.get(profile);
+   
+   if( cm == null )
+    myEqMap.put(profile, cm = new TreeMap<>() );
+   
+   cm.put(param, val);
+  }
+  
   for( Map.Entry<String, Map<String,Object>> me : profMap.entrySet() )
   {
    if( me.getKey() == null )
@@ -127,8 +187,12 @@ public class Init implements ServletContextListener
   if( defaultProfile != null )
    EMFManager.setDefaultFactory( Persistence.createEntityManagerFactory ( "X-S", defaultProfile ) );
   
+  RequestConfig reqCfg = new RequestConfig();
+  reqCfg.loadParameters(config, EBeyeRequestPrefix);
+  
   EntityManagerFactory emf;
-  String connProf = servletContext.getInitParameter(EBeyeConnectionProfileParam);
+
+  String connProf = reqCfg.getServer(null);
   
   if( connProf == null )
    emf = EMFManager.getDefaultFactory();
@@ -137,19 +201,40 @@ public class Init implements ServletContextListener
   
   if( emf == null )
   {
-   log.warn("Invalid value for {} parameter. EBeye export will be disabled", EBeyeConnectionProfileParam);
+   log.warn("Invalid value for {} parameter. EBeye export will be disabled", EBeyeRequestPrefix+RequestConfig.ProfileParameter);
    return;
   }
   
+  for( Map.Entry<String, Map<String,Object>> me : myEqMap.entrySet() )
+  {
+   if( me.getKey() == null )
+    continue;
+   
+   EMFManager.addMyEqFactory( me.getKey(), Persistence.createEntityManagerFactory ( "MyEq", me.getValue() )  );
+  }
+
+  
+  String str = reqCfg.getMyEq(null);
+  
+  EntityManagerFactory myEqFact = null;
+  
+  if( str != null )
+  {
+   myEqFact = EMFManager.getMyEqFactory(str);
+   
+   if( myEqFact == null )
+    log.warn("MyEq profile \""+str+"\" is not defined. MyEq support will be disabled");
+
+  }
   
   final boolean genSamples;
 
-  String gen = servletContext.getInitParameter(EBeyeGenSamples);
+  String gen = config.getParameter(EBeyeGenSamples);
   
   genSamples = ( gen != null )? "1".equals(gen) || "yes".equalsIgnoreCase(gen) || "on".equalsIgnoreCase(gen) || "true".equalsIgnoreCase(gen) : true;
 
   
-  String outPath = servletContext.getInitParameter(EBeyeOutputPathParam);
+  String outPath = config.getParameter(EBeyeOutputPathParam);
   
   if( outPath == null )
   {
@@ -157,7 +242,7 @@ public class Init implements ServletContextListener
    return;
   }
   
-  String tempPath = servletContext.getInitParameter(EBeyeTempPathParam);
+  String tempPath = config.getParameter(EBeyeTempPathParam);
 
   if( tempPath == null )
   {
@@ -167,7 +252,7 @@ public class Init implements ServletContextListener
  
 
   Map<String,String> ebeyeSrcMap = null;
-  String str = servletContext.getInitParameter( EBeyeSources );
+  str = config.getParameter( EBeyeSources );
   
   if( str != null )
   {
@@ -189,7 +274,7 @@ public class Init implements ServletContextListener
    
   }
 
-  String efoURLStr = servletContext.getInitParameter( EBeyeEfoURLParam );
+  String efoURLStr = config.getParameter( EBeyeEfoURLParam );
   
   if( efoURLStr == null )
   {
@@ -213,7 +298,7 @@ public class Init implements ServletContextListener
    return;
   }
   
-  String invokeTime = servletContext.getInitParameter(EBeyeUpdateHourParam);
+  String invokeTime = config.getParameter(EBeyeUpdateHourParam);
 
   int hour = -1;
   int min = 0;
@@ -266,37 +351,11 @@ public class Init implements ServletContextListener
    
   }
   
-  str = servletContext.getInitParameter(EBeyeThreads);
   
-  int t=0;
-  
-  if( str != null )
-  {
-   try
-   {
-    t = Integer.parseInt(str);
-   }
-   catch(Exception e)
-   {
-   }
-  }
-  
-  final int threads = t;
+  final int threads = reqCfg.getThreads(Runtime.getRuntime().availableProcessors());
 
-    
-  RequestConfig reqCfg = new RequestConfig();
-  reqCfg.loadParameters(new ParamPool()
-  {
-   
-   @Override
-   public String getParameter(String name)
-   {
-    return servletContext.getInitParameter(name);
-   }
-  }, EBeyeAuxPrefix);
   
-  
-  EBeyeExport.setInstance( new EBeyeExport(emf, new File(outPath), new File(tempPath), efoURL, reqCfg, ebeyeSrcMap ) );
+  EBeyeExport.setInstance( new EBeyeExport(emf, myEqFact, new File(outPath), new File(tempPath), efoURL, reqCfg, ebeyeSrcMap ) );
   
   if( hour != -1 )
   {

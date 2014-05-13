@@ -1,15 +1,15 @@
 package uk.ac.ebi.biosd.xs.service;
 
+import uk.ac.ebi.biosd.xs.util.ParamPool;
+
 public class RequestConfig
 {
  
- public interface ParamPool
- {
-  String getParameter( String name );
- }
+
  
  public static final String SchemaParameter            = "schema";
  public static final String ProfileParameter           = "server";
+ public static final String MyEqProfileParameter       = "myeq";
  public static final String LimitParameter             = "limit";
  public static final String ThreadsParameter           = "threads";
  public static final String SamplesParameter           = "samplesFormat";
@@ -33,6 +33,7 @@ public class RequestConfig
  private String      output;
  private String      schema;
  private String      server;
+ private String      myeq;
  private String      samplesFormat;
  private Integer     threads;
  private Long        limit;
@@ -49,6 +50,8 @@ public class RequestConfig
   schema = params.getParameter(pfx+SchemaParameter);
   
   server = params.getParameter(pfx+ProfileParameter);
+  
+  myeq = params.getParameter(pfx+MyEqProfileParameter);
   
   samplesFormat = params.getParameter(pfx+SamplesParameter);
   
@@ -205,6 +208,12 @@ public class RequestConfig
  {
   return server!=null?server:def;
  }
+ 
+ public String getMyEq(String def)
+ {
+  return myeq!=null?myeq:def;
+ }
+
 
  public String getSamplesFormat(String def)
  {

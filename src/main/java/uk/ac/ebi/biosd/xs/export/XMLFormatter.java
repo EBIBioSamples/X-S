@@ -14,9 +14,9 @@ public interface XMLFormatter
  
  boolean isSamplesExport();
  
- boolean exportSample(BioSample smp,  Appendable out, boolean showNS ) throws IOException;
+ boolean exportSample(BioSample smp, AuxInfo aux, Appendable out, boolean showNS ) throws IOException;
 
- boolean exportGroup( BioSampleGroup ao, Appendable out, boolean showNS ) throws IOException;
+ boolean exportGroup( BioSampleGroup ao, AuxInfo aux, Appendable out, boolean showNS ) throws IOException;
 
  void exportHeader(long since, Appendable out, boolean showNS) throws IOException;
  void exportGroupHeader(Appendable out, boolean showNS, int n) throws IOException;

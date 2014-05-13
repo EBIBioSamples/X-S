@@ -8,6 +8,8 @@ import javax.persistence.EntityManagerFactory;
 public class EMFManager
 {
  private static Map<String, EntityManagerFactory> mngrMap = new TreeMap<>();
+ private static Map<String, EntityManagerFactory> myeqMngrMap = new TreeMap<>();
+ 
  private static EntityManagerFactory defaultFactory;
  
  public static EntityManagerFactory getDefaultFactory()
@@ -30,5 +32,14 @@ public class EMFManager
   mngrMap.put(cmId, cm);
  }
 
- 
+ public static void addMyEqFactory( String cmId, EntityManagerFactory cm )
+ {
+  myeqMngrMap.put(cmId, cm);
+ }
+
+ public static EntityManagerFactory getMyEqFactory( String mngId )
+ {
+  return myeqMngrMap.get(mngId);
+ }
+
 }

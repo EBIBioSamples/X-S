@@ -50,4 +50,13 @@
 <class>uk.ac.ebi.fg.core_model.xref.XRef</class>
 
 </persistence-unit>
+
+<persistence-unit name="MyEq" transaction-type="RESOURCE_LOCAL">
+<provider>org.hibernate.ejb.HibernatePersistence</provider>
+<class>uk.ac.ebi.fg.myequivalents.model.EntityMapping</class>
+<class>uk.ac.ebi.fg.myequivalents.model.Repository</class>
+<class>uk.ac.ebi.fg.myequivalents.model.Service</class>
+<class>uk.ac.ebi.fg.myequivalents.model.ServiceCollection</class>
+</persistence-unit>
+ 
 </persistence>

@@ -80,17 +80,17 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  }
  
  @Override
- public boolean exportSample(BioSample smp, Appendable out, boolean showNS) throws IOException
+ public boolean exportSample(BioSample smp, AuxInfo aux, Appendable out, boolean showNS) throws IOException
  {
-  return exportSample(smp, out, showNS, isShowAttributes(), true, null, isShowAC());
+  return exportSample(smp, aux, out, showNS, isShowAttributes(), true, null, isShowAC());
  }
 
  
  
  @Override
- public boolean exportGroup(BioSampleGroup ao, Appendable out, boolean showNS) throws IOException
+ public boolean exportGroup(BioSampleGroup ao, AuxInfo aux, Appendable out, boolean showNS) throws IOException
  {
-  return exportGroup(ao, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
+  return exportGroup(ao, aux, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
  }
  
  protected interface ACObj
@@ -121,7 +121,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("\" ");
  }
 
- protected void exportSamples(BioSampleGroup ao, Appendable mainout, SamplesFormat smpSts,
+ protected void exportSamples(BioSampleGroup ao, AuxInfo aux, Appendable mainout, SamplesFormat smpSts,
    AttributesSummary attrset) throws IOException
  {
   if( smpSts != SamplesFormat.NONE && ao.getSamples() != null )
@@ -135,14 +135,34 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    for(BioSample smp : smpls)
    {
     if( ! isPublicOnly() || isSamplePublic(smp) )
-     exportSample(smp, mainout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
+     exportSample(smp, aux, mainout, false, smpSts == SamplesFormat.EMBED, false, attrset, isShowAC());
    }
   
    assert LoggerFactory.getLogger().exit("End procesing sample block", "sblock");
   }
  }
  
- protected boolean exportGroup(final BioSampleGroup ao, Appendable mainout, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
+ protected void showReferences( Collection<EquivalenceRecord> eqs, Appendable mainout ) throws IOException
+ {
+  mainout.append("<References>\n");
+  
+  for( EquivalenceRecord eq : eqs )
+  {
+   mainout.append(" <ref id=\"");
+   xmlEscaped(eq.getAccession(), mainout);
+   mainout.append("\" title=\"");
+   xmlEscaped(eq.getTitle(), mainout);
+   mainout.append("\" url=\"");
+   xmlEscaped(eq.getUrl(), mainout);
+   mainout.append("\" />\n");
+  }
+  
+  mainout.append("</References>\n");
+  
+
+ }
+ 
+ protected boolean exportGroup(final BioSampleGroup ao, AuxInfo aux, Appendable mainout, boolean showNS, SamplesFormat smpSts, boolean showAttributes, boolean showAC) throws IOException
  {
   if( isPublicOnly() && ! isGroupPublic(ao) )
    return false;
@@ -181,6 +201,13 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   xmlEscaped(ao.getAcc(), mainout);
   mainout.append("\">\n");
 
+  if( aux != null )
+  {
+   Collection<EquivalenceRecord> eqs = aux.getGroupEquivalences(ao.getAcc());
+   
+   if( eqs != null && eqs.size() > 0 )
+    showReferences(eqs, mainout);
+  }
 
   MSI msi = null;
   
@@ -340,7 +367,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   }
   
 
-  exportSamples( ao, mainout, smpSts, attrset);
+  exportSamples( ao, aux, mainout, smpSts, attrset);
   
   if( showAttributes )
   {
@@ -605,7 +632,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   out.append("</attribute>\n");
  }
  
- protected boolean exportSample(final BioSample smp, Appendable mainout, boolean showNS, boolean showAnnt,
+ protected boolean exportSample(final BioSample smp, AuxInfo aux, Appendable mainout, boolean showNS, boolean showAnnt,
    boolean showGrpId, AttributesSummary attrset, boolean showAC) throws IOException
  {
   if( isPublicOnly() && ! isSamplePublic(smp) )
@@ -645,7 +672,13 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
   mainout.append("\">\n");
   
-  
+  if( aux != null )
+  {
+   Collection<EquivalenceRecord> eqs = aux.getSampleEquivalences(smp.getAcc());
+   
+   if( eqs != null && eqs.size() > 0 )
+    showReferences(eqs, mainout);
+  }
   
   Collection<DatabaseRecordRef> dbs = smp.getDatabaseRecordRefs();
   

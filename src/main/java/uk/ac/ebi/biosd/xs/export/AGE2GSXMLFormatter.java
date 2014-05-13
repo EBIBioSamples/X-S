@@ -25,7 +25,7 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  }
  
  @Override
- protected void exportSamples(BioSampleGroup ao, Appendable mainout, SamplesFormat smpSts, AttributesSummary attrset) throws IOException
+ protected void exportSamples(BioSampleGroup ao, AuxInfo aux, Appendable mainout, SamplesFormat smpSts, AttributesSummary attrset) throws IOException
  {
   if(ao.getSamples() == null)
    return;
@@ -81,11 +81,11 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  
  
  @Override
- public boolean exportSample(BioSample smp, Appendable out, boolean showNS) throws IOException
+ public boolean exportSample(BioSample smp, AuxInfo aux, Appendable out, boolean showNS) throws IOException
  {
   assert LoggerFactory.getLogger().entry("Start exporting sample: "+smp.getAcc(), "sample");
   
-  boolean res =  super.exportSample(smp, out, showNS, isShowAttributes(), true, null, isShowAC());
+  boolean res =  super.exportSample(smp, aux, out, showNS, isShowAttributes(), true, null, isShowAC());
 
   assert LoggerFactory.getLogger().exit("End exporting sample: "+smp.getAcc(), "sample");
   
@@ -93,11 +93,11 @@ public class AGE2GSXMLFormatter extends AGE2XMLFormatter
  }
 
  @Override
- public boolean exportGroup(BioSampleGroup ao, Appendable out, boolean showNS) throws IOException
+ public boolean exportGroup(BioSampleGroup ao, AuxInfo aux, Appendable out, boolean showNS) throws IOException
  {
   assert LoggerFactory.getLogger().entry("Start exporting group: "+ao.getAcc(), "group");
 
-  boolean res = super.exportGroup(ao, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
+  boolean res = super.exportGroup(ao, aux, out, showNS, getSamplesFormat(), isShowAttributes(), isShowAC() );
   
   assert LoggerFactory.getLogger().exit("End exporting group: "+ao.getAcc(), "group");
 

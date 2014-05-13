@@ -54,6 +54,8 @@ public class EBeyeExport
  
  private  XMLFormatter ebeyeFmt;
  private final EntityManagerFactory emf;
+ private final EntityManagerFactory myEqFact;
+;
 
  private XMLFormatter auxFmt = null;
  private final File outDir;
@@ -78,11 +80,12 @@ public class EBeyeExport
   EBeyeExport.instance = instance;
  }
  
- public EBeyeExport(EntityManagerFactory emf, File outDir, File tmpDir, URL efoURL, RequestConfig rc,  Map<String, String> ebeyeSrcMap)
+ public EBeyeExport(EntityManagerFactory emf, EntityManagerFactory myEqFact, File outDir, File tmpDir, URL efoURL, RequestConfig rc,  Map<String, String> ebeyeSrcMap)
  {
   log = LoggerFactory.getLogger(EBeyeExport.class);
 
   this.emf=emf;
+  this.myEqFact = myEqFact;
   
   this.ebeyeSrcMap = ebeyeSrcMap;
   this.outDir = outDir;
@@ -236,7 +239,7 @@ public class EBeyeExport
    if( auxFileOut != null )
     frList.add( new FormattingRequest(auxFmt, auxFileOut, tmpAuxSampleOut) );
    
-   ExporterMTControl mtc = new ExporterMTControl(emf, frList, auxConfig.getShowSources(DefaultShowSources), auxConfig.getSourcesByName(DefaultSourcesByName), threads);
+   ExporterMTControl mtc = new ExporterMTControl(emf, myEqFact, frList, auxConfig.getShowSources(DefaultShowSources), auxConfig.getSourcesByName(DefaultSourcesByName), threads);
 
    try
    {

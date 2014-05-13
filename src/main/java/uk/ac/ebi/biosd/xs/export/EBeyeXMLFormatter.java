@@ -24,6 +24,7 @@ import uk.ac.ebi.fg.core_model.expgraph.properties.ExperimentalPropertyValue;
 import uk.ac.ebi.fg.core_model.organizational.Contact;
 import uk.ac.ebi.fg.core_model.organizational.Organization;
 import uk.ac.ebi.fg.core_model.organizational.Publication;
+import uk.ac.ebi.fg.core_model.terms.OntologyEntry;
 
 public class EBeyeXMLFormatter extends AbstractXMLFormatter
 {
@@ -43,7 +44,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  static DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 
  @Override
- public boolean exportSample(BioSample smp,  Appendable out, boolean showNS) throws IOException
+ public boolean exportSample(BioSample smp, AuxInfo aux,  Appendable out, boolean showNS) throws IOException
  {
   if( isPublicOnly() && ! isSamplePublic(smp) )
    return false;
@@ -88,6 +89,19 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
     else
      kw.add(pVal);
 
+    Set<OntologyEntry> onts = val.getOntologyTerms();
+    
+    if( onts != null && onts.size() !=0 )
+    {
+     for( OntologyEntry oe : onts )
+     {
+      if( oe.getAcc() != null )
+       kw.add(oe.getAcc());
+      
+      if( oe.getLabel() != null )
+       kw.add(oe.getLabel());
+     }
+    }
     
 //    if( isChar )
 //     xmlEscaped("Characteristic["+pName+"]",out);
@@ -201,7 +215,7 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
  }
 
  @Override
- public boolean exportGroup(BioSampleGroup grp, Appendable out, boolean showNS) throws IOException
+ public boolean exportGroup(BioSampleGroup grp, AuxInfo aux, Appendable out, boolean showNS) throws IOException
  {
   if( isPublicOnly() && ! isGroupPublic(grp) )
    return false;
@@ -238,6 +252,20 @@ public class EBeyeXMLFormatter extends AbstractXMLFormatter
     kw.addAll(terms);
    else
     kw.add(pVal);
+   
+   Set<OntologyEntry> onts = val.getOntologyTerms();
+   
+   if( onts != null && onts.size() !=0 )
+   {
+    for( OntologyEntry oe : onts )
+    {
+     if( oe.getAcc() != null )
+      kw.add(oe.getAcc());
+     
+     if( oe.getLabel() != null )
+      kw.add(oe.getLabel());
+    }
+   }
    
   }
 

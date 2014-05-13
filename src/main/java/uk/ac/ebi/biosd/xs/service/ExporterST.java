@@ -17,6 +17,7 @@ import java.util.Set;
 
 import javax.persistence.EntityManagerFactory;
 
+import uk.ac.ebi.biosd.xs.export.AuxInfo;
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.biosd.xs.mtexport.GroupRangeQueryManager;
@@ -31,14 +32,16 @@ import uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef;
 public class ExporterST implements Exporter
 {
  private final EntityManagerFactory emf;
+ private final EntityManagerFactory myeqemf;
  private final XMLFormatter formatter;
  private final boolean exportSources;
  private final boolean sourcesByName;
  private final boolean showNS;
  
- public ExporterST(EntityManagerFactory emf, XMLFormatter formatter, boolean exportSources, boolean sourcesByName, int blockSize, boolean showNS)
+ public ExporterST(EntityManagerFactory emf, EntityManagerFactory myeqemf, XMLFormatter formatter, boolean exportSources, boolean sourcesByName, int blockSize, boolean showNS)
  {
   this.emf = emf;
+  this.myeqemf= myeqemf;
   this.formatter = formatter;
   this.exportSources = exportSources;
   this.sourcesByName = sourcesByName;
@@ -60,6 +63,7 @@ public class ExporterST implements Exporter
   
   GroupRangeQueryManager grpMngr = new GroupRangeQueryManager(emf);
   
+ 
   long startID = Long.MIN_VALUE;
   
   Set<String> sampleSet =  new HashSet<String>() ;
@@ -110,6 +114,12 @@ public class ExporterST implements Exporter
   }
   
  
+  AuxInfo auxInf = null;
+  
+  if( myeqemf != null )
+   auxInf = new AuxInfoImpl(myeqemf);
+  
+  
   try
   {
 
@@ -144,7 +154,7 @@ public class ExporterST implements Exporter
        if( grpMul != null )
         ng = GroupSampleUtil.cloneGroup(g, g.getAcc()+"00"+grpRep, smpMul);
        
-       formatter.exportGroup(ng, out, false);
+       formatter.exportGroup(ng, auxInf, out, false);
 
        msiTags.clear();
        int nSmp = ng.getSamples().size();
@@ -190,7 +200,7 @@ public class ExporterST implements Exporter
          if(!sampleSet.add(smp.getAcc()))
           continue;
 
-         formatter.exportSample(smp,smpStream, false);
+         formatter.exportSample(smp, auxInf, smpStream, false);
          uniqSampleCount++;
         }
        }
@@ -258,6 +268,9 @@ public class ExporterST implements Exporter
    
    if( tmpFile != null )
     tmpFile.delete();
+   
+   if( auxInf != null )
+    auxInf.destroy();
   }
   
   formatter.exportFooter(out);
