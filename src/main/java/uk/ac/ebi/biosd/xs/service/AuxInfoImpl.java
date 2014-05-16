@@ -14,10 +14,14 @@ import uk.ac.ebi.fg.myequivalents.model.EntityMapping;
 
 public class AuxInfoImpl implements AuxInfo
 {
+ private static final int MAX_REQUESTS = 50;
+ 
  private final EntityManagerFactory myeqFactory;
  private EntityManager myeqManager;
  
  private final EntityMappingDAO entityMappingDAO;
+ 
+ private int counter=0;
 
  public AuxInfoImpl( EntityManagerFactory myeqFact )
  {
@@ -57,7 +61,11 @@ public class AuxInfoImpl implements AuxInfo
    res.add( new EquivalenceRecord(mp.getAccession(),mp.getService().getTitle(),mp.getService().getUriPattern()) );
   }
 
-  myeqManager.clear();
+  if( ++counter > MAX_REQUESTS )
+  {
+   myeqManager.clear();
+   counter=0;
+  }
   
   return res;
  }

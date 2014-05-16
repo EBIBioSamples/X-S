@@ -26,7 +26,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.biosd.xs.ebeye.EBeyeExport;
+import uk.ac.ebi.biosd.xs.email.Email;
 import uk.ac.ebi.biosd.xs.service.RequestConfig;
+import uk.ac.ebi.biosd.xs.task.ExportTask;
+import uk.ac.ebi.biosd.xs.task.TaskInitError;
+import uk.ac.ebi.biosd.xs.task.TaskManager;
+import uk.ac.ebi.biosd.xs.util.MapParamPool;
 import uk.ac.ebi.biosd.xs.util.ParamPool;
 import uk.ac.ebi.biosd.xs.util.ResourceBundleParamPool;
 import uk.ac.ebi.biosd.xs.util.ServletContextParamPool;
@@ -34,6 +39,10 @@ import uk.ac.ebi.biosd.xs.util.ServletContextParamPool;
 public class Init implements ServletContextListener
 {
  public static final String EBeyeRequestPrefix = "ebeye.request.";
+
+ public static final String TaskRequestPrefix = "request.";
+ 
+ public static final String EmailParamPrefix = "email.";
  
 // static String EBeyeConnectionProfileParam = "ebeye.connectionProfile";
 // static String EBeyeMyEqProfileParam = "ebeye.myeqProfile";
@@ -43,19 +52,24 @@ public class Init implements ServletContextListener
  static String EBeyeTempPathParam = "ebeye.tempDir";
  static String EBeyeUpdateHourParam = "ebeye.updateTime";
  static String EBeyeEfoURLParam = "ebeye.efoURL";
- static String EBeyeGenSamples = "ebeye.generateSamples";
- static String EBeyeSources = "ebeye.sources";
+ static String EBeyeGenSamplesParam = "ebeye.generateSamples";
+ static String EBeyeSourcesParam = "ebeye.sources";
 
+ static String TaskTmpDirParam = "tmpDir";
+ static String TaskTimeParam = "updateTime";
+
+ 
  static final String ebeyeSrcSeparator = ";";
  static final String ebeyeSrcSubstSeparator = ":";
  
  static String BioSDDBParamPrefix = "biosddb";
  static String MyEQDBParamPrefix = "myeqdb";
+ static String TaskParamPrefix = "task";
  
  static String DefaultProfileParam = BioSDDBParamPrefix+".defaultProfile";
 
  private final Logger log = LoggerFactory.getLogger(Init.class);
- private final Timer timer = new Timer("Timer", true);
+ private Timer ebeyeTimer;
 
  
  @Override
@@ -63,12 +77,14 @@ public class Init implements ServletContextListener
  {
   Map<String, Map<String,Object>> profMap = new HashMap<>();
   Map<String, Map<String,Object>> myEqMap = new HashMap<>();
+  Map<String, Map<String,Object>> tasksMap = new HashMap<>();
 
   Map<String,Object> defaultProfile=null;
   String defProfName = null;
   
   Matcher prstMtch = Pattern.compile("^"+BioSDDBParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
   Matcher myeqMtch = Pattern.compile("^"+MyEQDBParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
+  Matcher taskMtch = Pattern.compile("^"+TaskParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
   
   ParamPool config = null;
 
@@ -86,7 +102,6 @@ public class Init implements ServletContextListener
   else
    config = new ServletContextParamPool(ctx.getServletContext());
   
-//  final ServletContext servletContext = ctx.getServletContext();
   
   Enumeration<String> pNames = config.getNames();
   
@@ -94,37 +109,88 @@ public class Init implements ServletContextListener
   {
    String key = pNames.nextElement();
    String val = config.getParameter(key);
-  
-   if( key.equals(DefaultProfileParam) )
+
+   if(key.equals(DefaultProfileParam))
    {
     defProfName = val;
     continue;
    }
-   
-   prstMtch.reset( key );
-   
-   if( ! prstMtch.matches() )
-    continue;
 
-   String profile = null;
-   String param = null;
+   prstMtch.reset(key);
 
-   if( prstMtch.groupCount() == 3 )
+   if(prstMtch.matches())
    {
-    profile = prstMtch.group(2);
-    param = prstMtch.group(3);
+
+    String profile = null;
+    String param = null;
+
+    if(prstMtch.groupCount() == 3)
+    {
+     profile = prstMtch.group(2);
+     param = prstMtch.group(3);
+    }
+    else
+     param = prstMtch.group(prstMtch.groupCount());
+
+    Map<String, Object> cm = profMap.get(profile);
+
+    if(cm == null)
+     profMap.put(profile, cm = new TreeMap<>());
+
+    cm.put(param, val);
    }
    else
-    param = prstMtch.group(prstMtch.groupCount());
-   
+   {
+    myeqMtch.reset(key);
 
-   
-   Map<String,Object> cm = profMap.get(profile);
-   
-   if( cm == null )
-    profMap.put(profile, cm = new TreeMap<>() );
-   
-   cm.put(param, val);
+    if(myeqMtch.matches())
+    {
+
+     String profile = null;
+     String param = null;
+
+     if(myeqMtch.groupCount() == 3)
+     {
+      profile = myeqMtch.group(2);
+      param = myeqMtch.group(3);
+     }
+     else
+      log.warn("Invalid parameter {} will be ignored.", key);
+
+     Map<String, Object> cm = myEqMap.get(profile);
+
+     if(cm == null)
+      myEqMap.put(profile, cm = new TreeMap<>());
+
+     cm.put(param, val);
+    }
+    else
+    {
+     taskMtch.reset(key);
+
+     if(taskMtch.matches())
+     {
+
+      String profile = null;
+      String param = null;
+
+      if(taskMtch.groupCount() == 3)
+      {
+       profile = taskMtch.group(2);
+       param = taskMtch.group(3);
+      }
+      else
+       log.warn("Invalid parameter {} will be ignored.", key);
+
+      Map<String, Object> cm = tasksMap.get(profile);
+
+      if(cm == null)
+       tasksMap.put(profile, cm = new TreeMap<>());
+
+      cm.put(param, val);
+     }
+    }
+   }
   }
   
   defaultProfile = profMap.get(null);
@@ -142,39 +208,8 @@ public class Init implements ServletContextListener
     defaultProfile = namedDP;
   }
   
-  pNames = config.getNames();
   
-  while( pNames.hasMoreElements() )
-  {
-   String key = pNames.nextElement().toString();
-   String val = config.getParameter(key); 
-  
-   
-   myeqMtch.reset( key );
-   
-   if( ! myeqMtch.matches() )
-    continue;
 
-   String profile = null;
-   String param = null;
-
-   if( myeqMtch.groupCount() == 3 )
-   {
-    profile = myeqMtch.group(2);
-    param = myeqMtch.group(3);
-   }
-   else
-    log.warn("Invalid parameter {} will be ignored.", key);
-    
-
-   
-   Map<String,Object> cm = myEqMap.get(profile);
-   
-   if( cm == null )
-    myEqMap.put(profile, cm = new TreeMap<>() );
-   
-   cm.put(param, val);
-  }
   
   for( Map.Entry<String, Map<String,Object>> me : profMap.entrySet() )
   {
@@ -186,6 +221,18 @@ public class Init implements ServletContextListener
   
   if( defaultProfile != null )
    EMFManager.setDefaultFactory( Persistence.createEntityManagerFactory ( "X-S", defaultProfile ) );
+  
+ 
+  try
+  {
+   Email.setDefaultInstance( new Email(config,EmailParamPrefix) );
+  }
+  catch( Exception e )
+  {
+   log.warn("Can't init email. Emails will be disabled. Error: "+e.getMessage());
+  }
+
+  
   
   RequestConfig reqCfg = new RequestConfig();
   reqCfg.loadParameters(config, EBeyeRequestPrefix);
@@ -229,7 +276,7 @@ public class Init implements ServletContextListener
   
   final boolean genSamples;
 
-  String gen = config.getParameter(EBeyeGenSamples);
+  String gen = config.getParameter(EBeyeGenSamplesParam);
   
   genSamples = ( gen != null )? "1".equals(gen) || "yes".equalsIgnoreCase(gen) || "on".equalsIgnoreCase(gen) || "true".equalsIgnoreCase(gen) : true;
 
@@ -252,7 +299,7 @@ public class Init implements ServletContextListener
  
 
   Map<String,String> ebeyeSrcMap = null;
-  str = config.getParameter( EBeyeSources );
+  str = config.getParameter( EBeyeSourcesParam );
   
   if( str != null )
   {
@@ -299,13 +346,159 @@ public class Init implements ServletContextListener
   }
   
   String invokeTime = config.getParameter(EBeyeUpdateHourParam);
+  long delay = getAdjustedDelay(invokeTime, "EBeye");
+  
+  
+  final int threads = reqCfg.getThreads(Runtime.getRuntime().availableProcessors());
+
+  
+  EBeyeExport.setInstance( new EBeyeExport(emf, myEqFact, new File(outPath), new File(tempPath), efoURL, reqCfg, ebeyeSrcMap ) );
+  
+  
+  long day = TimeUnit.DAYS.toMillis(1);
+  
+  if( delay > 0 )
+  {
+
+   TimerTask task = new TimerTask()
+   {
+    @Override
+    public void run()
+    {
+     log.info("Starting scheduled task");
+     
+     try
+     {
+      EBeyeExport.getInstance().export(-1, genSamples, true, threads );
+     }
+     catch(Throwable e)
+     {
+      log.error("Export error: "+(e.getMessage()!=null?e.getMessage():e.getClass().getName()));
+     }
+     
+     log.info("Finishing scheduled task");
+    }
+   };
+   
+   ebeyeTimer = new Timer("Timer", true);
+   
+   ebeyeTimer.scheduleAtFixedRate(task, delay, day);
+  }
+  
+  createTasks(tasksMap);
+  
+  for( TaskInfo tinf : TaskManager.getDefaultInstance().getTasks() )
+  {
+   if( tinf.getTimerDelay() > 0 )
+   {
+    Timer timer = new Timer("Task "+tinf.getTask().getName()+" timer",true);
+    
+    timer.scheduleAtFixedRate(tinf, tinf.getTimerDelay(), day);
+   
+    tinf.setTimer(timer);
+    
+    log.info("Task '"+tinf.getTask().getName()+"' is scheduled to run periodically");
+   }
+  }
+   
+  
+ }
+
+ private void createTasks(Map<String, Map<String, Object>> tasksMap)
+ {
+  for( Map.Entry<String, Map<String, Object>> me : tasksMap.entrySet() )
+  {
+   TaskInfo tinf = new TaskInfo();
+   
+   ParamPool pp = new MapParamPool(me.getValue());
+   
+   RequestConfig rc = new RequestConfig();
+   rc.loadParameters(pp, TaskRequestPrefix);
+   
+   String str = rc.getServer(null);
+   
+   if( str == null )
+   {
+    log.warn("Task '"+me.getKey()+"' has not defined 'server' parameter and will be disabled");
+    continue;
+   }
+   
+   EntityManagerFactory emf = EMFManager.getFactory(str);
+   
+   if( emf == null )
+   {
+    log.warn("Task '"+me.getKey()+"': Server connection '"+str+"' is not defined. Task will be disabled");
+    continue;
+   }
+   
+   EntityManagerFactory myEqFact=null;
+   str = rc.getMyEq(null);
+   
+   if( str != null )
+   {
+    myEqFact = EMFManager.getMyEqFactory(str);
+    
+    if( myEqFact == null )
+     log.warn("Task '"+me.getKey()+"': MyEq connection '"+str+"' is not defined. MyEq support will be disabled");
+   }
+   
+   Object val = me.getValue().get(TaskTmpDirParam);
+   
+   str = null;
+   
+   if( val != null )
+    str = val.toString();
+   
+   File tmpDir = null;
+   
+   if( str != null )
+   {
+    tmpDir = new File(str);
+    
+    if(  ! ( tmpDir.isDirectory() && tmpDir.canWrite() ) )
+    {
+     tmpDir = null;
+     log.warn("Task '"+me.getKey()+"': Tmp dir '"+str+"' is not writable. Falling back to default tmp dir." );
+    }
+   }
+   
+   
+   val = me.getValue().get(TaskTimeParam);
+   
+   str = null;
+   
+   if( val != null )
+    str = val.toString();
+
+   
+   tinf.setTimerDelay( getAdjustedDelay(str,me.getKey()) );
+
+   try
+   {
+    ExportTask tsk = new ExportTask(me.getKey(), emf, myEqFact, tmpDir, rc);
+    
+    tinf.setTask(tsk);
+    
+    TaskManager.getDefaultInstance().addTask(tinf);
+   }
+   catch(TaskInitError e)
+   {
+    log.warn("Task '"+me.getKey()+"': Initialization error: "+e.getMessage() );
+   }
+   
+  }
+  
+ }
+ 
+ private long getAdjustedDelay( String invokeTime , String taskName)
+ {
 
   int hour = -1;
   int min = 0;
   
   if( invokeTime == null )
   {
-   log.warn("Parameter '{}' is missed. EBeye export will not run periodicaly", EBeyeUpdateHourParam);
+   return -1;
   }
   else
   {
@@ -329,8 +522,8 @@ public class Init implements ServletContextListener
    
    if( hour < 0 || hour > 23 )
    {
-    log.warn("Parameter '{}' has invalid value. EBeye export will not run periodicaly", EBeyeUpdateHourParam);
-    hour=-1;
+    log.error("Task '"+taskName+"': start time parameter has invalid value: '"+invokeTime+"'. Task will not run periodicaly");
+    return -1;
    }
    
    if( minStr != null )
@@ -344,63 +537,44 @@ public class Init implements ServletContextListener
     
     if( min < 0 || min > 59 )
     {
-     log.warn("Parameter '{}' has invalid value. EBeye export will not run periodicaly", EBeyeUpdateHourParam);
-     hour=-1;
+     log.error("Task '"+taskName+"': start time parameter has invalid value: '"+invokeTime+"'. Task will not run periodicaly");
+     return -1;
     }
    }
    
   }
   
   
-  final int threads = reqCfg.getThreads(Runtime.getRuntime().availableProcessors());
+  Calendar cr = Calendar.getInstance(TimeZone.getDefault());
+  cr.setTimeInMillis(System.currentTimeMillis());
+  long day = TimeUnit.DAYS.toMillis(1);
+  
+  cr.set(Calendar.HOUR_OF_DAY, hour);
+  cr.set(Calendar.MINUTE, min);
+  
+  long delay = cr.getTimeInMillis() - System.currentTimeMillis();
+  
+  long adjustedDelay = (delay > 0 ? delay : day + delay);
+  
+  return adjustedDelay;
 
-  
-  EBeyeExport.setInstance( new EBeyeExport(emf, myEqFact, new File(outPath), new File(tempPath), efoURL, reqCfg, ebeyeSrcMap ) );
-  
-  if( hour != -1 )
-  {
-
-   TimerTask task = new TimerTask()
-   {
-    @Override
-    public void run()
-    {
-     log.info("Starting scheduled task");
-     
-     try
-     {
-      EBeyeExport.getInstance().export(-1, genSamples, true, threads );
-     }
-     catch(Throwable e)
-     {
-      log.error("Export error: "+(e.getMessage()!=null?e.getMessage():e.getClass().getName()));
-     }
-     
-     log.info("Finishing scheduled task");
-    }
-   };
-   
-   Calendar cr = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-   cr.setTimeInMillis(System.currentTimeMillis());
-   long day = TimeUnit.DAYS.toMillis(1);
-   
-   cr.set(Calendar.HOUR_OF_DAY, hour);
-   cr.set(Calendar.MINUTE, min);
-   
-   long delay = cr.getTimeInMillis() - System.currentTimeMillis();
-   
-   long adjustedDelay = (delay > 0 ? delay : day + delay);
-   
-   timer.scheduleAtFixedRate(task, adjustedDelay, day);
-  }
-  
-  
  }
+ 
 
  @Override
  public void contextDestroyed(ServletContextEvent arg0)
  {
-  timer.cancel();
+  if( ebeyeTimer != null )
+   ebeyeTimer.cancel();
+  
+  for( TaskInfo tinf : TaskManager.getDefaultInstance().getTasks() )
+  {
+   if( tinf.getTimer() != null )
+    tinf.getTimer().cancel();
+  }
+  
+  EBeyeExport.getInstance().destroy();
+  EMFManager.destroy();
  }
 
 

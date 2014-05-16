@@ -42,4 +42,13 @@ public class EMFManager
   return myeqMngrMap.get(mngId);
  }
 
+ public static void destroy()
+ {
+  for( EntityManagerFactory emf : mngrMap.values() )
+   emf.close();
+  
+  for( EntityManagerFactory emf : myeqMngrMap.values() )
+   emf.close();
+ }
+
 }

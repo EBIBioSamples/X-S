@@ -14,13 +14,15 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.persistence.EntityManagerFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import uk.ac.ebi.biosd.xs.email.Email;
 import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
 import uk.ac.ebi.biosd.xs.export.EBeyeXMLFormatter;
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
@@ -30,7 +32,6 @@ import uk.ac.ebi.biosd.xs.mtexport.FormattingRequest;
 import uk.ac.ebi.biosd.xs.mtexport.MTExporterStat;
 import uk.ac.ebi.biosd.xs.service.RequestConfig;
 import uk.ac.ebi.biosd.xs.service.SchemaManager;
-import uk.ac.ebi.biosd.xs.util.StringUtils;
 
 public class EBeyeExport
 {
@@ -55,7 +56,6 @@ public class EBeyeExport
  private  XMLFormatter ebeyeFmt;
  private final EntityManagerFactory emf;
  private final EntityManagerFactory myEqFact;
-;
 
  private XMLFormatter auxFmt = null;
  private final File outDir;
@@ -65,7 +65,9 @@ public class EBeyeExport
  private final RequestConfig auxConfig;
  private final Map<String, String> ebeyeSrcMap;
  
- private final AtomicBoolean busy = new AtomicBoolean( false );
+ private final Lock busy = new ReentrantLock();
+ 
+ ExporterMTControl exportControl;
  
  private final Logger log;
  
@@ -127,12 +129,17 @@ public class EBeyeExport
 
  public boolean isBusy()
  {
-  return busy.get();
+  if( ! busy.tryLock() )
+   return true;
+  
+  busy.unlock();
+  
+  return false;
  }
  
  public boolean export( int limit, boolean genSamples, boolean pubOnly, int threads ) throws Throwable
  {
-  if( ! busy.compareAndSet(false, true) )
+  if( ! busy.tryLock() )
   {
    log.info("Export in progress. Skiping");
    return false;
@@ -201,7 +208,6 @@ public class EBeyeExport
    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
    java.util.Date startTime = new java.util.Date();
-   long startTs = startTime.getTime();
 
    if( auxFileOut != null )
     auxFmt.exportHeader(-1, auxFileOut, auxConfig.getShowNamespace(DefaultShowNS) );
@@ -239,12 +245,17 @@ public class EBeyeExport
    if( auxFileOut != null )
     frList.add( new FormattingRequest(auxFmt, auxFileOut, tmpAuxSampleOut) );
    
-   ExporterMTControl mtc = new ExporterMTControl(emf, myEqFact, frList, auxConfig.getShowSources(DefaultShowSources), auxConfig.getSourcesByName(DefaultSourcesByName), threads);
+   synchronized(this)
+   {
+    exportControl = new ExporterMTControl(emf, myEqFact, frList, auxConfig.getShowSources(DefaultShowSources), auxConfig.getSourcesByName(DefaultSourcesByName), threads);
+   }
 
+   boolean finishedOK = true;
+   
    try
    {
 
-    MTExporterStat stat = mtc.export(-1, limit, now, auxConfig.getGroupMultiplier(null), auxConfig.getSampleMultiplier(null) );
+    MTExporterStat stat = exportControl.export(-1, limit, now, auxConfig.getGroupMultiplier(null), auxConfig.getSampleMultiplier(null) );
 
     ebeyeFmt.exportGroupFooter( grpFileOut );
 
@@ -293,61 +304,31 @@ public class EBeyeExport
     }
 
     
-    java.util.Date endTime = new java.util.Date();
-    long endTs = endTime.getTime();
+    String summary = stat.createReport(startTime, new java.util.Date(), threads);
+    
+    grpHdrFileOut.append(summary);
 
-    
-    long rate = stat.getGroupCount()!=0? (endTs-startTs)/stat.getGroupCount():0;
-    
-    String stmsg1="\n<!-- Exported: "+stat.getGroupCount()+" groups in "+threads+" threads. Rate: "+rate+"ms per group -->";
-    String stmsg1a="\n<!-- Public groups: "+stat.getGroupPublicCount()+" -->";
-    
-    rate = stat.getSampleCount()!=0? (endTs-startTs)/stat.getSampleCount():0;
-    String stmsg2="\n<!-- Samples in groups: "+stat.getSampleCount()+". Rate: "+rate+"ms per sample -->";
-    
-    rate = stat.getUniqSampleCount()!=0? (endTs-startTs)/stat.getUniqSampleCount():0;
-    String stmsg3="\n<!-- Unique samples: "+stat.getUniqSampleCount()+". Rate: "+rate+"ms per unique sample -->";
-
-    String stmsg3a="\n<!-- Public unique samples: "+stat.getSamplePublicUniqCount()+" -->";
-    
-    String stmsg4="\n<!-- Start time: "+simpleDateFormat.format(startTime)+" -->";
-    String stmsg5="\n<!-- End time: "+simpleDateFormat.format(endTime)+". Time spent: "+StringUtils.millisToString(endTs-startTs)+" -->";
-    String stmsg6="\n<!-- Thank you. Good bye. -->\n";
-    
-    grpHdrFileOut.append(stmsg1);
-    grpHdrFileOut.append(stmsg1a);
-    grpHdrFileOut.append(stmsg2);
-    grpHdrFileOut.append(stmsg3);
-    grpHdrFileOut.append(stmsg3a);
-    grpHdrFileOut.append(stmsg4);
-    grpHdrFileOut.append(stmsg5);
-    grpHdrFileOut.append(stmsg6);
 
     if( genSamples )
-    {
-     smplHdrFileOut.append(stmsg1);
-     smplHdrFileOut.append(stmsg1a);
-     smplHdrFileOut.append(stmsg2);
-     smplHdrFileOut.append(stmsg3);
-     smplHdrFileOut.append(stmsg3a);
-     smplHdrFileOut.append(stmsg4);
-     smplHdrFileOut.append(stmsg5);
-     smplHdrFileOut.append(stmsg6);
-    }
+     smplHdrFileOut.append(summary);
     
     if( auxFileOut != null )
-    {
-     auxFileOut.append(stmsg1);
-     auxFileOut.append(stmsg1a);
-     auxFileOut.append(stmsg2);
-     auxFileOut.append(stmsg3);
-     auxFileOut.append(stmsg3a);
-     auxFileOut.append(stmsg4);
-     auxFileOut.append(stmsg5);
-     auxFileOut.append(stmsg6);
-    }
+     auxFileOut.append(summary);
 
+    if( Email.getDefaultInstance() != null )
+     if( ! Email.getDefaultInstance().sendAnnouncement(summary) )
+      log.error("Can't send an info announcement by email");
 
+   }
+   catch( Throwable t )
+   {
+    finishedOK = false; 
+    
+    log.error("EBeye: XML generation terminated with error: "+t.getMessage());
+
+    if( Email.getDefaultInstance() != null )
+     if( ! Email.getDefaultInstance().sendErrorAnnouncement("XML generation terminated with error",t) )
+      log.error("Can't send an error announcement by email");
    }
    finally
    {
@@ -369,42 +350,62 @@ public class EBeyeExport
     
     if( auxFileOut != null )
      auxFileOut.close();
+    
    }
    
-   
-
-   File grpFile = new File(outDir, groupsFileName);
-   
-   if( grpFile.exists() && !grpFile.delete() )
-    log.error("Can't delete file: "+grpFile);
-   
-   if(!tmpHdrGrpFile.renameTo(grpFile))
-    log.error("Moving groups file failed. {} -> {} ", tmpHdrGrpFile.getAbsolutePath(), grpFile.getAbsolutePath());
-
-   if( genSamples )
+   if( finishedOK )
    {
-    File smpFile = new File(outDir, samplesFileName);
-    
-    if( smpFile.exists() && !smpFile.delete() )
-     log.error("Can't delete file: "+smpFile);
-    
-    if(!tmpHdrSmplFile.renameTo(smpFile))
-     log.error("Moving samples file failed. {} -> {} ", tmpHdrSmplFile.getAbsolutePath(), smpFile.getAbsolutePath());
+
+    File grpFile = new File(outDir, groupsFileName);
+
+    if(grpFile.exists() && !grpFile.delete())
+     log.error("EBeye: Can't delete file: " + grpFile);
+
+    if(!tmpHdrGrpFile.renameTo(grpFile))
+     log.error("EBeye: Moving groups file failed. {} -> {} ", tmpHdrGrpFile.getAbsolutePath(), grpFile.getAbsolutePath());
+
+    if(genSamples)
+    {
+     File smpFile = new File(outDir, samplesFileName);
+
+     if(smpFile.exists() && !smpFile.delete())
+      log.error("EBeye: Can't delete file: " + smpFile);
+
+     if(!tmpHdrSmplFile.renameTo(smpFile))
+      log.error("EBeye: Moving samples file failed. {} -> {} ", tmpHdrSmplFile.getAbsolutePath(), smpFile.getAbsolutePath());
+    }
+
+    if(auxFileOut != null)
+    {
+     if(auxFile.exists() && !auxFile.delete())
+      log.error("EBeye: Can't delete file: " + auxFile);
+
+     if(!tmpAuxFile.renameTo(auxFile))
+      log.error("EBeye: Moving aux file failed. {} -> {} ", tmpAuxFile.getAbsolutePath(), auxFile.getAbsolutePath());
+    }
+
    }
-
-   if( auxFileOut != null )
+   else
    {
-    if( auxFile.exists() && !auxFile.delete() )
-     log.error("Can't delete file: "+auxFile);
-    
-    if(!tmpAuxFile.renameTo(auxFile))
-     log.error("Moving aux file failed. {} -> {} ", tmpAuxFile.getAbsolutePath(), auxFile.getAbsolutePath());
+    tmpHdrGrpFile.delete();
+    tmpHdrSmplFile.delete();
+    tmpGrpFile.delete();
+    tmpSmplFile.delete();
+    tmpAuxFile.delete();
    }
 
   }
   finally
   {
-   busy.set(false);
+   busy.unlock();
+   
+   synchronized(this)
+   {
+    exportControl.destroy();
+    
+    exportControl = null;
+   }
+   
   }
  
   return true;
@@ -479,6 +480,19 @@ public class EBeyeExport
    {
     rd.close();
    }
+  }
+
+  public void destroy()
+  {
+   synchronized(this)
+   {
+    if( exportControl != null )
+     exportControl.destroy();
+   }
+   
+   busy.lock();
+   busy.unlock();
+   
   }
 
 

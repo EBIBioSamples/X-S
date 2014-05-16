@@ -9,7 +9,8 @@ public class ControlMessage
   OUTPUT_FINISH,
   OUTPUT_ERROR,
   PROCESS_FINISH,
-  PROCESS_ERROR
+  PROCESS_ERROR,
+  TERMINATE
  }
 
  private final Type      type;

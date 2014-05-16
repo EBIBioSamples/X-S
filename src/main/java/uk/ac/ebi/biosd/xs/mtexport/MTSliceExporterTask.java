@@ -251,7 +251,6 @@ public class MTSliceExporterTask implements Runnable
     finally
     {
      grpq.release();
-     auxInf.destroy();
     }
 
     if(limit != null && limit.get() < 0)

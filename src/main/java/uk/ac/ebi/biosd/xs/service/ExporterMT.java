@@ -40,6 +40,7 @@ public class ExporterMT implements Exporter
   this.sourcesByName = sourcesByName;
   threads = thN;
   this.showNS = showNS;
+  
  }
 
  @Override
@@ -68,7 +69,7 @@ public class ExporterMT implements Exporter
 
   if(formatter.isSamplesExport())
   {
-   tmpFile = File.createTempFile("XSexport", ".tmp");
+    tmpFile = File.createTempFile("XSexport", ".tmp");
 
    System.out.println("Tmp file: " + tmpFile.getAbsolutePath());
 

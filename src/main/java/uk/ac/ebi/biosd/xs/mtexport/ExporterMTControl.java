@@ -11,6 +11,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.persistence.EntityManagerFactory;
 
@@ -31,6 +33,10 @@ public class ExporterMTControl
  final boolean sourcesByName;
  private final int threads;
  
+ private final BlockingQueue<ControlMessage> controlMsgQueue;
+ private final Lock busyLock = new ReentrantLock();
+
+ 
  public ExporterMTControl(EntityManagerFactory emf, EntityManagerFactory myEqFact, List<FormattingRequest> ftasks, boolean exportSources, boolean sourcesByName, int thN )
  {
   super();
@@ -40,162 +46,179 @@ public class ExporterMTControl
   this.exportSources = exportSources;
   this.sourcesByName = sourcesByName;
   threads = thN;
+  
+  controlMsgQueue = new ArrayBlockingQueue<>(requests.size()*3+1);
  }
 
  
  public MTExporterStat export( long since, long limit, Date now, Double grpMul, Double smpMul) throws Throwable
  {
-  List<MTSliceExporterTask> exporters = new ArrayList<>( threads );
-  List<OutputTask> outputs = new ArrayList<>( requests.size() * 2);
-  
-  List<FormattingTask> tasks = new ArrayList<>( requests.size() );
-  
-  BlockingQueue<ControlMessage> msgQ = new ArrayBlockingQueue<>(requests.size()*3+1);
+  if(!busyLock.tryLock())
+   throw new ExporterBusyException();
 
-  
-  for( FormattingRequest req : requests )
+  try
   {
-   BlockingQueue<Object> grQueue = new ArrayBlockingQueue<>(100);
-   outputs.add( new OutputTask(req.getGroupOut(), grQueue, msgQ) );
-   
-   BlockingQueue<Object> smQueue=null;
-   
-   if( req.getSampleOut() != null )
+
+   List<MTSliceExporterTask> exporters = new ArrayList<>(threads);
+   List<OutputTask> outputs = new ArrayList<>(requests.size() * 2);
+
+   List<FormattingTask> tasks = new ArrayList<>(requests.size());
+
+   controlMsgQueue.clear();
+
+   for(FormattingRequest req : requests)
    {
-    smQueue = new ArrayBlockingQueue<>(100);
-    outputs.add( new OutputTask(req.getSampleOut(), smQueue, msgQ) );
-   }
-   
-   tasks.add( new FormattingTask(req.getFormatter(), grQueue, smQueue) );
-  }
-  
-  ExecutorService tPool = Executors.newFixedThreadPool(threads+outputs.size());
-  
-  
-//  RangeManager rm = new RangeManager(Long.MIN_VALUE,Long.MAX_VALUE,threads*2);
-  SliceManager sm = new SliceManager();
-  
-  AtomicBoolean stopFlag = new AtomicBoolean(false);
-  
-  MTExporterStat statistics = new MTExporterStat( now );
-  
-  for( OutputTask ot : outputs )
-   tPool.submit(ot);
+    BlockingQueue<Object> grQueue = new ArrayBlockingQueue<>(100);
+    outputs.add(new OutputTask(req.getGroupOut(), grQueue, controlMsgQueue));
 
-  AtomicLong limitCnt = null;
-  
-  if( limit > 0 )
-   limitCnt = new AtomicLong(limit);
-  
-  for( int i=0; i < threads; i++ )
-  {
-   MTSliceExporterTask et = new MTSliceExporterTask(emf, myEqFact, sm, since, tasks, statistics, msgQ, stopFlag, sourcesByName,limitCnt, grpMul, smpMul);
-   
-   exporters.add(et);
-   
-   tPool.submit( et );
-  }
-  
-  int tproc = threads;
-  int tout = outputs.size();
-  
-  Throwable exception = null;
-  
-  boolean termGoes=false;
-  
-  while(true)
-  {
-   ControlMessage o;
+    BlockingQueue<Object> smQueue = null;
 
-   try
-   {
-    o = msgQ.take();
-   }
-   catch(InterruptedException e)
-   {
-    continue;
-   }
-
-   if(o.getType() == Type.PROCESS_FINISH)
-    tproc--;
-   else if(o.getType() == Type.OUTPUT_FINISH)
-   {
-    tout--;
-   }
-   else if( o.getType() == Type.OUTPUT_ERROR )
-   {
-    log.error("Got output error. Sending termination to processing threads");
-
-    logException(o);
-
-    tout--;
-    stopFlag.set(true);
-    
-    ((OutputTask)(o.getSubject())).getIncomingQueue().clear(); // To unlock processing tasks to see the stop flag.
-   }
-   else if( o.getType() == Type.PROCESS_ERROR )
-   {
-    log.error("Got processing error. Sending termination to other processing threads");
-
-    logException(o);
-    
-    tproc--;
-    stopFlag.set(true);
-   }
-
-   
-   if( tproc == 0 && ! termGoes )
-   {
-    log.debug("All processing thread finished. Initiating outputters shutdown");
-    
-    termGoes = true;
-    
-    exception = o.getException();
-
-    PoisonedObject po = new PoisonedObject();
-
-    for(FormattingTask ft : tasks)
+    if(req.getSampleOut() != null)
     {
-     ft.getGroupQueue().clear();
-     putIntoQueue(ft.getGroupQueue(),po);
-
-     if(ft.getSampleQueue() != null)
-     {
-      ft.getSampleQueue().clear();
-      putIntoQueue(ft.getSampleQueue(),po);
-     }
+     smQueue = new ArrayBlockingQueue<>(100);
+     outputs.add(new OutputTask(req.getSampleOut(), smQueue, controlMsgQueue));
     }
 
+    tasks.add(new FormattingTask(req.getFormatter(), grQueue, smQueue));
    }
 
+   ExecutorService tPool = Executors.newFixedThreadPool(threads + outputs.size());
 
-   if(tout == 0)
-    break;
+   //  RangeManager rm = new RangeManager(Long.MIN_VALUE,Long.MAX_VALUE,threads*2);
+   SliceManager sm = new SliceManager();
+
+   AtomicBoolean stopFlag = new AtomicBoolean(false);
+
+   MTExporterStat statistics = new MTExporterStat(now);
+
+   for(OutputTask ot : outputs)
+    tPool.submit(ot);
+
+   AtomicLong limitCnt = null;
+
+   if(limit > 0)
+    limitCnt = new AtomicLong(limit);
+
+   for(int i = 0; i < threads; i++)
+   {
+    MTSliceExporterTask et = new MTSliceExporterTask(emf, myEqFact, sm, since, tasks, statistics, controlMsgQueue, stopFlag, sourcesByName, limitCnt,
+      grpMul, smpMul);
+
+    exporters.add(et);
+
+    tPool.submit(et);
+   }
+
+   int tproc = threads;
+   int tout = outputs.size();
+
+   Throwable exception = null;
+
+   boolean termGoes = false;
+
+   while(true)
+   {
+    ControlMessage o;
+
+    try
+    {
+     o = controlMsgQueue.take();
+    }
+    catch(InterruptedException e)
+    {
+     continue;
+    }
+
+    if(o.getType() == Type.PROCESS_FINISH)
+     tproc--;
+    else if(o.getType() == Type.OUTPUT_FINISH)
+    {
+     tout--;
+    }
+    else if(o.getType() == Type.OUTPUT_ERROR)
+    {
+     log.error("Got output error. Sending termination to processing threads");
+
+     logException(o);
+
+     tout--;
+     stopFlag.set(true);
+
+     ((OutputTask) (o.getSubject())).getIncomingQueue().clear(); // To unlock processing tasks to see the stop flag.
+    }
+    else if(o.getType() == Type.PROCESS_ERROR)
+    {
+     log.error("Got processing error. Sending termination to other processing threads");
+
+     logException(o);
+
+     tproc--;
+     stopFlag.set(true);
+    }
+    else if(o.getType() == Type.TERMINATE)
+    {
+     log.error("User terminate request. Sending termination to other processing threads");
+
+     stopFlag.set(true);
+    }
+
+    if(tproc == 0 && !termGoes)
+    {
+     log.debug("All processing thread finished. Initiating outputters shutdown");
+
+     termGoes = true;
+
+     exception = o.getException();
+
+     PoisonedObject po = new PoisonedObject();
+
+     for(FormattingTask ft : tasks)
+     {
+      ft.getGroupQueue().clear();
+      putIntoQueue(ft.getGroupQueue(), po);
+
+      if(ft.getSampleQueue() != null)
+      {
+       ft.getSampleQueue().clear();
+       putIntoQueue(ft.getSampleQueue(), po);
+      }
+     }
+
+    }
+
+    if(tout == 0)
+     break;
+
+   }
+
+   tPool.shutdown();
+
+   while(true)
+   {
+    try
+    {
+     if(!tPool.awaitTermination(30, TimeUnit.SECONDS))
+      System.out.println("Can't terminate thread pool");
+
+     break;
+    }
+    catch(InterruptedException e)
+    {
+    }
+   }
+
+   System.gc();
+
+   if(exception != null)
+    throw exception;
+
+   return statistics;
 
   }
-
-  tPool.shutdown();
-  
-  while( true )
+  finally
   {
-   try
-   {
-    if( ! tPool.awaitTermination(30, TimeUnit.SECONDS) )
-     System.out.println("Can't terminate thread pool");
-    
-    break;
-   }
-   catch(InterruptedException e)
-   {
-   }
+   busyLock.unlock();
   }
-  
-  System.gc();
-  
-  if( exception != null )
-   throw exception;
-   
-  return statistics;
  }
 
  
@@ -253,6 +276,35 @@ public class ExporterMTControl
   log.error(o.getException().getStackTrace()[0].toString());
 
   o.getException().printStackTrace();
+ }
+
+
+ public void destroy()
+ {
+  if( busyLock.tryLock() )
+   return;
+  
+  while( true )
+  {
+   
+   try
+   {
+    controlMsgQueue.put(new ControlMessage(Type.TERMINATE, null, new TerminationException()));
+   }
+   catch(InterruptedException e)
+   {
+   }
+   
+   break;
+  } 
+  
+  
+  busyLock.lock();
+  
+  log.info("MT exported has been terminated");
+  
+  return;
+  
  }
  
 }

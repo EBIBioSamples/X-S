@@ -1,5 +1,6 @@
 package uk.ac.ebi.biosd.xs.mtexport;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -7,9 +8,12 @@ import java.util.Map;
 import java.util.Set;
 
 import uk.ac.ebi.biosd.xs.util.Counter;
+import uk.ac.ebi.biosd.xs.util.StringUtils;
 
 public class MTExporterStat
 {
+ private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+ 
  private int groupCount=0;
  private int sampleCount=0;
  private int groupPublicCount=0;
@@ -130,5 +134,32 @@ public class MTExporterStat
   samplePublicUniqCount++;
  }
 
+ public String createReport(Date startTime, Date endTime, int threads)
+ {
+  long startTs = startTime.getTime();
+  long endTs = endTime.getTime();
+  
+  long rate = getGroupCount()!=0? (endTs-startTs)/getGroupCount():0;
+  
+  StringBuffer summaryBuf = new StringBuffer();
+
+  summaryBuf.append("\n<!-- Exported: ").append(getGroupCount()).append(" groups in ").append(threads).append(" threads. Rate: ").append(rate).append("ms per group -->");
+  summaryBuf.append("\n<!-- Public groups: ").append(getGroupPublicCount()).append(" -->");
+  
+  rate = getSampleCount()!=0? (endTs-startTs)/getSampleCount():0;
+  summaryBuf.append("\n<!-- Samples in groups: ").append(getSampleCount()).append(". Rate: ").append(rate).append("ms per sample -->");
+  
+  rate = getUniqSampleCount()!=0? (endTs-startTs)/getUniqSampleCount():0;
+  summaryBuf.append("\n<!-- Unique samples: ").append(getUniqSampleCount()).append(". Rate: ").append(rate).append("ms per unique sample -->");
+
+  summaryBuf.append("\n<!-- Public unique samples: ").append(getSamplePublicUniqCount()).append(" -->");
+  
+  summaryBuf.append("\n<!-- Start time: ").append(simpleDateFormat.format(startTime)).append(" -->");
+  summaryBuf.append("\n<!-- End time: ").append(simpleDateFormat.format(endTime)).append(". Time spent: "+StringUtils.millisToString(endTs-startTs)).append(" -->");
+  summaryBuf.append("\n<!-- Thank you. Good bye. -->\n");
+  
+  return summaryBuf.toString();
+
+ }
 
 }
