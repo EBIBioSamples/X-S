@@ -212,7 +212,7 @@ public class ExportTask
     auxFileOut.append(summary);
 
     if( Email.getDefaultInstance() != null )
-     if( ! Email.getDefaultInstance().sendAnnouncement(summary) )
+     if( ! Email.getDefaultInstance().sendAnnouncement("Task '"+name+"' has finished successfully\n\n"+summary) )
       log.error("Can't send an info announcement by email");
 
    }
@@ -261,7 +261,7 @@ public class ExportTask
    
    synchronized(this)
    {
-    exportControl.destroy();
+    exportControl.interrupt();
     
     exportControl = null;
    }
@@ -342,16 +342,25 @@ public class ExportTask
    }
   }
 
-  public void destroy()
+  public boolean interrupt()
   {
+   
+   if( busy.tryLock() )
+   {
+    busy.unlock();
+    return false;
+   }
+   
    synchronized(this)
    {
     if( exportControl != null )
-     exportControl.destroy();
+     exportControl.interrupt();
    }
    
    busy.lock();
    busy.unlock();
+   
+   return true;
    
   }
 

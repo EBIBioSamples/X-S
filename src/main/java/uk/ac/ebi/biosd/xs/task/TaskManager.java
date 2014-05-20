@@ -14,6 +14,9 @@ public class TaskManager
 
  public static TaskManager getDefaultInstance()
  {
+  if( defaultInstance == null )
+   defaultInstance = new TaskManager();
+  
   return defaultInstance;
  }
 

@@ -279,10 +279,13 @@ public class ExporterMTControl
  }
 
 
- public void destroy()
+ public boolean interrupt()
  {
   if( busyLock.tryLock() )
-   return;
+  {
+   busyLock.unlock();
+   return false;
+  }
   
   while( true )
   {
@@ -300,11 +303,11 @@ public class ExporterMTControl
   
   
   busyLock.lock();
+  busyLock.unlock();
   
-  log.info("MT exported has been terminated");
+  log.info("MT exported has been interrupted");
   
-  return;
-  
+  return true;
  }
  
 }

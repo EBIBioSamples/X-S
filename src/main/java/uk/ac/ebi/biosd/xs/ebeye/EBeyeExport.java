@@ -401,7 +401,7 @@ public class EBeyeExport
    
    synchronized(this)
    {
-    exportControl.destroy();
+    exportControl.interrupt();
     
     exportControl = null;
    }
@@ -482,16 +482,25 @@ public class EBeyeExport
    }
   }
 
-  public void destroy()
+  public boolean interrupt()
   {
+   
+   if( busy.tryLock() )
+   {
+    busy.unlock();
+    return false;
+   }
+   
    synchronized(this)
    {
     if( exportControl != null )
-     exportControl.destroy();
+     exportControl.interrupt();
    }
    
    busy.lock();
    busy.unlock();
+   
+   return true;
    
   }
 

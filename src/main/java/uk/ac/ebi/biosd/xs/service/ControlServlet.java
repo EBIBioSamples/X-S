@@ -8,23 +8,36 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import uk.ac.ebi.biosd.xs.ebeye.EBeyeExport;
+import uk.ac.ebi.biosd.xs.init.TaskInfo;
+import uk.ac.ebi.biosd.xs.starter.EBeyeStarter;
+import uk.ac.ebi.biosd.xs.starter.StarterLog;
+import uk.ac.ebi.biosd.xs.starter.TaskStarter;
+import uk.ac.ebi.biosd.xs.task.TaskManager;
+import uk.ac.ebi.biosd.xs.util.ServletRequestParamPool;
 
 public class ControlServlet extends HttpServlet
 {
  static final String CommandParameter = "command";
- static final String LimitParameter = "limit";
- static final String GenGroupParameter = "generateGroups";
- static final String GenSamplesParameter = "generateSamples";
- static final String ExportPrivateParameter = "exportPrivate";
+
+
  static final String CommandForceEBEye = "forceEBEye";
- static final String ThreadsParameter = "threads";
+ static final String CommandForceTask = "forceTask";
+ static final String CommandInterruptEBEye = "interruptEBEye";
+ static final String CommandInterruptTask = "interruptTask";
+
+ static final String TaskParameter = "task";
 
  private static final long serialVersionUID = 1L;
 
+ private final Logger log = LoggerFactory.getLogger(ControlServlet.class);
+ 
  
  @Override
- protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+ protected void doGet(HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException
  {
   String command = req.getParameter(CommandParameter);
   
@@ -34,90 +47,97 @@ public class ControlServlet extends HttpServlet
    return;
   }
   
-  if( CommandForceEBEye.equalsIgnoreCase(command) )
-  {
-   final EBeyeExport exp = EBeyeExport.getInstance();
-   
-   if( exp == null )
-   {
-    sendMessage("EBeyeExport was not initialized. See logs", resp.getOutputStream(), "red");
-    return;
-   }
-   
-   int limit = -1;
-   
-   String limStr = req.getParameter(LimitParameter);
-   
-   if( limStr != null )
-   {
-    try
-    {
-     limit = Integer.parseInt(limStr);
-    }
-    catch(Exception e)
-    {
-     sendMessage("Invalid value of '"+LimitParameter+"' parameter", resp.getOutputStream(), "red");
-     return;
-    }
-   }
-   
   
-   String genSmpStr =  req.getParameter(GenSamplesParameter);
+  StarterLog stLog = new StarterLog()
+  {
    
-   final boolean genSmp = genSmpStr == null? true : "1".equals(genSmpStr) || "yes".equalsIgnoreCase(genSmpStr) || "on".equalsIgnoreCase(genSmpStr) || "true".equalsIgnoreCase(genSmpStr);
-
-   String expPrvStr =  req.getParameter(ExportPrivateParameter);
-   
-   final boolean expPrv = expPrvStr == null? false : "1".equals(expPrvStr) || "yes".equalsIgnoreCase(expPrvStr) || "on".equalsIgnoreCase(expPrvStr) || "true".equalsIgnoreCase(expPrvStr);
-   
-   String prm = req.getParameter(ThreadsParameter);
-   
-   int nThrs = -1;
-   
-   if( prm != null )
+   @Override
+   public void sendInfoMsg(String msg)
    {
-    try
-    {
-     nThrs = Integer.parseInt(prm);
-    }
-    catch(Exception e)
-    {
-    }
-   }
-
-   
-   if( exp.isBusy() )
-   {
-    sendMessage("EBEye export is busy", resp.getOutputStream(), "orange");
-    return;
-   }
-   
-   final int fLimit = limit;
-   final int fThreads = nThrs;
-   
-   new Thread( new Runnable()
-   {
-    
-    @Override
-    public void run()
-    {
      try
      {
-      exp.export(fLimit, genSmp, ! expPrv, fThreads);
+      sendMessageNoExp(msg, resp.getOutputStream(), "black");
      }
-     catch(Throwable e)
+     catch(IOException e)
      {
-      e.printStackTrace();
-     }   
-    }
-    }, "Manual EBeye export").start();
+      log.error("IO error: "+e.getMessage());
+     }
+   }
    
+   @Override
+   public void sendErrorMsg(String msg)
+   {
+     try
+     {
+      sendMessageNoExp(msg, resp.getOutputStream(), "red");
+     }
+     catch(IOException e)
+     {
+      log.error("IO error: "+e.getMessage());
+     }
+   }
+  };
+  
+  if( CommandForceEBEye.equalsIgnoreCase(command) )
+  {
+   EBeyeStarter.start(new ServletRequestParamPool(req), "", stLog);
+  }
+  else if( CommandForceTask.equalsIgnoreCase(command) )
+  {
+   String tNm = req.getParameter(TaskParameter);
    
-   sendMessage("EBEye export has been initiated", resp.getOutputStream(), "black");
+   if( tNm == null )
+   {
+    sendMessageNoExp("'"+TaskParameter+"' should be defined for this command", resp.getOutputStream(), "red");
+    return;
+   }
+   
+   TaskStarter.start(tNm, new ServletRequestParamPool(req), "", stLog);
+  }
+  else if( CommandInterruptEBEye.equalsIgnoreCase(command) )
+  {
+   if( EBeyeExport.getInstance() == null )
+    sendMessageNoExp("EBeye service is not initialized", resp.getOutputStream(), "red");
+   else if( EBeyeExport.getInstance().interrupt() )
+    sendMessageNoExp("EBeye service was interrupted", resp.getOutputStream(), "black");
+   else
+    sendMessageNoExp("EBeye service is idle", resp.getOutputStream(), "black");
+  }
+  else if( CommandInterruptTask.equalsIgnoreCase(command) )
+  {
+   String tNm = req.getParameter(TaskParameter);
+   
+   if( tNm == null )
+   {
+    sendMessageNoExp("'"+TaskParameter+"' should be defined for this command", resp.getOutputStream(), "red");
+    return;
+   }
+   
+   TaskInfo ti = TaskManager.getDefaultInstance().getTask(tNm);
+   
+   if( ti == null )
+    sendMessageNoExp("Task '"+tNm+"' doesn't exist", resp.getOutputStream(), "red");
+   else if( ti.getTask().interrupt() )
+    sendMessageNoExp("Task '"+tNm+"' was interrupted", resp.getOutputStream(), "black");
+   else
+    sendMessageNoExp("Task '"+tNm+"' is idle", resp.getOutputStream(), "black");
 
   }
  }
 
+ 
+ private void sendMessageNoExp(String msg, ServletOutputStream out, String color)
+ {
+  try
+  {
+   sendMessage(msg, out, color);
+  }
+  catch(IOException e)
+  {
+   log.error("Can't send info message to the client. "+e.getMessage());
+  }
+
+ }
 
  private void sendMessage(String msg, ServletOutputStream out, String color) throws IOException
  {

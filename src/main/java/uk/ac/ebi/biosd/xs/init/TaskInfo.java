@@ -41,18 +41,27 @@ public class TaskInfo extends TimerTask
  @Override
  public void run()
  {
-  log.info("Starting scheduled task: "+task.getName());
+  log.info("Starting scheduled task: " + task.getName());
 
-  try
+  new Thread(new Runnable()
   {
-   task.export( task.getRequestConfig().getLimit(-1), -1 );
-  }
-  catch(Throwable e)
-  {
-   log.error("Export error: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getName()));
-  }
 
-  log.info("Finishing scheduled task: "+task.getName());
+   @Override
+   public void run()
+   {
+    try
+    {
+     task.export(task.getRequestConfig().getLimit(-1), task.getRequestConfig().getThreads(-1));
+    }
+    catch(Throwable e)
+    {
+     log.error("Export error: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getName()));
+    }
+
+    log.info("Finishing scheduled task: " + task.getName());
+
+   }
+  }, "Task '"+task.getName()+"' export");
  }
 
  public Timer getTimer()

@@ -55,7 +55,7 @@ public class Init implements ServletContextListener
  static String EBeyeGenSamplesParam = "ebeye.generateSamples";
  static String EBeyeSourcesParam = "ebeye.sources";
 
- static String TaskTmpDirParam = "tmpDir";
+ static String TaskTmpDirParam = "tempDir";
  static String TaskTimeParam = "updateTime";
 
  
@@ -69,7 +69,7 @@ public class Init implements ServletContextListener
  static String DefaultProfileParam = BioSDDBParamPrefix+".defaultProfile";
 
  private final Logger log = LoggerFactory.getLogger(Init.class);
- private Timer ebeyeTimer;
+ private Timer timer;
 
  
  @Override
@@ -360,29 +360,38 @@ public class Init implements ServletContextListener
   if( delay > 0 )
   {
 
-   TimerTask task = new TimerTask()
+   TimerTask tt = new TimerTask()
    {
     @Override
     public void run()
     {
      log.info("Starting scheduled task");
-     
-     try
+
+     new Thread(new Runnable()
      {
-      EBeyeExport.getInstance().export(-1, genSamples, true, threads );
-     }
-     catch(Throwable e)
-     {
-      log.error("Export error: "+(e.getMessage()!=null?e.getMessage():e.getClass().getName()));
-     }
-     
+
+      @Override
+      public void run()
+      {
+       try
+       {
+        EBeyeExport.getInstance().export(-1, genSamples, true, threads);
+       }
+       catch(Throwable e)
+       {
+        log.error("Export error: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getName()));
+       }
+      }
+     }, "Scheduled EBeye export");
+
      log.info("Finishing scheduled task");
     }
    };
-   
-   ebeyeTimer = new Timer("Timer", true);
-   
-   ebeyeTimer.scheduleAtFixedRate(task, delay, day);
+
+   if(timer == null)
+    timer = new Timer("Timer", true);
+
+   timer.scheduleAtFixedRate(tt, delay, day);
   }
   
   createTasks(tasksMap);
@@ -391,12 +400,11 @@ public class Init implements ServletContextListener
   {
    if( tinf.getTimerDelay() > 0 )
    {
-    Timer timer = new Timer("Task "+tinf.getTask().getName()+" timer",true);
+    if(timer == null)
+     timer = new Timer("Timer", true);
     
     timer.scheduleAtFixedRate(tinf, tinf.getTimerDelay(), day);
    
-    tinf.setTimer(timer);
-    
     log.info("Task '"+tinf.getTask().getName()+"' is scheduled to run periodically");
    }
   }
@@ -564,16 +572,20 @@ public class Init implements ServletContextListener
  @Override
  public void contextDestroyed(ServletContextEvent arg0)
  {
-  if( ebeyeTimer != null )
-   ebeyeTimer.cancel();
+  if( timer != null )
+   timer.cancel();
   
   for( TaskInfo tinf : TaskManager.getDefaultInstance().getTasks() )
   {
    if( tinf.getTimer() != null )
     tinf.getTimer().cancel();
+   
+   tinf.getTask().interrupt();
   }
   
-  EBeyeExport.getInstance().destroy();
+  if( EBeyeExport.getInstance() != null )
+   EBeyeExport.getInstance().interrupt();
+ 
   EMFManager.destroy();
  }
 
