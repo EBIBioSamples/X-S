@@ -261,7 +261,8 @@ public class ExportTask
    
    synchronized(this)
    {
-    exportControl.interrupt();
+    if( exportControl != null )
+     exportControl.interrupt();
     
     exportControl = null;
    }
@@ -273,18 +274,20 @@ public class ExportTask
 
  private boolean checkDirs()
  {
-  if( ! outFile.exists() )
+  File outDir = outFile.getParentFile();
+  
+  if( ! outDir.exists() )
   {
-   if( ! outFile.getParentFile().mkdirs() )
+   if( ! outDir.mkdirs() )
    {
-    log.error("Task '"+name+"': Can't create output directory: {}",outFile.getParentFile().getAbsolutePath());
+    log.error("Task '"+name+"': Can't create output directory: {}",outDir.getAbsolutePath());
     return false;
    }
   }
   
-  if( ! outFile.getParentFile().canWrite() )
+  if( ! outDir.canWrite() )
   {
-   log.error("Task '"+name+"': Output directory is not writable: {}",outFile.getParentFile().getAbsolutePath());
+   log.error("Task '"+name+"': Output directory is not writable: {}",outDir.getAbsolutePath());
    return false;
   }
   

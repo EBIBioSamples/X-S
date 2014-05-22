@@ -316,7 +316,7 @@ public class EBeyeExport
      auxFileOut.append(summary);
 
     if( Email.getDefaultInstance() != null )
-     if( ! Email.getDefaultInstance().sendAnnouncement(summary) )
+     if( ! Email.getDefaultInstance().sendAnnouncement("Task 'EBEye' has finished successfully\n\n"+summary) )
       log.error("Can't send an info announcement by email");
 
    }

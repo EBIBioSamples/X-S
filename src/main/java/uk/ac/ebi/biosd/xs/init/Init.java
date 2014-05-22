@@ -14,6 +14,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -75,6 +76,9 @@ public class Init implements ServletContextListener
  @Override
  public void contextInitialized(ServletContextEvent ctx)
  {
+  java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.WARNING);
+  java.util.logging.Logger.getLogger("com.mchange").setLevel(Level.WARNING);
+  
   Map<String, Map<String,Object>> profMap = new HashMap<>();
   Map<String, Map<String,Object>> myEqMap = new HashMap<>();
   Map<String, Map<String,Object>> tasksMap = new HashMap<>();
@@ -365,7 +369,7 @@ public class Init implements ServletContextListener
     @Override
     public void run()
     {
-     log.info("Starting scheduled task");
+     log.info("Starting scheduled EBeye export task");
 
      new Thread(new Runnable()
      {
@@ -382,9 +386,9 @@ public class Init implements ServletContextListener
         log.error("Export error: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getName()));
        }
       }
-     }, "Scheduled EBeye export");
+     }, "Scheduled EBeye export").start();
 
-     log.info("Finishing scheduled task");
+//     log.info("Finishing scheduled task");
     }
    };
 

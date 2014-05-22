@@ -56,12 +56,13 @@ public class TaskInfo extends TimerTask
     catch(Throwable e)
     {
      log.error("Export error: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getName()));
+     e.printStackTrace();
     }
 
     log.info("Finishing scheduled task: " + task.getName());
 
    }
-  }, "Task '"+task.getName()+"' export");
+  }, "Task '"+task.getName()+"' export").start();
  }
 
  public Timer getTimer()
