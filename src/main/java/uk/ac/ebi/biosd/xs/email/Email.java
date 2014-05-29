@@ -100,7 +100,7 @@ public class Email
   Email.defaultInstance = defaultInstance;
  }
  
- public boolean sendErrorAnnouncement(String msg, Throwable t)
+ public boolean sendErrorAnnouncement(String subj, String msg, Throwable t)
  {
 
   if( errorsToAddr == null )
@@ -116,6 +116,9 @@ public class Email
 
    message.addRecipient(Message.RecipientType.TO, errorsToAddr);
 
+   if( subj == null )
+    subj = "X-S error message";
+   
    message.setSubject("X-S error message");
 
    StringBuffer buf = new StringBuffer();
@@ -147,7 +150,7 @@ public class Email
   return true;
  }
 
- public boolean sendAnnouncement(String msg)
+ public boolean sendAnnouncement(String subj, String msg)
  {
 
   if( toAddr == null )
@@ -162,7 +165,10 @@ public class Email
    message.setFrom(fromAddr);
 
    message.addRecipient(Message.RecipientType.TO, toAddr);
-
+ 
+   if( subj == null )
+    subj = "X-S info message";
+   
    message.setSubject("X-S info message");
 
   

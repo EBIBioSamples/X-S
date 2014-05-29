@@ -32,6 +32,7 @@ import uk.ac.ebi.biosd.xs.mtexport.FormattingRequest;
 import uk.ac.ebi.biosd.xs.mtexport.MTExporterStat;
 import uk.ac.ebi.biosd.xs.service.RequestConfig;
 import uk.ac.ebi.biosd.xs.service.SchemaManager;
+import uk.ac.ebi.biosd.xs.util.StringUtils;
 
 public class EBeyeExport
 {
@@ -303,8 +304,9 @@ public class EBeyeExport
      appendFile(smplHdrFileOut, tmpSmplFile);
     }
 
+    Date endTime = new java.util.Date();
     
-    String summary = stat.createReport(startTime, new java.util.Date(), threads);
+    String summary = stat.createReport(startTime, endTime , threads);
     
     grpHdrFileOut.append(summary);
 
@@ -315,8 +317,10 @@ public class EBeyeExport
     if( auxFileOut != null )
      auxFileOut.append(summary);
 
+
     if( Email.getDefaultInstance() != null )
-     if( ! Email.getDefaultInstance().sendAnnouncement("Task 'EBEye' has finished successfully\n\n"+summary) )
+     if( ! Email.getDefaultInstance().sendAnnouncement("X-S task 'EBEye' success "+StringUtils.millisToString(endTime.getTime()-startTime.getTime()),
+       "Task 'EBEye' has finished successfully\n\n"+summary) )
       log.error("Can't send an info announcement by email");
 
    }
@@ -327,8 +331,9 @@ public class EBeyeExport
     log.error("EBeye: XML generation terminated with error: "+t.getMessage());
 
     if( Email.getDefaultInstance() != null )
-     if( ! Email.getDefaultInstance().sendErrorAnnouncement("XML generation terminated with error",t) )
+     if( ! Email.getDefaultInstance().sendErrorAnnouncement("X-S task 'EBEye' error","Task 'EBEye': XML generation terminated with error",t) )
       log.error("Can't send an error announcement by email");
+
    }
    finally
    {
