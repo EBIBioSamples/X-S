@@ -9,3 +9,6 @@
 /target
 /war
 /export.xml
+/garbage
+/bin
+/src/debug

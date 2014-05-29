@@ -28,6 +28,7 @@ import uk.ac.ebi.biosd.xs.mtexport.FormattingRequest;
 import uk.ac.ebi.biosd.xs.mtexport.MTExporterStat;
 import uk.ac.ebi.biosd.xs.service.RequestConfig;
 import uk.ac.ebi.biosd.xs.service.SchemaManager;
+import uk.ac.ebi.biosd.xs.util.StringUtils;
 
 public class ExportTask
 {
@@ -206,13 +207,15 @@ public class ExportTask
 
     formatter.exportFooter(auxFileOut);    
     
+    Date endTime = new java.util.Date();
    
-    String summary = stat.createReport(startTime, new java.util.Date(), threads);
+    String summary = stat.createReport(startTime, endTime, threads);
     
     auxFileOut.append(summary);
 
     if( Email.getDefaultInstance() != null )
-     if( ! Email.getDefaultInstance().sendAnnouncement("Task '"+name+"' has finished successfully\n\n"+summary) )
+     if( ! Email.getDefaultInstance().sendAnnouncement("X-S task '"+name+"' success "+StringUtils.millisToString(endTime.getTime()-startTime.getTime()),
+       "Task '"+name+"' has finished successfully\n\n"+summary) )
       log.error("Can't send an info announcement by email");
 
    }
@@ -223,7 +226,7 @@ public class ExportTask
     log.error("Task '"+name+"': XML generation terminated with error: "+t.getMessage());
 
     if( Email.getDefaultInstance() != null )
-     if( ! Email.getDefaultInstance().sendErrorAnnouncement("Task '"+name+"': XML generation terminated with error",t) )
+     if( ! Email.getDefaultInstance().sendErrorAnnouncement("X-S task '"+name+"' error","Task '"+name+"': XML generation terminated with error",t) )
       log.error("Can't send an error announcement by email");
    }
    finally
