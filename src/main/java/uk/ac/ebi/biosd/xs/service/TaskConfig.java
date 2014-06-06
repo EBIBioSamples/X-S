@@ -2,28 +2,29 @@ package uk.ac.ebi.biosd.xs.service;
 
 import uk.ac.ebi.biosd.xs.util.ParamPool;
 
-public class RequestConfig
+public class TaskConfig
 {
  
 
  
- public static final String SchemaParameter            = "schema";
  public static final String ProfileParameter           = "server";
  public static final String MyEqProfileParameter       = "myeq";
  public static final String LimitParameter             = "limit";
  public static final String ThreadsParameter           = "threads";
+ public static final String SinceParameter             = "since";
+ public static final String PublicOnlyParameter        = "publicOnly";
+ public static final String GroupMultiplierParameter   = "groupMultiplier";
+ public static final String SampleMultiplierParameter  = "sampleMultiplier";
+
+ public static final String AttributesSummaryParameter = "attributesSummary";
  public static final String SamplesParameter           = "samplesFormat";
  public static final String ShowSourcesParameter       = "sourcesSummary";
  public static final String SourcesByNameParameter     = "sourcesByName";
  public static final String GroupedSampleParameter     = "groupedSamplesOnly";
- public static final String SinceParameter             = "since";
- public static final String AttributesSummaryParameter = "attributesSummary";
- public static final String NamespaceParameter         = "showNS";
  public static final String ShowAccessControlParameter = "showAC";
+ public static final String NamespaceParameter         = "showNS";
  public static final String OutputParameter            = "output";
- public static final String PublicOnlyParameter        = "publicOnly";
- public static final String GroupMultiplierParameter   = "groupMultiplier";
- public static final String SampleMultiplierParameter  = "sampleMultiplier";
+ public static final String SchemaParameter            = "schema";
 
  private Boolean     publicOnly;
  private Boolean     groupedSamplesOnly;

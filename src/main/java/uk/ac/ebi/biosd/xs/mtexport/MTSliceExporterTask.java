@@ -40,6 +40,7 @@ public class MTSliceExporterTask implements Runnable
  private final BlockingQueue<ControlMessage> controlQueue;
  private final AtomicBoolean stopFlag;
  private final boolean sourcesByName;
+ private final boolean groupedSmpOnly;
  private boolean hasSampleOutput = false;
  private final AtomicLong limit;
 
@@ -49,25 +50,26 @@ public class MTSliceExporterTask implements Runnable
  private final Logger log = LoggerFactory.getLogger(Init.class);
 
  
- public MTSliceExporterTask( EntityManagerFactory emf, EntityManagerFactory myeqf, SliceManager slMgr, long since, List<FormattingTask> tasks,
-   MTExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, boolean srcByNm, AtomicLong lim, Double grpMul, Double smpMul )
+ public MTSliceExporterTask( EntityManagerFactory emf, EntityManagerFactory myeqf, SliceManager slMgr, List<FormattingTask> tasks,
+   MTExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, AtomicLong lim, MTTaskConfig tCfg )
  {
   emFactory = emf;
   myEqFactory = myeqf;
   
   sliceMngr = slMgr;
-  this.since = since;
+  this.since = tCfg.getSince();
   
   this.tasks = tasks;
   this.stat = stat;
   this.controlQueue = controlQueue;
 
-  this.grpMul = grpMul;
-  this.smpMul = smpMul;
+  this.grpMul = tCfg.getGroupMultiplier();
+  this.smpMul = tCfg.getSampleMultiplier();
   
   stopFlag = stf;
   
-  sourcesByName = srcByNm;
+  sourcesByName = tCfg.isSourcesByName();
+  groupedSmpOnly = tCfg.isGroupedSamplesOnly();
   
   limit = lim;
   

@@ -14,17 +14,18 @@ import javax.servlet.http.HttpServletResponse;
 import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.init.EMFManager;
+import uk.ac.ebi.biosd.xs.task.ExportTask;
 import uk.ac.ebi.biosd.xs.util.ParamPool;
 
 public class ExportAll extends HttpServlet
 {
- static final String       DefaultSchema                = SchemaManager.STXML;
- static final boolean      DefaultShowNS                = false;
- static final boolean      DefaultShowAttributesSummary = true;
- static final boolean      DefaultShowAccessControl     = false;
- static final boolean      DefaultShowSources           = true;
- static final boolean      DefaultSourcesByName         = false;
- static final boolean      DefaultPublicOnly            = false;
+// static final String       DefaultSchema                = SchemaManager.STXML;
+// static final boolean      DefaultShowNS                = false;
+// static final boolean      DefaultShowAttributesSummary = true;
+// static final boolean      DefaultShowAccessControl     = false;
+// static final boolean      DefaultShowSources           = true;
+// static final boolean      DefaultSourcesByName         = false;
+// static final boolean      DefaultPublicOnly            = false;
 
  private static final long serialVersionUID = 1L;
  
@@ -116,13 +117,13 @@ public class ExportAll extends HttpServlet
   Appendable out = response.getWriter();
   
   
-  String sch = reqCfg.getSchema(DefaultSchema);
+  String sch = reqCfg.getSchema(ExportTask.DefaultSchema);
   
   formatter = SchemaManager.getFormatter(sch,
-    reqCfg.getShowAttributesSummary(DefaultShowAttributesSummary),
-    reqCfg.getShowAccessControl(DefaultShowAccessControl),
+    reqCfg.getShowAttributesSummary(ExportTask.Default),
+    reqCfg.getShowAccessControl(ExportTask.Default),
     samplesFormat,
-    reqCfg.getPublicOnly(DefaultPublicOnly),
+    reqCfg.getPublicOnly(ExportTask.Default),
     new Date()
 );
   
@@ -133,17 +134,18 @@ public class ExportAll extends HttpServlet
    return;
   }
   
-  boolean exportSources = reqCfg.getShowSources(DefaultShowSources);
+  boolean exportSources = reqCfg.getShowSources(ExportTask.DefaultShowSources);
   
-  boolean sourcesByName = reqCfg.getSourcesByName(DefaultSourcesByName);
+  boolean sourcesByName = reqCfg.getSourcesByName(ExportTask.DefaultSourcesByName);
 
   
   Exporter expt = null;
   
   if( threadsNum == 1 )
-   expt = new ExporterST(emf, myEqEmf, formatter, exportSources, sourcesByName, blockSize, reqCfg.getShowNamespace(DefaultShowNS) );
+   expt = new ExporterST(emf, myEqEmf, formatter, exportSources, sourcesByName, blockSize, reqCfg.getShowNamespace(ExportTask.DefaultShowNS) );
   else
-   expt = new ExporterMT(emf, myEqEmf, formatter, exportSources, sourcesByName, reqCfg.getShowNamespace(DefaultShowNS), threadsNum);
+   expt = new ExporterMT(emf, myEqEmf, formatter, exportSources, sourcesByName, reqCfg.getShowNamespace(ExportTask.DefaultShowNS),
+     reqCfg.getGroupedSamplesOnly(ExportTask.DefaultGroupedSamplesOnly), threadsNum);
  
   System.out.println("Start exporting. Request from: "+request.getRemoteAddr()+" Limit: "+limit+" Time: "+new Date()+" Thread: "+Thread.currentThread().getName());
   

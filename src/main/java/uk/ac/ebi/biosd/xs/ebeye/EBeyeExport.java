@@ -32,17 +32,19 @@ import uk.ac.ebi.biosd.xs.mtexport.FormattingRequest;
 import uk.ac.ebi.biosd.xs.mtexport.MTExporterStat;
 import uk.ac.ebi.biosd.xs.service.RequestConfig;
 import uk.ac.ebi.biosd.xs.service.SchemaManager;
+import uk.ac.ebi.biosd.xs.task.ExportTask;
 import uk.ac.ebi.biosd.xs.util.StringUtils;
 
 public class EBeyeExport
 {
  private static EBeyeExport instance;
  
- static final String                DefaultSchema         = SchemaManager.STXML;
- static final String                DefaultSamplesFormat  = SamplesFormat.EMBED.name();
- static final boolean               DefaultShowNS         = false;
- static final boolean               DefaultShowSources    = true;
- static final boolean               DefaultSourcesByName  = false;
+// static final String                DefaultSchema         = SchemaManager.STXML;
+// static final String                DefaultSamplesFormat  = SamplesFormat.EMBED.name();
+// static final boolean               DefaultShowNS         = false;
+// static final boolean               DefaultShowSources    = true;
+// static final boolean               DefaultSourcesByName  = false;
+// static final boolean               DefaultGroupedSamplesOnly
 
  
  private static final String        samplesFileName      = "samples.xml";
@@ -112,9 +114,9 @@ public class EBeyeExport
    
    try
    {
-    smpfmt = SamplesFormat.valueOf(rc.getSamplesFormat(DefaultSamplesFormat) );
+    smpfmt = SamplesFormat.valueOf(rc.getSamplesFormat(ExportTask.DefaultSamplesFormat) );
 
-    auxFmt = SchemaManager.getFormatter(rc.getSchema(DefaultSchema), rc.getShowAttributesSummary(true), rc.getShowAccessControl(true), smpfmt, rc.getPublicOnly(false), new Date());
+    auxFmt = SchemaManager.getFormatter(rc.getSchema(ExportTask.DefaultSchema), rc.getShowAttributesSummary(true), rc.getShowAccessControl(true), smpfmt, rc.getPublicOnly(false), new Date());
    }
    catch(Exception e)
    {
@@ -211,7 +213,7 @@ public class EBeyeExport
    java.util.Date startTime = new java.util.Date();
 
    if( auxFileOut != null )
-    auxFmt.exportHeader(-1, auxFileOut, auxConfig.getShowNamespace(DefaultShowNS) );
+    auxFmt.exportHeader(-1, auxFileOut, auxConfig.getShowNamespace(ExportTask.DefaultShowNS) );
    
    String commStr = "<!-- Start time: "+simpleDateFormat.format(startTime)+" -->\n";
    
@@ -248,7 +250,8 @@ public class EBeyeExport
    
    synchronized(this)
    {
-    exportControl = new ExporterMTControl(emf, myEqFact, frList, auxConfig.getShowSources(DefaultShowSources), auxConfig.getSourcesByName(DefaultSourcesByName), threads);
+    exportControl = new ExporterMTControl(emf, myEqFact, frList, auxConfig.getShowSources(ExportTask.DefaultShowSources), 
+      auxConfig.getSourcesByName(ExportTask.DefaultSourcesByName), auxConfig.getGroupedSamplesOnly(ExportTask.DefaultGroupedSamplesOnly), threads);
    }
 
    boolean finishedOK = true;
@@ -288,7 +291,7 @@ public class EBeyeExport
       
      }
 
-     if( auxConfig.getShowSources(DefaultShowSources))
+     if( auxConfig.getShowSources(ExportTask.DefaultShowSources))
       auxFmt.exportSources(stat.getSourcesMap(), auxFileOut);
 
      

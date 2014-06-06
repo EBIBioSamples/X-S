@@ -27,10 +27,12 @@ public class ExporterMT implements Exporter
  private final XMLFormatter formatter;
  private final boolean exportSources;
  private final boolean sourcesByName;
+ private final boolean grpSmpOnly;
  private final int threads;
  private final boolean showNS;
  
- public ExporterMT(EntityManagerFactory emf, EntityManagerFactory myeqemf, XMLFormatter formatter, boolean exportSources, boolean sourcesByName, boolean showNS, int thN)
+ public ExporterMT(EntityManagerFactory emf, EntityManagerFactory myeqemf, XMLFormatter formatter, boolean exportSources, boolean sourcesByName,
+   boolean showNS, boolean grpSmpOnly, int thN)
  {
   super();
   this.emf = emf;
@@ -40,6 +42,7 @@ public class ExporterMT implements Exporter
   this.sourcesByName = sourcesByName;
   threads = thN;
   this.showNS = showNS;
+  this.grpSmpOnly=grpSmpOnly;
   
  }
 
@@ -82,7 +85,7 @@ public class ExporterMT implements Exporter
   
   formatter.setNowDate(now);
   
-  ExporterMTControl mtc = new ExporterMTControl(emf,myeqemf, Collections.singletonList(freq), exportSources, sourcesByName, threads);
+  ExporterMTControl mtc = new ExporterMTControl(emf,myeqemf, Collections.singletonList(freq), exportSources, sourcesByName, grpSmpOnly, threads);
 
   try
   {

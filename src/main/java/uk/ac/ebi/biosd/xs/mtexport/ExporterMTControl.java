@@ -31,13 +31,15 @@ public class ExporterMTControl
  final  List<FormattingRequest> requests;
  private final boolean exportSources;
  final boolean sourcesByName;
+ boolean grpSmpOnly;
  private final int threads;
  
  private final BlockingQueue<ControlMessage> controlMsgQueue;
  private final Lock busyLock = new ReentrantLock();
 
  
- public ExporterMTControl(EntityManagerFactory emf, EntityManagerFactory myEqFact, List<FormattingRequest> ftasks, boolean exportSources, boolean sourcesByName, int thN )
+ public ExporterMTControl(EntityManagerFactory emf, EntityManagerFactory myEqFact, List<FormattingRequest> ftasks,
+   boolean exportSources, boolean sourcesByName, boolean grpSmpOnly, int thN )
  {
   super();
   this.emf = emf;
@@ -45,6 +47,7 @@ public class ExporterMTControl
   this.requests = ftasks;
   this.exportSources = exportSources;
   this.sourcesByName = sourcesByName;
+  this.grpSmpOnly = grpSmpOnly;
   threads = thN;
   
   controlMsgQueue = new ArrayBlockingQueue<>(requests.size()*3+1);
@@ -99,10 +102,17 @@ public class ExporterMTControl
    if(limit > 0)
     limitCnt = new AtomicLong(limit);
 
+   MTTaskConfig tCnf = new MTTaskConfig();
+   
+   tCnf.setGroupMultiplier(grpMul);
+   tCnf.setSampleMultiplier(smpMul);
+   tCnf.setSince(since);
+   tCnf.setSourcesByName(sourcesByName);
+   tCnf.setGroupedSamplesOnly(grpSmpOnly);
+   
    for(int i = 0; i < threads; i++)
    {
-    MTSliceExporterTask et = new MTSliceExporterTask(emf, myEqFact, sm, since, tasks, statistics, controlMsgQueue, stopFlag, sourcesByName, limitCnt,
-      grpMul, smpMul);
+    MTSliceExporterTask et = new MTSliceExporterTask(emf, myEqFact, sm, tasks, statistics, controlMsgQueue, stopFlag, limitCnt, tCnf);
 
     exporters.add(et);
 

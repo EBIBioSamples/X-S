@@ -33,11 +33,12 @@ import uk.ac.ebi.biosd.xs.util.StringUtils;
 public class ExportTask
 {
  
- static final String                DefaultSchema         = SchemaManager.STXML;
- static final String                DefaultSamplesFormat  = SamplesFormat.EMBED.name();
- static final boolean               DefaultShowNS         = false;
- static final boolean               DefaultShowSources    = true;
- static final boolean               DefaultSourcesByName  = false;
+ public static final String                DefaultSchema         = SchemaManager.STXML;
+ public static final String                DefaultSamplesFormat  = SamplesFormat.EMBED.name();
+ public static final boolean               DefaultShowNS         = false;
+ public static final boolean               DefaultShowSources    = true;
+ public static final boolean               DefaultSourcesByName  = false;
+ public static final boolean               DefaultGroupedSamplesOnly  = false;
 
  private final String name;
  
@@ -174,9 +175,11 @@ public class ExportTask
    
    frList.add( new FormattingRequest(formatter, auxFileOut, tmpAuxSampleOut) );
    
+   
    synchronized(this)
    {
-    exportControl = new ExporterMTControl(emf, myEqFact, frList, taskConfig.getShowSources(DefaultShowSources), taskConfig.getSourcesByName(DefaultSourcesByName), threads);
+    exportControl = new ExporterMTControl(emf, myEqFact, frList, taskConfig.getShowSources(DefaultShowSources),
+      taskConfig.getSourcesByName(DefaultSourcesByName), taskConfig.getGroupedSamplesOnly(DefaultGroupedSamplesOnly), threads);
    }
 
    boolean finishedOK = true;
