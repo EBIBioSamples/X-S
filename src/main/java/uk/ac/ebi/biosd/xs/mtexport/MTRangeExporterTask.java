@@ -30,7 +30,7 @@ public class MTRangeExporterTask implements Runnable
  private final RangeManager rangeMngr;
  private final long since;
  private final List<FormattingTask> tasks;
- private final MTExporterStat stat;
+ private final ExporterStat stat;
  private final BlockingQueue<ControlMessage> controlQueue;
  private final AtomicBoolean stopFlag;
  private final boolean sourcesByName;
@@ -38,7 +38,7 @@ public class MTRangeExporterTask implements Runnable
  private final AtomicLong limit;
  
  public MTRangeExporterTask( EntityManagerFactory emf, EntityManagerFactory myeqf,  RangeManager rMgr, long since, List<FormattingTask> tasks,
-   MTExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, boolean srcByNm, AtomicLong lim )
+   ExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, boolean srcByNm, AtomicLong lim )
  {
   emFactory = emf;
   myEqFactory = myeqf;

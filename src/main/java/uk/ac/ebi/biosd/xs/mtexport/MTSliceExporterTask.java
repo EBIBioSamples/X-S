@@ -33,15 +33,17 @@ public class MTSliceExporterTask implements Runnable
   */
  private final EntityManagerFactory emFactory;
  private final EntityManagerFactory myEqFactory;
- private final SliceManager sliceMngr;
+ private final SliceManager grpSliceMngr;
+ private final SliceManager smpSliceMngr;
  private final long since;
  private final List<FormattingTask> tasks;
- private final MTExporterStat stat;
+ private final ExporterStat stat;
  private final BlockingQueue<ControlMessage> controlQueue;
  private final AtomicBoolean stopFlag;
- private final boolean sourcesByName;
- private final boolean groupedSmpOnly;
- private boolean hasSampleOutput = false;
+ private boolean hasSourcesByName;
+ private boolean hasSourcesByAcc;
+ private boolean hasGroupedSmp;
+ private boolean hasUngroupedSmp;
  private final AtomicLong limit;
 
  private final Double grpMul;
@@ -50,13 +52,15 @@ public class MTSliceExporterTask implements Runnable
  private final Logger log = LoggerFactory.getLogger(Init.class);
 
  
- public MTSliceExporterTask( EntityManagerFactory emf, EntityManagerFactory myeqf, SliceManager slMgr, List<FormattingTask> tasks,
-   MTExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, AtomicLong lim, MTTaskConfig tCfg )
+ public MTSliceExporterTask( EntityManagerFactory emf, EntityManagerFactory myeqf, SliceManager grpSlMgr, SliceManager smpSlMgr, List<FormattingTask> tasks,
+   ExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, AtomicLong lim, MTTaskConfig tCfg )
  {
   emFactory = emf;
   myEqFactory = myeqf;
   
-  sliceMngr = slMgr;
+  grpSliceMngr = grpSlMgr;
+  smpSliceMngr = smpSlMgr;
+  
   this.since = tCfg.getSince();
   
   this.tasks = tasks;
@@ -68,8 +72,14 @@ public class MTSliceExporterTask implements Runnable
   
   stopFlag = stf;
   
-  sourcesByName = tCfg.isSourcesByName();
-  groupedSmpOnly = tCfg.isGroupedSamplesOnly();
+  hasGroupedSmp=false;
+  hasUngroupedSmp=false;
+  hasSourcesByName = false;
+  hasSourcesByAcc = false;
+  
+  
+//  sourcesByName = tCfg.isSourcesByName();
+//  groupedSmpOnly = tCfg.isGroupedSamplesOnly();
   
   limit = lim;
   
@@ -77,9 +87,19 @@ public class MTSliceExporterTask implements Runnable
   {
    if( ft.getSampleQueue() != null )
    {
-    hasSampleOutput = true;
-    break;
+    if( ft.isGroupedSamplesOnly() )
+     hasGroupedSmp = true;
+    else
+     hasUngroupedSmp = true;
    }
+   
+
+   
+   if( ft.isSourcesByAcc() )
+    hasSourcesByAcc = true;
+
+   if( ft.isSourcesByName() )
+    hasSourcesByName = true;
   }
   
  }
@@ -112,7 +132,7 @@ public class MTSliceExporterTask implements Runnable
 
    while(true)
    {
-    Slice sl = sliceMngr.getSlice();
+    Slice sl = grpSliceMngr.getSlice();
 
     log.debug("(" + Thread.currentThread().getName() + ") Processing slice: " + sl);
 
@@ -122,11 +142,7 @@ public class MTSliceExporterTask implements Runnable
      Collection<BioSampleGroup> grps = grpq.getGroups(since, sl);
 
      if(grps.size() == 0)
-     {
-      putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
-
-      return;
-     }
+      break;
 
      for(BioSampleGroup g : grps)
      {
@@ -171,28 +187,45 @@ public class MTSliceExporterTask implements Runnable
        if(AbstractXMLFormatter.isGroupPublic(ng, stat.getNowDate()))
         stat.incGroupPublicCounter();
 
-       for(MSI msi : ng.getMSIs())
+       if( hasSourcesByName || hasSourcesByAcc )
        {
-        for(DatabaseRecordRef db : msi.getDatabaseRecordRefs())
+       
+        for(MSI msi : ng.getMSIs())
         {
-         String scrNm = sourcesByName ? db.getDbName() : db.getAcc();
+         for(DatabaseRecordRef db : msi.getDatabaseRecordRefs())
+         {
+          if( hasSourcesByAcc )
+          {
+           String scrNm =db.getAcc();
 
-         if(scrNm == null)
-          continue;
+           if(scrNm != null)
+           {
+            scrNm = scrNm.trim();
+            
+            if(scrNm.length() != 0)
+             stat.addToSourceByAcc(scrNm, nSmp);
+            
+           }
+        
+          }
+          
+          if( hasSourcesByName )
+          {
+           String scrNm =db.getDbName();
 
-         scrNm = scrNm.trim();
-
-         if(scrNm.length() == 0)
-          continue;
-
-         if(msiTags.contains(scrNm))
-          continue;
-
-         msiTags.add(scrNm);
-
-         stat.addToSource(scrNm, nSmp);
-
+           if(scrNm != null)
+           {
+            scrNm = scrNm.trim();
+            
+            if(scrNm.length() != 0)
+             stat.addToSourceByAcc(scrNm, nSmp);
+           }
+        
+          }
+          
+         }
         }
+        
        }
 
        for(FormattingTask ft : tasks)
@@ -205,21 +238,24 @@ public class MTSliceExporterTask implements Runnable
 
        }
 
-       if(hasSampleOutput)
+       if( hasGroupedSmp )
        {
         for(BioSample s : ng.getSamples())
         {
          if(!stat.addSample(s.getAcc()))
           continue;
 
-         stat.incUniqSampleCounter();
+         if( ! hasUngroupedSmp )
+         {
+          stat.incUniqSampleCounter();
 
-         if(AbstractXMLFormatter.isSamplePublic(s, stat.getNowDate()))
-          stat.incSamplePublicUniqCounter();
-
+          if(AbstractXMLFormatter.isSamplePublic(s, stat.getNowDate()))
+           stat.incSamplePublicUniqCounter();
+         }
+         
          for(FormattingTask ft : tasks)
          {
-          if(ft.getSampleQueue() == null)
+          if(ft.getSampleQueue() == null || ! ft.isGroupedSamplesOnly() )
            continue;
 
           sb.setLength(0);
@@ -262,7 +298,69 @@ public class MTSliceExporterTask implements Runnable
     }
 
    }
+   
 
+
+   if(hasUngroupedSmp)
+   {
+    SampleSliceQueryManager smpq = new SampleSliceQueryManager(emFactory);
+
+    while(true)
+    {
+     Slice sl = smpSliceMngr.getSlice();
+
+     log.debug("(" + Thread.currentThread().getName() + ") Processing slice: " + sl);
+
+     try
+     {
+
+      Collection<BioSample> smps = smpq.getSamples(since, sl);
+
+      if(smps.size() == 0)
+       break;
+
+      for(BioSample s : smps)
+      {
+       if( ! hasGroupedSmp )
+       {
+        stat.incUniqSampleCounter();
+
+        if(AbstractXMLFormatter.isSamplePublic(s, stat.getNowDate()))
+         stat.incSamplePublicUniqCounter();
+       }
+
+       for(FormattingTask ft : tasks)
+       {
+        if(ft.getSampleQueue() == null || ft.isGroupedSamplesOnly() )
+         continue;
+
+        sb.setLength(0);
+
+        ft.getFormatter().exportSample(s, auxInf, sb, false);
+
+        putIntoQueue(ft.getSampleQueue(), sb.toString());
+       }
+      }
+     }
+     catch(Throwable e)
+     {
+      e.printStackTrace();
+
+      putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_ERROR, this, e));
+
+      return;
+     }
+     finally
+     {
+      smpq.release();
+     }
+
+    }
+
+   }
+   
+   putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
+   
   }
   finally
   {

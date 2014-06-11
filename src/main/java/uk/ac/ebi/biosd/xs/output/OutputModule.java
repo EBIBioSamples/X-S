@@ -1,17 +1,26 @@
 package uk.ac.ebi.biosd.xs.output;
 
+import java.io.IOException;
+
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
+import uk.ac.ebi.biosd.xs.mtexport.ExporterStat;
 
 public interface OutputModule
 {
 
- public XMLFormatter getFormatter();
+ XMLFormatter getFormatter();
 
- public Appendable getGroupOut();
+ Appendable getGroupOut();
 
- public Appendable getSampleOut();
+ Appendable getSampleOut();
  
- public boolean isGroupedSamplesOnly();
+ boolean isGroupedSamplesOnly();
+ boolean isSourcesByAcc();
+ boolean isSourcesByName();
  
- public void finish();
+ void start() throws IOException;
+ void finish(ExporterStat stat) throws IOException;
+
+ void cancel() throws IOException;
+ 
 }

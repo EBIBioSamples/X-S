@@ -3,8 +3,6 @@ package uk.ac.ebi.biosd.xs.mtexport;
 public class MTTaskConfig
 {
  private long    since;
- private boolean sourcesByName;
- private boolean groupedSamplesOnly;
  private Double  groupMultiplier;
  private Double  sampleMultiplier;
 
@@ -18,25 +16,7 @@ public class MTTaskConfig
   this.since = since;
  }
 
- public boolean isSourcesByName()
- {
-  return sourcesByName;
- }
 
- public void setSourcesByName(boolean sourcesByName)
- {
-  this.sourcesByName = sourcesByName;
- }
-
- public boolean isGroupedSamplesOnly()
- {
-  return groupedSamplesOnly;
- }
-
- public void setGroupedSamplesOnly(boolean groupedSamplesOnly)
- {
-  this.groupedSamplesOnly = groupedSamplesOnly;
- }
 
  public Double getGroupMultiplier()
  {

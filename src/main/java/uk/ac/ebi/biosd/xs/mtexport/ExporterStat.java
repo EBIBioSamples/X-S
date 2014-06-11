@@ -10,7 +10,7 @@ import java.util.Set;
 import uk.ac.ebi.biosd.xs.util.Counter;
 import uk.ac.ebi.biosd.xs.util.StringUtils;
 
-public class MTExporterStat
+public class ExporterStat
 {
  private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
  
@@ -20,11 +20,13 @@ public class MTExporterStat
  private int samplePublicUniqCount=0;
  private  int uniqSampleCount=0;
  private final Date now;
+ private int threads;
  
  private final Set<String> sampleSet = new HashSet<>();
- private final Map<String, Counter> srcMap = new HashMap<String, Counter>();
+ private final Map<String, Counter> srcNmMap = new HashMap<String, Counter>();
+ private final Map<String, Counter> srcAccMap = new HashMap<String, Counter>();
  
- public MTExporterStat( Date now )
+ public ExporterStat( Date now )
  {
   this.now = now;
  }
@@ -99,19 +101,34 @@ public class MTExporterStat
   return sampleSet.contains(id);
  }
  
- public synchronized void addToSource( String srcName, int cnt )
+ public synchronized void addToSourceByName( String srcName, int cnt )
  {
-  Counter c = srcMap.get(srcName);
+  Counter c = srcNmMap.get(srcName);
 
   if(c == null)
-   srcMap.put(srcName, new Counter(cnt));
+   srcNmMap.put(srcName, new Counter(cnt));
   else
    c.add(cnt);
  }
  
- public Map<String, Counter> getSourcesMap()
+ public Map<String, Counter> getSourcesByNameMap()
  {
-  return srcMap;
+  return srcNmMap;
+ }
+ 
+ public synchronized void addToSourceByAcc( String srcName, int cnt )
+ {
+  Counter c = srcAccMap.get(srcName);
+
+  if(c == null)
+   srcAccMap.put(srcName, new Counter(cnt));
+  else
+   c.add(cnt);
+ }
+ 
+ public Map<String, Counter> getSourcesByAccMap()
+ {
+  return srcAccMap;
  }
 
  public int getGroupPublicCount()
@@ -160,6 +177,16 @@ public class MTExporterStat
   
   return summaryBuf.toString();
 
+ }
+
+ public int getThreads()
+ {
+  return threads;
+ }
+
+ public void setThreads(int threads)
+ {
+  this.threads = threads;
  }
 
 }

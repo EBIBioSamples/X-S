@@ -10,12 +10,20 @@ public class FormattingTask
  private final BlockingQueue<Object> groupQueue;
  private final BlockingQueue<Object> sampleQueue;
  
- public FormattingTask(XMLFormatter formatter, BlockingQueue<Object> groupQueue, BlockingQueue<Object> sampleQueue)
+ private final boolean groupedSamplesOnly;
+ private final boolean sourcesByAcc;
+ private final boolean sourcesByName;
+ 
+ public FormattingTask(XMLFormatter formatter, boolean grpSmp, boolean collByAcc, boolean collByName, BlockingQueue<Object> groupQueue, BlockingQueue<Object> sampleQueue)
  {
   super();
   this.formatter = formatter;
   this.groupQueue = groupQueue;
   this.sampleQueue = sampleQueue;
+  
+  groupedSamplesOnly=grpSmp;
+  sourcesByAcc=collByAcc;
+  sourcesByName = collByName;
  }
 
  public XMLFormatter getFormatter()
@@ -31,6 +39,21 @@ public class FormattingTask
  public BlockingQueue<Object> getSampleQueue()
  {
   return sampleQueue;
+ }
+
+ public boolean isGroupedSamplesOnly()
+ {
+  return groupedSamplesOnly;
+ }
+
+ public boolean isSourcesByAcc()
+ {
+  return sourcesByAcc;
+ }
+
+ public boolean isSourcesByName()
+ {
+  return sourcesByName;
  }
 
 }

@@ -2,6 +2,7 @@ package uk.ac.ebi.biosd.xs.mtexport;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -20,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.biosd.xs.mtexport.ControlMessage.Type;
+import uk.ac.ebi.biosd.xs.output.OutputModule;
 import uk.ac.ebi.biosd.xs.util.SliceManager;
 
 public class ExporterMTControl
@@ -28,33 +30,27 @@ public class ExporterMTControl
  
  private final EntityManagerFactory emf;
  private final EntityManagerFactory myEqFact;
- final  List<FormattingRequest> requests;
- private final boolean exportSources;
- final boolean sourcesByName;
- boolean grpSmpOnly;
+ final  Collection<OutputModule> requests;
+
  private final int threads;
  
  private final BlockingQueue<ControlMessage> controlMsgQueue;
  private final Lock busyLock = new ReentrantLock();
-
  
- public ExporterMTControl(EntityManagerFactory emf, EntityManagerFactory myEqFact, List<FormattingRequest> ftasks,
-   boolean exportSources, boolean sourcesByName, boolean grpSmpOnly, int thN )
+ public ExporterMTControl(EntityManagerFactory emf, EntityManagerFactory myEqFact, Collection<OutputModule> mods, int thN )
  {
   super();
   this.emf = emf;
   this.myEqFact=myEqFact;
-  this.requests = ftasks;
-  this.exportSources = exportSources;
-  this.sourcesByName = sourcesByName;
-  this.grpSmpOnly = grpSmpOnly;
+  this.requests = mods;
+
   threads = thN;
   
   controlMsgQueue = new ArrayBlockingQueue<>(requests.size()*3+1);
  }
 
  
- public MTExporterStat export( long since, long limit, Date now, Double grpMul, Double smpMul) throws Throwable
+ public ExporterStat export( long since, long limit, Date now, Double grpMul, Double smpMul) throws Throwable
  {
   if(!busyLock.tryLock())
    throw new ExporterBusyException();
@@ -69,7 +65,7 @@ public class ExporterMTControl
 
    controlMsgQueue.clear();
 
-   for(FormattingRequest req : requests)
+   for(OutputModule req : requests)
    {
     BlockingQueue<Object> grQueue = new ArrayBlockingQueue<>(100);
     outputs.add(new OutputTask(req.getGroupOut(), grQueue, controlMsgQueue));
@@ -82,17 +78,19 @@ public class ExporterMTControl
      outputs.add(new OutputTask(req.getSampleOut(), smQueue, controlMsgQueue));
     }
 
-    tasks.add(new FormattingTask(req.getFormatter(), grQueue, smQueue));
+    tasks.add(new FormattingTask(req.getFormatter(), req.isGroupedSamplesOnly(), req.isSourcesByAcc(), req.isSourcesByName(), grQueue, smQueue));
    }
 
    ExecutorService tPool = Executors.newFixedThreadPool(threads + outputs.size());
 
    //  RangeManager rm = new RangeManager(Long.MIN_VALUE,Long.MAX_VALUE,threads*2);
-   SliceManager sm = new SliceManager();
+   SliceManager gsm = new SliceManager();
+   SliceManager ssm = new SliceManager();
 
    AtomicBoolean stopFlag = new AtomicBoolean(false);
 
-   MTExporterStat statistics = new MTExporterStat(now);
+   ExporterStat statistics = new ExporterStat(now);
+   statistics.setThreads(threads);
 
    for(OutputTask ot : outputs)
     tPool.submit(ot);
@@ -107,12 +105,10 @@ public class ExporterMTControl
    tCnf.setGroupMultiplier(grpMul);
    tCnf.setSampleMultiplier(smpMul);
    tCnf.setSince(since);
-   tCnf.setSourcesByName(sourcesByName);
-   tCnf.setGroupedSamplesOnly(grpSmpOnly);
    
    for(int i = 0; i < threads; i++)
    {
-    MTSliceExporterTask et = new MTSliceExporterTask(emf, myEqFact, sm, tasks, statistics, controlMsgQueue, stopFlag, limitCnt, tCnf);
+    MTSliceExporterTask et = new MTSliceExporterTask(emf, myEqFact, gsm, ssm, tasks, statistics, controlMsgQueue, stopFlag, limitCnt, tCnf);
 
     exporters.add(et);
 

@@ -29,7 +29,7 @@ import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.keyword.OWLKeywordExpansion;
 import uk.ac.ebi.biosd.xs.mtexport.ExporterMTControl;
 import uk.ac.ebi.biosd.xs.mtexport.FormattingRequest;
-import uk.ac.ebi.biosd.xs.mtexport.MTExporterStat;
+import uk.ac.ebi.biosd.xs.mtexport.ExporterStat;
 import uk.ac.ebi.biosd.xs.service.RequestConfig;
 import uk.ac.ebi.biosd.xs.service.SchemaManager;
 import uk.ac.ebi.biosd.xs.task.ExportTask;
@@ -259,7 +259,7 @@ public class EBeyeExport
    try
    {
 
-    MTExporterStat stat = exportControl.export(-1, limit, now, auxConfig.getGroupMultiplier(null), auxConfig.getSampleMultiplier(null) );
+    ExporterStat stat = exportControl.export(-1, limit, now, auxConfig.getGroupMultiplier(null), auxConfig.getSampleMultiplier(null) );
 
     ebeyeFmt.exportGroupFooter( grpFileOut );
 
