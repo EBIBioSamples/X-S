@@ -1,12 +1,5 @@
 package uk.ac.ebi.biosd.xs.task;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Date;
 import java.util.concurrent.locks.Lock;
@@ -42,6 +35,7 @@ public class ExportTask2
  private final EntityManagerFactory myEqFact;
 
  private final Collection<OutputModule> modules;
+ private final RequestConfig taskConfig;
  
  private final Lock busy = new ReentrantLock();
  
@@ -51,7 +45,7 @@ public class ExportTask2
  
 
  
- public ExportTask2(String nm, EntityManagerFactory emf, EntityManagerFactory myEqFact, Collection<OutputModule> modules) throws TaskInitError
+ public ExportTask2(String nm, EntityManagerFactory emf, EntityManagerFactory myEqFact, Collection<OutputModule> modules, RequestConfig cnf) throws TaskInitError
  {
   if( log == null )
    log = LoggerFactory.getLogger(ExportTask2.class);
@@ -63,6 +57,7 @@ public class ExportTask2
 
   this.modules = modules;
   
+  taskConfig=cnf;
  }
 
 
@@ -89,10 +84,7 @@ public class ExportTask2
   
   try
   {
-   
-   if(limit < 0)
-    limit = Integer.MAX_VALUE;
-   
+      
    log.debug("Start exporting XML files for task '"+name+"'");
 
   
@@ -102,83 +94,28 @@ public class ExportTask2
     exportControl = new ExporterMTControl(emf, myEqFact, modules, threads);
    }
 
-   boolean finishedOK = true;
+  
+   Date startTime = new Date();
    
    try
    {
-    ExporterStat stat = exportControl.export(-1, limit, now, grpMul, smpMul);
+    ExporterStat stat = exportControl.export(-1, limit, startTime, taskConfig.getGroupMultiplier(null), taskConfig.getSampleMultiplier(null) );
 
-    ExporterStat stat = exportControl.export(-1, limit, now, taskConfig.getGroupMultiplier(null), taskConfig.getSampleMultiplier(null) );
-
-   
-    formatter.exportGroupFooter(auxFileOut);
-     
-    if(formatter.isSamplesExport())
-    {
-     tmpAuxSampleOut.close();
-
-     tmpAuxSampleOut = null;
-
-     formatter.exportSampleHeader(auxFileOut, false, stat.getUniqSampleCount());
-
-     appendFile(auxFileOut, tmpAuxSampleFile);
-
-     formatter.exportSampleFooter(auxFileOut);
-    }
-
-    if(taskConfig.getShowSources(DefaultShowSources))
-     formatter.exportSources(stat.getSourcesMap(), auxFileOut);
-
-    formatter.exportFooter(auxFileOut);    
-    
-    Date endTime = new java.util.Date();
-   
-    String summary = stat.createReport(startTime, endTime, threads);
-    
-    auxFileOut.append(summary);
+    Date endTime = new Date();
 
     if( Email.getDefaultInstance() != null )
      if( ! Email.getDefaultInstance().sendAnnouncement("X-S task '"+name+"' success "+StringUtils.millisToString(endTime.getTime()-startTime.getTime()),
-       "Task '"+name+"' has finished successfully\n\n"+summary) )
+       "Task '"+name+"' has finished successfully\n\n"+stat.createReport(startTime, endTime, threads)) )
       log.error("Can't send an info announcement by email");
 
    }
    catch( Throwable t )
    {
-    finishedOK = false; 
-    
     log.error("Task '"+name+"': XML generation terminated with error: "+t.getMessage());
 
     if( Email.getDefaultInstance() != null )
      if( ! Email.getDefaultInstance().sendErrorAnnouncement("X-S task '"+name+"' error","Task '"+name+"': XML generation terminated with error",t) )
       log.error("Can't send an error announcement by email");
-   }
-   finally
-   {
-    if(tmpAuxSampleOut != null )
-     tmpAuxSampleOut.close();
-    
-    if( tmpAuxSampleFile != null )
-     tmpAuxSampleFile.delete();
-    
-    if( auxFileOut != null )
-     auxFileOut.close();
-    
-   }
-   
-   if( finishedOK )
-   {
-
-    if(outFile.exists() && !outFile.delete())
-     log.error("Task '"+name+"': Can't delete file: " + outFile);
-
-    if(!tmpAuxFile.renameTo(outFile))
-     log.error("Task '"+name+"': Moving aux file failed. {} -> {} ", tmpAuxFile.getAbsolutePath(), outFile.getAbsolutePath());
-
-   }
-   else
-   {
-     tmpAuxFile.delete();
    }
 
   }
@@ -199,78 +136,6 @@ public class ExportTask2
   return true;
  }
 
- private boolean checkDirs()
- {
-  File outDir = outFile.getParentFile();
-  
-  if( ! outDir.exists() )
-  {
-   if( ! outDir.mkdirs() )
-   {
-    log.error("Task '"+name+"': Can't create output directory: {}",outDir.getAbsolutePath());
-    return false;
-   }
-  }
-  
-  if( ! outDir.canWrite() )
-  {
-   log.error("Task '"+name+"': Output directory is not writable: {}",outDir.getAbsolutePath());
-   return false;
-  }
-  
-  if( ! tmpDir.exists() )
-  {
-   if( ! tmpDir.mkdirs() )
-   {
-    log.error("Task '"+name+"': Can't create temp directory: {}",tmpDir.getAbsolutePath());
-    return false;
-   }
-  }
-  
-  if( ! tmpDir.canWrite() )
-  {
-   log.error("Task '"+name+"': Temp directory is not writable: {}",tmpDir.getAbsolutePath());
-   return false;
-  }
-  
-  return true;
- }
- 
- private void cleanDir(File dir)
- {
-  for( File f : dir.listFiles() )
-  {
-   if( f.isDirectory() )
-    cleanDir(f);
-    
-   f.delete();
-  }
-  
- }
-  private void appendFile(Appendable out, File f) throws IOException
-  {
-   Reader rd = new InputStreamReader(new FileInputStream(f), Charset.forName("utf-8"));
-   
-   try
-   {
-    
-    CharBuffer buf = CharBuffer.allocate(4096);
-    
-    while(rd.read(buf) != -1)
-    {
-     String str = new String(buf.array(), 0, buf.position());
-     
-     out.append(str);
-     
-     buf.clear();
-    }
-    
-   }
-   finally
-   {
-    rd.close();
-   }
-  }
 
   public boolean interrupt()
   {

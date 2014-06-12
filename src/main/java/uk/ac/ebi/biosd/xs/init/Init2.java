@@ -25,8 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.biosd.xs.ebeye.EBeyeExport;
 import uk.ac.ebi.biosd.xs.email.Email;
-import uk.ac.ebi.biosd.xs.service.TaskConfig;
 import uk.ac.ebi.biosd.xs.task.ExportTask;
+import uk.ac.ebi.biosd.xs.task.TaskConfig;
 import uk.ac.ebi.biosd.xs.task.TaskInitError;
 import uk.ac.ebi.biosd.xs.task.TaskManager;
 import uk.ac.ebi.biosd.xs.util.MapParamPool;
@@ -42,13 +42,6 @@ public class Init2 implements ServletContextListener
  public static final String EmailParamPrefix = "email.";
  
 
-// public static final String EBeyeRequestPrefix = "ebeye.request.";
-// static String EBeyeOutputPathParam = "ebeye.outputDir";
-// static String EBeyeTempPathParam = "ebeye.tempDir";
-// static String EBeyeUpdateHourParam = "ebeye.updateTime";
-// static String EBeyeEfoURLParam = "ebeye.efoURL";
-// static String EBeyeGenSamplesParam = "ebeye.generateSamples";
-// static String EBeyeSourcesParam = "ebeye.sources";
 
  static String TaskTmpDirParam = "tempDir";
  static String TaskTimeParam = "updateTime";
@@ -60,6 +53,7 @@ public class Init2 implements ServletContextListener
  static String BioSDDBParamPrefix = "biosddb";
  static String MyEQDBParamPrefix = "myeqdb";
  static String TaskParamPrefix = "task";
+ static String OutputParamPrefix = "output";
  
 // static String DefaultProfileParam = BioSDDBParamPrefix+".defaultProfile";
 
@@ -75,12 +69,13 @@ public class Init2 implements ServletContextListener
   
   Map<String, Map<String,Object>> profMap = new HashMap<>();
   Map<String, Map<String,Object>> myEqMap = new HashMap<>();
-  Map<String, Map<String,Object>> tasksMap = new HashMap<>();
+  Map<String, TaskConfig> tasksMap = new HashMap<>();
 
   
-  Matcher prstMtch = Pattern.compile("^"+BioSDDBParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
+  Matcher biodbMtch = Pattern.compile("^"+BioSDDBParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
   Matcher myeqMtch = Pattern.compile("^"+MyEQDBParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
   Matcher taskMtch = Pattern.compile("^"+TaskParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
+  Matcher outMtch = Pattern.compile("^"+OutputParamPrefix+"(?:\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
   
   ParamPool config = null;
 
@@ -107,21 +102,21 @@ public class Init2 implements ServletContextListener
    String val = config.getParameter(key);
 
 
-   prstMtch.reset(key);
+   biodbMtch.reset(key);
 
-   if(prstMtch.matches())
+   if(biodbMtch.matches())
    {
 
     String profile = null;
     String param = null;
 
-    if(prstMtch.groupCount() == 3)
+    if(biodbMtch.groupCount() == 3)
     {
-     profile = prstMtch.group(2);
-     param = prstMtch.group(3);
+     profile = biodbMtch.group(2);
+     param = biodbMtch.group(3);
     }
     else
-     param = prstMtch.group(prstMtch.groupCount());
+     param = biodbMtch.group(biodbMtch.groupCount());
 
     Map<String, Object> cm = profMap.get(profile);
 
@@ -162,23 +157,33 @@ public class Init2 implements ServletContextListener
      if(taskMtch.matches())
      {
 
-      String profile = null;
+      String taskName = null;
       String param = null;
 
       if(taskMtch.groupCount() == 3)
       {
-       profile = taskMtch.group(2);
+       taskName = taskMtch.group(2);
        param = taskMtch.group(3);
       }
       else
        log.warn("Invalid parameter {} will be ignored.", key);
+      
+      if( taskName == null )
+       taskName = "_default_";
 
-      Map<String, Object> cm = tasksMap.get(profile);
+      TaskConfig cm = tasksMap.get(taskName);
 
       if(cm == null)
-       tasksMap.put(profile, cm = new TreeMap<>());
+       tasksMap.put(taskName, cm = new TaskConfig(taskName) );
 
-      cm.put(param, val);
+      outMtch.reset(val);
+      
+      if( outMtch.matches() )
+      {
+       
+      }
+      else
+       cm.readParameter(param, val);
      }
     }
    }

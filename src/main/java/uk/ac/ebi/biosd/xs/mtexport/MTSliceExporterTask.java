@@ -114,6 +114,8 @@ public class MTSliceExporterTask implements Runnable
   if(myEqFactory != null)
    auxInf = new AuxInfoImpl(myEqFactory);
 
+  int grpCount=0;
+  
   try
   {
 
@@ -170,9 +172,10 @@ public class MTSliceExporterTask implements Runnable
 
          return;
         }
-
        }
 
+       grpCount++;
+       
        BioSampleGroup ng = g;
 
        if(grpMul != null)
@@ -184,7 +187,9 @@ public class MTSliceExporterTask implements Runnable
        stat.incGroupCounter();
        stat.addSampleCounter(nSmp);
 
-       if(AbstractXMLFormatter.isGroupPublic(ng, stat.getNowDate()))
+       boolean grpPub = AbstractXMLFormatter.isGroupPublic(ng, stat.getNowDate());
+       
+       if(grpPub)
         stat.incGroupPublicCounter();
 
        if( hasSourcesByName || hasSourcesByAcc )
@@ -204,7 +209,6 @@ public class MTSliceExporterTask implements Runnable
             
             if(scrNm.length() != 0)
              stat.addToSourceByAcc(scrNm, nSmp);
-            
            }
         
           }
@@ -231,7 +235,7 @@ public class MTSliceExporterTask implements Runnable
        for(FormattingTask ft : tasks)
        {
         sb.setLength(0);
-
+        
         ft.getFormatter().exportGroup(ng, auxInf, sb, false);
 
         putIntoQueue(ft.getGroupQueue(), sb.toString());
@@ -305,6 +309,17 @@ public class MTSliceExporterTask implements Runnable
    {
     SampleSliceQueryManager smpq = new SampleSliceQueryManager(emFactory);
 
+    int smpCount = 0;
+    
+    int smpMulFloor = 1;
+    double smpMulFrac = 0;
+
+    if( smpMul != null )
+    {
+     smpMulFloor = (int) Math.floor(smpMul);
+     smpMulFrac = smpMul - smpMulFloor;
+    }
+    
     while(true)
     {
      Slice sl = smpSliceMngr.getSlice();
@@ -321,25 +336,55 @@ public class MTSliceExporterTask implements Runnable
 
       for(BioSample s : smps)
       {
-       if( ! hasGroupedSmp )
-       {
-        stat.incUniqSampleCounter();
+       int nSmpRep = smpMulFloor;
 
+       if( smpMul != null && smpMulFrac > 0.005 )
+        nSmpRep += Math.random() < smpMulFrac ? 1 : 0;
+       
+       for(int smpRep = 1; smpRep <= nSmpRep; smpRep++)
+       {
+
+        if(stopFlag.get())
+        {
+         putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
+         return;
+        }
+
+        smpCount++;
+       
+        if(limit != null && smpCount > grpCount )
+        {
+         putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
+
+         return;
+        }
+        
+        BioSample ns = s;
+
+        if( smpMul != null)
+         ns = GroupSampleUtil.cloneSample(ns, s.getAcc() + "00" + smpRep);
+
+
+        stat.incUniqSampleCounter();
+         
         if(AbstractXMLFormatter.isSamplePublic(s, stat.getNowDate()))
          stat.incSamplePublicUniqCounter();
+        
+        for(FormattingTask ft : tasks)
+        {
+         if(ft.getSampleQueue() == null || ft.isGroupedSamplesOnly() )
+          continue;
+         
+         sb.setLength(0);
+         
+         ft.getFormatter().exportSample(ns, auxInf, sb, false);
+         
+         putIntoQueue(ft.getSampleQueue(), sb.toString());
+        }
+
        }
-
-       for(FormattingTask ft : tasks)
-       {
-        if(ft.getSampleQueue() == null || ft.isGroupedSamplesOnly() )
-         continue;
-
-        sb.setLength(0);
-
-        ft.getFormatter().exportSample(s, auxInf, sb, false);
-
-        putIntoQueue(ft.getSampleQueue(), sb.toString());
-       }
+  
+       
       }
      }
      catch(Throwable e)

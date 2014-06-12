@@ -144,7 +144,10 @@ public class MTRangeExporterTask implements Runnable
 
         msiTags.add(scrNm);
 
-        stat.addToSource(scrNm, nSmp);
+        if( sourcesByName )
+         stat.addToSourceByName(scrNm, nSmp);
+        else
+         stat.addToSourceByAcc(scrNm, nSmp);
 
        }
       }

@@ -79,6 +79,8 @@ public class ExporterMTControl
     }
 
     tasks.add(new FormattingTask(req.getFormatter(), req.isGroupedSamplesOnly(), req.isSourcesByAcc(), req.isSourcesByName(), grQueue, smQueue));
+    
+    req.start();
    }
 
    ExecutorService tPool = Executors.newFixedThreadPool(threads + outputs.size());
@@ -117,6 +119,8 @@ public class ExporterMTControl
 
    int tproc = threads;
    int tout = outputs.size();
+   
+   boolean cleanFinish = true;
 
    Throwable exception = null;
 
@@ -151,6 +155,8 @@ public class ExporterMTControl
      stopFlag.set(true);
 
      ((OutputTask) (o.getSubject())).getIncomingQueue().clear(); // To unlock processing tasks to see the stop flag.
+     
+     cleanFinish = false;
     }
     else if(o.getType() == Type.PROCESS_ERROR)
     {
@@ -160,12 +166,16 @@ public class ExporterMTControl
 
      tproc--;
      stopFlag.set(true);
+     
+     cleanFinish = false;
     }
     else if(o.getType() == Type.TERMINATE)
     {
      log.error("User terminate request. Sending termination to other processing threads");
 
      stopFlag.set(true);
+     
+     cleanFinish = false;
     }
 
     if(tproc == 0 && !termGoes)
@@ -174,7 +184,8 @@ public class ExporterMTControl
 
      termGoes = true;
 
-     exception = o.getException();
+     if( exception == null )
+      exception = o.getException();
 
      PoisonedObject po = new PoisonedObject();
 
@@ -213,6 +224,17 @@ public class ExporterMTControl
     }
    }
 
+   if( cleanFinish )
+   {
+    for( OutputModule omod : requests )
+     omod.finish(statistics);
+   }
+   else
+   {
+    for( OutputModule omod : requests )
+     omod.cancel();
+   }
+   
    System.gc();
 
    if(exception != null)
