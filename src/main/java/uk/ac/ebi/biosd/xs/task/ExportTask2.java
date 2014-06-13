@@ -15,7 +15,6 @@ import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
 import uk.ac.ebi.biosd.xs.mtexport.ExporterMTControl;
 import uk.ac.ebi.biosd.xs.mtexport.ExporterStat;
 import uk.ac.ebi.biosd.xs.output.OutputModule;
-import uk.ac.ebi.biosd.xs.service.RequestConfig;
 import uk.ac.ebi.biosd.xs.service.SchemaManager;
 import uk.ac.ebi.biosd.xs.util.StringUtils;
 
@@ -35,7 +34,7 @@ public class ExportTask2
  private final EntityManagerFactory myEqFact;
 
  private final Collection<OutputModule> modules;
- private final RequestConfig taskConfig;
+ private final TaskConfig taskConfig;
  
  private final Lock busy = new ReentrantLock();
  
@@ -45,7 +44,7 @@ public class ExportTask2
  
 
  
- public ExportTask2(String nm, EntityManagerFactory emf, EntityManagerFactory myEqFact, Collection<OutputModule> modules, RequestConfig cnf) throws TaskInitError
+ public ExportTask2(String nm, EntityManagerFactory emf, EntityManagerFactory myEqFact, Collection<OutputModule> modules, TaskConfig cnf) throws TaskInitError
  {
   if( log == null )
    log = LoggerFactory.getLogger(ExportTask2.class);
@@ -166,7 +165,7 @@ public class ExportTask2
   }
 
 
-  public RequestConfig getRequestConfig()
+  public TaskConfig getTaskConfig()
   {
    return taskConfig;
   }

@@ -15,6 +15,8 @@ public class TaskConfig
  public static final String SinceParameter             = "since";
  public static final String GroupMultiplierParameter   = "groupMultiplier";
  public static final String SampleMultiplierParameter  = "sampleMultiplier";
+ public static final String TaskInvokeTimeParameter    = "invokeTime";
+ 
 
  public static final String PublicOnlyParameter        = "publicOnly";
  public static final String AttributesSummaryParameter = "attributesSummary";
@@ -27,11 +29,21 @@ public class TaskConfig
  public static final String OutputParameter            = "output";
  public static final String SchemaParameter            = "schema";
 
- 
  private final String taskName;
  
  private final Map<String, Map<String,String>> outputParameters = new HashMap<String, Map<String,String>>();
  
+ private String      server;
+ private String      schema;
+ private String      myeq;
+ private Long        limit;
+ private Long        since;
+ private Integer     threads;
+ private Double      groupMultiplier;
+ private Double      sampleMultiplier;
+ private int         hour=-1;
+ private int         min=0;
+
  private Boolean     publicOnly;
  private Boolean     groupedSamplesOnly;
  private Boolean     showNamespace;
@@ -40,15 +52,7 @@ public class TaskConfig
  private Boolean     showAttributesSummary;
  private Boolean     showAccessControl;
  private String      output;
- private String      schema;
- private String      server;
- private String      myeq;
  private String      samplesFormat;
- private Integer     threads;
- private Long        limit;
- private Long        since;
- private Double      groupMultiplier;
- private Double      sampleMultiplier;
 
  public TaskConfig( String nm )
  {
@@ -63,6 +67,11 @@ public class TaskConfig
    outputParameters.put(mod, mp=new HashMap<>());
   
   mp.put(nm, val);
+ }
+ 
+ public Map<String, Map<String,String>> getOutputModulesConfig()
+ {
+  return outputParameters;
  }
  
  public boolean readParameter( String pName, String pVal ) throws TaskConfigException
@@ -124,6 +133,50 @@ public class TaskConfig
    catch(Exception e)
    {
     throw new TaskConfigException("Task '"+taskName+"' Invalid parameter value: "+pName+"="+pVal);
+   }
+  }
+  else if( TaskInvokeTimeParameter.equals(pName) )
+  {
+   int colPos = pVal.indexOf(':');
+   
+   String hourStr = pVal;
+   String minStr = null;
+   
+   if( colPos >= 0  )
+   {
+    hourStr = pVal.substring(0,colPos);
+    minStr = pVal.substring(colPos+1);
+   }
+   
+   try
+   {
+    hour = Integer.parseInt(hourStr);
+   }
+   catch( Exception e )
+   {
+    throw new TaskConfigException("Task '"+taskName+"' Invalid parameter value: "+pName+"="+pVal);
+   }
+   
+   if( hour < 0 || hour > 23 )
+   {
+    throw new TaskConfigException("Task '"+taskName+"' Invalid parameter value: "+pName+"="+pVal);
+   }
+   
+   if( minStr != null )
+   {
+    try
+    {
+     min = Integer.parseInt(minStr);
+    }
+    catch( Exception e )
+    {
+     throw new TaskConfigException("Task '"+taskName+"' Invalid parameter value: "+pName+"="+pVal);
+    }
+    
+    if( min < 0 || min > 59 )
+    {
+     throw new TaskConfigException("Task '"+taskName+"' Invalid parameter value: "+pName+"="+pVal);
+    }
    }
   }
   else
@@ -352,5 +405,21 @@ public class TaskConfig
  {
   return sampleMultiplier!=null?sampleMultiplier:def;
  }
+
+ public String getName()
+ {
+  return taskName;
+ }
+ 
+ public int getInvokeHour()
+ {
+  return hour;
+ }
+ 
+ public int getInvokeMin()
+ {
+  return min;
+ }
+
 
 }

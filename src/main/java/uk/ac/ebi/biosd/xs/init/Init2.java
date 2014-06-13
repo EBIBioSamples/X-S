@@ -1,9 +1,10 @@
 package uk.ac.ebi.biosd.xs.init;
 
-import java.io.File;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -25,11 +26,14 @@ import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.biosd.xs.ebeye.EBeyeExport;
 import uk.ac.ebi.biosd.xs.email.Email;
-import uk.ac.ebi.biosd.xs.task.ExportTask;
+import uk.ac.ebi.biosd.xs.output.EBEyeOutputModule;
+import uk.ac.ebi.biosd.xs.output.OutputModule;
+import uk.ac.ebi.biosd.xs.output.XMLDumpOutputModule;
+import uk.ac.ebi.biosd.xs.task.ExportTask2;
 import uk.ac.ebi.biosd.xs.task.TaskConfig;
+import uk.ac.ebi.biosd.xs.task.TaskConfigException;
 import uk.ac.ebi.biosd.xs.task.TaskInitError;
 import uk.ac.ebi.biosd.xs.task.TaskManager;
-import uk.ac.ebi.biosd.xs.util.MapParamPool;
 import uk.ac.ebi.biosd.xs.util.ParamPool;
 import uk.ac.ebi.biosd.xs.util.ResourceBundleParamPool;
 import uk.ac.ebi.biosd.xs.util.ServletContextParamPool;
@@ -41,24 +45,30 @@ public class Init2 implements ServletContextListener
  
  public static final String EmailParamPrefix = "email.";
  
+ public static final String DefaultName = "_default_";
 
-
- static String TaskTmpDirParam = "tempDir";
- static String TaskTimeParam = "updateTime";
+// static String TaskTmpDirParam = "tempDir";
+// static String TaskTimeParam = "updateTime";
 
  
- static final String ebeyeSrcSeparator = ";";
- static final String ebeyeSrcSubstSeparator = ":";
+// static final String ebeyeSrcSeparator = ";";
+// static final String ebeyeSrcSubstSeparator = ":";
  
- static String BioSDDBParamPrefix = "biosddb";
- static String MyEQDBParamPrefix = "myeqdb";
- static String TaskParamPrefix = "task";
- static String OutputParamPrefix = "output";
+ static final String OutputTypeParameter = "type";
+ static final String XMLDumpType = "xmldump";
+ static final String EBEyeType = "ebeye";
+ 
+ static final String BioSDDBParamPrefix = "biosddb";
+ static final String MyEQDBParamPrefix = "myeqdb";
+ static final String TaskParamPrefix = "task";
+ static final String OutputParamPrefix = "output";
  
 // static String DefaultProfileParam = BioSDDBParamPrefix+".defaultProfile";
 
  private final Logger log = LoggerFactory.getLogger(Init2.class);
  private Timer timer;
+
+ private static final long dayInMills = TimeUnit.DAYS.toMillis(1);
 
  
  @Override
@@ -93,6 +103,8 @@ public class Init2 implements ServletContextListener
   else
    config = new ServletContextParamPool(ctx.getServletContext());
   
+  
+  boolean confOk = true;
   
   Enumeration<String> pNames = config.getNames();
   
@@ -169,27 +181,47 @@ public class Init2 implements ServletContextListener
        log.warn("Invalid parameter {} will be ignored.", key);
       
       if( taskName == null )
-       taskName = "_default_";
+       taskName = DefaultName;
 
       TaskConfig cm = tasksMap.get(taskName);
 
       if(cm == null)
        tasksMap.put(taskName, cm = new TaskConfig(taskName) );
 
-      outMtch.reset(val);
+      outMtch.reset(param);
       
       if( outMtch.matches() )
       {
+       String outName=outMtch.group(1);
+       String outParam = outMtch.group(2);
        
+       if( outName == null )
+        outName = DefaultName;
+       
+       cm.addOutputParameter(outName, outParam, val);
       }
       else
-       cm.readParameter(param, val);
+      {
+       try
+       {
+        if( ! cm.readParameter(param, val) )
+         log.warn("Unknown configuration parameter: "+key+" will be ignored");
+       }
+       catch( TaskConfigException e)
+       {
+        log.error("Invalid parameter value: "+key+"="+val);
+        confOk = false;
+       }
+      }
      }
     }
    }
   }
   
-
+  if( ! confOk )
+  {
+   throw new RuntimeException("X-S webapp initialization failed");
+  }
   
   for( Map.Entry<String, Map<String,Object>> me : profMap.entrySet() )
   {
@@ -211,8 +243,16 @@ public class Init2 implements ServletContextListener
   }
 
   
-  
-  createTasks(tasksMap);
+  try
+  {
+   createTasks(tasksMap);
+  }
+  catch( TaskConfigException e )
+  {
+   log.error("Configuration error : "+e.getMessage());
+   throw new RuntimeException("X-S webapp initialization failed");
+  }
+
   
   for( TaskInfo tinf : TaskManager.getDefaultInstance().getTasks() )
   {
@@ -221,7 +261,7 @@ public class Init2 implements ServletContextListener
     if(timer == null)
      timer = new Timer("Timer", true);
     
-    timer.scheduleAtFixedRate(tinf, tinf.getTimerDelay(), day);
+    timer.scheduleAtFixedRate(tinf, tinf.getTimerDelay(), dayInMills);
    
     log.info("Task '"+tinf.getTask().getName()+"' is scheduled to run periodically");
    }
@@ -230,22 +270,19 @@ public class Init2 implements ServletContextListener
   
  }
 
- private void createTasks(Map<String, Map<String, Object>> tasksMap)
+ private void createTasks(Map<String, TaskConfig> tasksMap) throws TaskConfigException
  {
-  for( Map.Entry<String, Map<String, Object>> me : tasksMap.entrySet() )
+  for( TaskConfig tc : tasksMap.values() )
   {
    TaskInfo tinf = new TaskInfo();
    
-   ParamPool pp = new MapParamPool(me.getValue());
    
-   TaskConfig rc = new TaskConfig();
-   rc.loadParameters(pp, TaskRequestPrefix);
    
-   String str = rc.getServer(null);
+   String str = tc.getServer(null);
    
    if( str == null )
    {
-    log.warn("Task '"+me.getKey()+"' has not defined 'server' parameter and will be disabled");
+    log.warn("Task '"+tc.getName()+"' has not defined 'server' parameter and will be disabled");
     continue;
    }
    
@@ -253,55 +290,45 @@ public class Init2 implements ServletContextListener
    
    if( emf == null )
    {
-    log.warn("Task '"+me.getKey()+"': Server connection '"+str+"' is not defined. Task will be disabled");
+    log.warn("Task '"+tc.getName()+"': Server connection '"+str+"' is not defined. Task will be disabled");
     continue;
    }
    
    EntityManagerFactory myEqFact=null;
-   str = rc.getMyEq(null);
+   str = tc.getMyEq(null);
    
    if( str != null )
    {
     myEqFact = EMFManager.getMyEqFactory(str);
     
     if( myEqFact == null )
-     log.warn("Task '"+me.getKey()+"': MyEq connection '"+str+"' is not defined. MyEq support will be disabled");
+     log.warn("Task '"+tc.getName()+"': MyEq connection '"+str+"' is not defined. MyEq support will be disabled");
    }
    
-   Object val = me.getValue().get(TaskTmpDirParam);
+   if( tc.getInvokeHour() >= 0 )
+    tinf.setTimerDelay( getAdjustedDelay(tc.getInvokeHour(), tc.getInvokeMin() ) );
    
-   str = null;
+   List<OutputModule> mods = new ArrayList<>(tc.getOutputModulesConfig().size() );
    
-   if( val != null )
-    str = val.toString();
-   
-   File tmpDir = null;
-   
-   if( str != null )
+   for( Map.Entry<String, Map<String,String>> me : tc.getOutputModulesConfig().entrySet() )
    {
-    tmpDir = new File(str);
+    Map<String,String> cfg = me.getValue();
     
-    if(  ! ( tmpDir.isDirectory() && tmpDir.canWrite() ) )
-    {
-     tmpDir = null;
-     log.warn("Task '"+me.getKey()+"': Tmp dir '"+str+"' is not writable. Falling back to default tmp dir." );
-    }
+    String type = cfg.get(OutputTypeParameter);
+    
+    if( type == null )
+     throw new TaskConfigException("Task '"+tc.getName()+"' output '"+me.getKey()+"': missed 'type' parameter");
+    
+    if( XMLDumpType.equals(type) )
+     mods.add( new XMLDumpOutputModule(me.getKey(),cfg));
+    else if( EBEyeType.equals(type) )
+     mods.add( new EBEyeOutputModule(me.getKey(),cfg) );
+    
    }
    
-   
-   val = me.getValue().get(TaskTimeParam);
-   
-   str = null;
-   
-   if( val != null )
-    str = val.toString();
-
-   
-   tinf.setTimerDelay( getAdjustedDelay(str,me.getKey()) );
-
    try
    {
-    ExportTask tsk = new ExportTask(me.getKey(), emf, myEqFact, tmpDir, rc);
+    ExportTask2 tsk = new ExportTask2(tc.getName(), emf, myEqFact, mods, tc);
     
     tinf.setTask(tsk);
     
@@ -309,81 +336,30 @@ public class Init2 implements ServletContextListener
    }
    catch(TaskInitError e)
    {
-    log.warn("Task '"+me.getKey()+"': Initialization error: "+e.getMessage() );
+    log.warn("Task '"+tc.getName()+"': Initialization error: "+e.getMessage() );
    }
    
   }
   
  }
  
- private long getAdjustedDelay( String invokeTime , String taskName)
+ private long getAdjustedDelay( int hour, int min )
  {
-
-  int hour = -1;
-  int min = 0;
-  
-  if( invokeTime == null )
-  {
+  if( hour < 0 )
    return -1;
-  }
-  else
-  {
-   int colPos = invokeTime.indexOf(':');
-   
-   String hourStr = invokeTime;
-   String minStr = null;
-   
-   if( colPos >= 0  )
-   {
-    hourStr = invokeTime.substring(0,colPos);
-    minStr = invokeTime.substring(colPos+1);
-   }
-   
-   try
-   {
-    hour = Integer.parseInt(hourStr);
-   }
-   catch( Exception e )
-   {}
-   
-   if( hour < 0 || hour > 23 )
-   {
-    log.error("Task '"+taskName+"': start time parameter has invalid value: '"+invokeTime+"'. Task will not run periodicaly");
-    return -1;
-   }
-   
-   if( minStr != null )
-   {
-    try
-    {
-     min = Integer.parseInt(minStr);
-    }
-    catch( Exception e )
-    {}
-    
-    if( min < 0 || min > 59 )
-    {
-     log.error("Task '"+taskName+"': start time parameter has invalid value: '"+invokeTime+"'. Task will not run periodicaly");
-     return -1;
-    }
-   }
-   
-  }
   
   
   Calendar cr = Calendar.getInstance(TimeZone.getDefault());
   cr.setTimeInMillis(System.currentTimeMillis());
-  long day = TimeUnit.DAYS.toMillis(1);
   
   cr.set(Calendar.HOUR_OF_DAY, hour);
   cr.set(Calendar.MINUTE, min);
   
   long delay = cr.getTimeInMillis() - System.currentTimeMillis();
   
-  long adjustedDelay = (delay > 0 ? delay : day + delay);
+  long adjustedDelay = (delay > 0 ? delay : dayInMills + delay);
   
   return adjustedDelay;
-
  }
  
 

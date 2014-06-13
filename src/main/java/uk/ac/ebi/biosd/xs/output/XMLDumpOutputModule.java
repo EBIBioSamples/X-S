@@ -10,6 +10,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,7 @@ public class XMLDumpOutputModule implements OutputModule
  
  private static Logger log = null;
  
- public XMLDumpOutputModule(String name) throws TaskInitError
+ public XMLDumpOutputModule(String name, Map<String, String> cfg) throws TaskInitError
  {
   if( log == null )
    log = LoggerFactory.getLogger(getClass());
