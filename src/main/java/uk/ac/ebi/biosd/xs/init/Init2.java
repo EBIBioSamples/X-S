@@ -26,9 +26,9 @@ import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.biosd.xs.ebeye.EBeyeExport;
 import uk.ac.ebi.biosd.xs.email.Email;
-import uk.ac.ebi.biosd.xs.output.EBEyeOutputModule;
 import uk.ac.ebi.biosd.xs.output.OutputModule;
-import uk.ac.ebi.biosd.xs.output.XMLDumpOutputModule;
+import uk.ac.ebi.biosd.xs.output.ebeye.EBEyeOutputModule;
+import uk.ac.ebi.biosd.xs.output.xmldump.XMLDumpOutputModule;
 import uk.ac.ebi.biosd.xs.task.ExportTask2;
 import uk.ac.ebi.biosd.xs.task.TaskConfig;
 import uk.ac.ebi.biosd.xs.task.TaskConfigException;

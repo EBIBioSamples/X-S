@@ -6,9 +6,9 @@ import java.util.Map;
 
 public class MapParamPool implements ParamPool
 {
- private final Map<String, Object> map;
+ private final Map<String, ? extends Object> map;
  
- public MapParamPool( Map<String, Object> map )
+ public MapParamPool( Map<String, ? extends Object> map )
  {
   this.map = map;
  }

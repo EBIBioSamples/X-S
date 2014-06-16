@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.xs.output;
+package uk.ac.ebi.biosd.xs.output.xmldump;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,10 +17,13 @@ import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.mtexport.ExporterStat;
-import uk.ac.ebi.biosd.xs.task.TaskInitError;
+import uk.ac.ebi.biosd.xs.output.OutputModule;
+import uk.ac.ebi.biosd.xs.task.TaskConfigException;
+import uk.ac.ebi.biosd.xs.util.MapParamPool;
 
 public class XMLDumpOutputModule implements OutputModule
 {
+ 
  private final String name;
  
  private XMLFormatter formatter;
@@ -43,7 +46,7 @@ public class XMLDumpOutputModule implements OutputModule
  
  private static Logger log = null;
  
- public XMLDumpOutputModule(String name, Map<String, String> cfg) throws TaskInitError
+ public XMLDumpOutputModule(String name, Map<String, String> cfgMap) throws TaskConfigException
  {
   if( log == null )
    log = LoggerFactory.getLogger(getClass());
@@ -51,22 +54,33 @@ public class XMLDumpOutputModule implements OutputModule
   
   this.name = name;
   
-//  this.tmpDir = tmpDir;
+  XMLDumpConfig cfg = new XMLDumpConfig();
+  
+  cfg.loadParameters(new MapParamPool(cfgMap), "");
+  
+  String tmpDirName = cfg.getTmpDir(null);
+  
+  if( tmpDirName == null )
+  {
+   
+  }
+  
+  this.tmpDir = cfg.getTmpDir(null);
 
 
 //  String outFileName = rc.getOutput(null);
   
-  String outFileName = null;
+  String outFileName = cfg.getOutputFile(null);
   
   if( outFileName == null )
-   throw new TaskInitError("Task '"+name+"': Output file is not defined");
+   throw new TaskConfigException("Task '"+name+"': Output file is not defined");
   
   outFile = new File(outFileName);
 
   if(!outFile.getParentFile().canWrite())
   {
    log.error("Task '"+name+"': Output file directory is not writable: " + outFile);
-   throw new TaskInitError("Task '"+name+"': Output file directory is not writable: " + outFile);
+   throw new TaskConfigException("Task '"+name+"': Output file directory is not writable: " + outFile);
   }
  
 
