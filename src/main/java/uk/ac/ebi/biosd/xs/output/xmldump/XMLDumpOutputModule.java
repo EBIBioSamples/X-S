@@ -34,7 +34,7 @@ public class XMLDumpOutputModule implements OutputModule
  private boolean showNS;
  
  private final File outFile;
- private final File tmpDir=null;
+ private final File tmpDir;
 
  private File tmpGrpFile;
  private File tmpSmpFile;
@@ -62,25 +62,30 @@ public class XMLDumpOutputModule implements OutputModule
   
   if( tmpDirName == null )
   {
-   
+   throw new TaskConfigException("Output module '"+name+"': Temp directory is not defined");
   }
   
-  this.tmpDir = cfg.getTmpDir(null);
+  
+  tmpDir = new File(tmpDirName);
 
-
-//  String outFileName = rc.getOutput(null);
+  if( ! tmpDir.canWrite() )
+  {
+   log.error("Output module '"+name+"': Temporary directory is not writable: " + tmpDir);
+   throw new TaskConfigException("Output module '"+name+"': Temporary directory is not writable: " + tmpDir);
+  }
+  
   
   String outFileName = cfg.getOutputFile(null);
   
   if( outFileName == null )
-   throw new TaskConfigException("Task '"+name+"': Output file is not defined");
+   throw new TaskConfigException("Output module '"+name+"': Output file is not defined");
   
   outFile = new File(outFileName);
 
   if(!outFile.getParentFile().canWrite())
   {
-   log.error("Task '"+name+"': Output file directory is not writable: " + outFile);
-   throw new TaskConfigException("Task '"+name+"': Output file directory is not writable: " + outFile);
+   log.error("Output module '"+name+"': Output file directory is not writable: " + outFile);
+   throw new TaskConfigException("Output module '"+name+"': Output file directory is not writable: " + outFile);
   }
  
 

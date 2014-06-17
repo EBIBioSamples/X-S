@@ -12,7 +12,7 @@ public class XMLDumpConfig
  public static final String GroupedSampleParameter     = "groupedSamplesOnly";
  public static final String ShowAccessControlParameter = "showAC";
  public static final String NamespaceParameter         = "showNS";
- public static final String OutputFileParameter        = "file";
+ public static final String OutputFileParameter        = "outfile";
  public static final String SchemaParameter            = "schema";
  public static final String TmpDirParam                = "tmpDir";
 
