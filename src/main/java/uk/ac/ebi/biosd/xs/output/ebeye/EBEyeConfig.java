@@ -1,5 +1,8 @@
 package uk.ac.ebi.biosd.xs.output.ebeye;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import uk.ac.ebi.biosd.xs.util.ParamPool;
 
 public class EBEyeConfig
@@ -10,15 +13,19 @@ public class EBEyeConfig
  public static final String SchemaParameter            = "schema";
  public static final String TmpDirParam                = "tmpDir";
  public static final String EFOUrlParam                = "efoURL";
+ public static final String SourcesParam               = "sourcesMap";
 
+ static final String SourcesSeparator = ";";
+ static final String SourcesSubstSeparator = ":";
+ 
  private String      schema;
  private Boolean     publicOnly;
  private Boolean     groupedSamplesOnly;
  private String      outputDir;
  private String      tmpDir;
  private String      efoUrl;
+ private Map<String,String> sourcesMap;
 
- private String      samplesFormat;
  
  public void loadParameters(ParamPool params, String pfx)
  {
@@ -47,10 +54,35 @@ public class EBEyeConfig
    groupedSamplesOnly = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
   }
 
+  pv = params.getParameter(pfx+SourcesParam);
+  
+  if( pv != null )
+  {
+   sourcesMap = new HashMap<>();
+   
+   String[] srcs = pv.split(SourcesSeparator);
+   
+   for( String s : srcs )
+   {
+    s=s.trim();
+    
+    String[] mp = s.split(SourcesSubstSeparator);
+    
+    if( mp.length > 1 )
+     sourcesMap.put(mp[0].trim(), mp[1].trim());
+    else
+     sourcesMap.put(s, s);
+   }
+   
+  }
 
  }
 
 
+ public Map<String,String> getSourcesMap()
+ {
+  return sourcesMap;
+ }
 
  public Boolean getGroupedSamplesOnly(boolean def)
  {
@@ -69,10 +101,6 @@ public class EBEyeConfig
   return schema!=null?schema:def;
  }
 
- public String getSamplesFormat(String def)
- {
-  return samplesFormat!=null?samplesFormat:def;
- }
 
  public String getOutputDir(String def)
  {

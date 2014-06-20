@@ -2,16 +2,21 @@ package uk.ac.ebi.biosd.xs.output.ebeye;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Date;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import uk.ac.ebi.biosd.xs.export.EBeyeXMLFormatter;
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
+import uk.ac.ebi.biosd.xs.keyword.OWLKeywordExpansion;
 import uk.ac.ebi.biosd.xs.mtexport.ExporterStat;
 import uk.ac.ebi.biosd.xs.output.OutputModule;
+import uk.ac.ebi.biosd.xs.task.ExportTask;
 import uk.ac.ebi.biosd.xs.task.TaskConfigException;
 import uk.ac.ebi.biosd.xs.util.MapParamPool;
 
@@ -29,7 +34,23 @@ public class EBEyeOutputModule implements OutputModule
  private final File tmpDir;
  private final URL efoURL;
  
- private final boolean groupedOnly; 
+ 
+ File tmpHdrGrpFile;
+ File tmpHdrSmplFile;
+
+ File tmpGrpFile;
+ File tmpSmplFile;
+ 
+ PrintStream grpFileOut = null;
+ PrintStream smplFileOut = null;
+
+ PrintStream grpHdrFileOut = null;
+ PrintStream smplHdrFileOut = null;
+ 
+ private final boolean groupedOnly;
+ private final boolean publicOnly;
+ private final Map<String,String> sourcesMap;
+ 
  private XMLFormatter formatter;
 
  private static Logger log;
@@ -67,6 +88,8 @@ public class EBEyeOutputModule implements OutputModule
    throw new TaskConfigException("Output module '" + name + "': Tmp directory is not writable");
   
   groupedOnly = cfg.getGroupedSamplesOnly(false);
+  
+  publicOnly = cfg.getPublicOnly(true);
 
   str = cfg.getEfoUrl( null );
     
@@ -81,6 +104,14 @@ public class EBEyeOutputModule implements OutputModule
   {
    throw new TaskConfigException("Output module '" + name + "': Invalid EFO URL");
   }
+  
+  sourcesMap = cfg.getSourcesMap();
+  
+  tmpHdrGrpFile = new File(tmpDir, groupsHdrFileName);
+  tmpHdrSmplFile = new File(tmpDir, samplesHdrFileName);
+
+  tmpGrpFile = new File(tmpDir, groupsFileName);
+  tmpSmplFile = new File(tmpDir, samplesFileName);
  }
 
  @Override
@@ -92,15 +123,13 @@ public class EBEyeOutputModule implements OutputModule
  @Override
  public Appendable getGroupOut()
  {
-  // TODO Auto-generated method stub
-  return null;
+  return grpFileOut;
  }
 
  @Override
  public Appendable getSampleOut()
  {
-  // TODO Auto-generated method stub
-  return null;
+  return smplFileOut;
  }
 
  @Override
@@ -124,22 +153,103 @@ public class EBEyeOutputModule implements OutputModule
  @Override
  public void start() throws IOException
  {
-  // TODO Auto-generated method stub
+  grpFileOut = new PrintStream(tmpGrpFile, "UTF-8");
+  grpHdrFileOut = new PrintStream(tmpHdrGrpFile, "UTF-8");
+  
+  smplFileOut = new PrintStream(tmpSmplFile, "UTF-8");
+  smplHdrFileOut = new PrintStream(tmpHdrSmplFile, "UTF-8");
+
+  ebeyeFmt = new EBeyeXMLFormatter(new OWLKeywordExpansion(efoURL), null, publicOnly, new Date());
+
   
  }
 
  @Override
  public void finish(ExporterStat stat) throws IOException
  {
-  // TODO Auto-generated method stub
+  ebeyeFmt.exportGroupFooter( grpFileOut );
+
+  if( genSamples )
+   ebeyeFmt.exportSampleFooter( smplFileOut );
   
+  
+  ebeyeFmt.exportGroupHeader(  grpHdrFileOut, true, stat.getGroupPublicCount() );
+
+  if( genSamples )
+   ebeyeFmt.exportSampleHeader( smplHdrFileOut, true, stat.getSamplePublicUniqCount() );
+  
+  if(auxFileOut != null )
+  {
+   auxFmt.exportGroupFooter(auxFileOut);
+   
+
+   if(auxFmt.isSamplesExport())
+   {
+    tmpAuxSampleOut.close();
+    
+    tmpAuxSampleOut = null;
+    
+    auxFmt.exportSampleHeader(auxFileOut, false, stat.getUniqSampleCount());
+    
+    appendFile(auxFileOut, tmpAuxSampleFile);
+    
+    auxFmt.exportSampleFooter(auxFileOut);
+    
+   }
+
+   if( auxConfig.getShowSources(ExportTask.DefaultShowSources))
+    auxFmt.exportSources(stat.getSourcesMap(), auxFileOut);
+
+   
+   auxFmt.exportFooter(auxFileOut);
+  }
+  
+  grpFileOut.close();
+  appendFile(grpHdrFileOut, tmpGrpFile);
+  
+  if( genSamples )
+  {
+   smplFileOut.close();
+   appendFile(smplHdrFileOut, tmpSmplFile);
+  }
+
+  Date endTime = new java.util.Date();
+  
+  String summary = stat.createReport(startTime, endTime , threads);
+  
+  grpHdrFileOut.append(summary);
+
+
+  if( genSamples )
+   smplHdrFileOut.append(summary);
+  
+  if( auxFileOut != null )
+   auxFileOut.append(summary);
+
+
  }
 
  @Override
  public void cancel() throws IOException
  {
-  // TODO Auto-generated method stub
+  if( grpFileOut != null )
+    grpFileOut.close();
+
+
+  if( grpHdrFileOut != null )
+   grpHdrFileOut.close();
+   
+  if( smplFileOut != null )
+   smplFileOut.close();
   
+  if( smplHdrFileOut != null )
+   smplHdrFileOut.close();
+  
+  tmpGrpFile.delete();
+  tmpSmplFile.delete();
+
+  tmpHdrGrpFile.delete();
+  tmpHdrSmplFile.delete();
  }
 
 }
