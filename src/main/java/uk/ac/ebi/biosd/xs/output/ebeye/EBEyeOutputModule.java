@@ -47,11 +47,14 @@ public class EBEyeOutputModule implements OutputModule
  PrintStream grpHdrFileOut = null;
  PrintStream smplHdrFileOut = null;
  
+ private final boolean genSamples;
+ private final boolean genGroups;
+ 
  private final boolean groupedOnly;
  private final boolean publicOnly;
  private final Map<String,String> sourcesMap;
  
- private XMLFormatter formatter;
+ private XMLFormatter ebeyeFmt;
 
  private static Logger log;
 
@@ -90,6 +93,9 @@ public class EBEyeOutputModule implements OutputModule
   groupedOnly = cfg.getGroupedSamplesOnly(false);
   
   publicOnly = cfg.getPublicOnly(true);
+  
+  genSamples = cfg.getGenerateSamples( true );
+  genGroups = cfg.getGenerateGroups( true );
 
   str = cfg.getEfoUrl( null );
     
@@ -117,7 +123,7 @@ public class EBEyeOutputModule implements OutputModule
  @Override
  public XMLFormatter getFormatter()
  {
-  return formatter;
+  return ebeyeFmt;
  }
 
  @Override
@@ -226,7 +232,7 @@ public class EBEyeOutputModule implements OutputModule
   if( auxFileOut != null )
    auxFileOut.append(summary);
 
-
+  ebeyeFmt = null;
  }
 
  @Override
@@ -250,6 +256,8 @@ public class EBEyeOutputModule implements OutputModule
 
   tmpHdrGrpFile.delete();
   tmpHdrSmplFile.delete();
+  
+  ebeyeFmt = null;
  }
 
 }

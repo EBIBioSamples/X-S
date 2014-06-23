@@ -14,6 +14,8 @@ public class EBEyeConfig
  public static final String TmpDirParam                = "tmpDir";
  public static final String EFOUrlParam                = "efoURL";
  public static final String SourcesParam               = "sourcesMap";
+ public static final String GenSamplesParam            = "generateSamples";
+ public static final String GenGroupsParam             = "generateGroups";
 
  static final String SourcesSeparator = ";";
  static final String SourcesSubstSeparator = ":";
@@ -117,6 +119,13 @@ public class EBEyeConfig
  public String getEfoUrl(String def)
  {
   return efoUrl!=null?efoUrl:def;
+ }
+
+
+ public boolean getGenerateSamples(boolean b)
+ {
+  // TODO Auto-generated method stub
+  return false;
  }
 
 
