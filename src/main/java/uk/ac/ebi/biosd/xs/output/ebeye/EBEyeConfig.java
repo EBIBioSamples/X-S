@@ -23,6 +23,8 @@ public class EBEyeConfig
  private String      schema;
  private Boolean     publicOnly;
  private Boolean     groupedSamplesOnly;
+ private Boolean     generateSamples;
+ private Boolean     generateGroups;
  private String      outputDir;
  private String      tmpDir;
  private String      efoUrl;
@@ -55,6 +57,22 @@ public class EBEyeConfig
   {
    groupedSamplesOnly = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
   }
+  
+  
+  pv = params.getParameter(pfx+GenGroupsParam);
+  
+  if( pv != null  )
+  {
+   generateGroups = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
+  }
+
+  pv = params.getParameter(pfx+GenSamplesParam);
+  
+  if( pv != null  )
+  {
+   generateSamples = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
+  }
+  
 
   pv = params.getParameter(pfx+SourcesParam);
   
@@ -86,13 +104,13 @@ public class EBEyeConfig
   return sourcesMap;
  }
 
- public Boolean getGroupedSamplesOnly(boolean def)
+ public boolean getGroupedSamplesOnly(boolean def)
  {
   return groupedSamplesOnly!=null?groupedSamplesOnly:def;
  }
 
  
- public Boolean getPublicOnly(boolean def)
+ public boolean getPublicOnly(boolean def)
  {
   return publicOnly!=null?publicOnly:def;
  }
@@ -122,11 +140,14 @@ public class EBEyeConfig
  }
 
 
- public boolean getGenerateSamples(boolean b)
+ public boolean getGenerateSamples(boolean def)
  {
-  // TODO Auto-generated method stub
-  return false;
+  return generateSamples!=null?generateSamples:def;
  }
 
 
+ public boolean getGenerateGroups(boolean def)
+ {
+  return generateGroups!=null?generateGroups:def;
+ }
 }

@@ -16,8 +16,8 @@ import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.keyword.OWLKeywordExpansion;
 import uk.ac.ebi.biosd.xs.mtexport.ExporterStat;
 import uk.ac.ebi.biosd.xs.output.OutputModule;
-import uk.ac.ebi.biosd.xs.task.ExportTask;
 import uk.ac.ebi.biosd.xs.task.TaskConfigException;
+import uk.ac.ebi.biosd.xs.util.FileUtils;
 import uk.ac.ebi.biosd.xs.util.MapParamPool;
 
 public class EBEyeOutputModule implements OutputModule
@@ -41,6 +41,10 @@ public class EBEyeOutputModule implements OutputModule
  File tmpGrpFile;
  File tmpSmplFile;
  
+ File grpFile;
+ File smplFile;
+
+ 
  PrintStream grpFileOut = null;
  PrintStream smplFileOut = null;
 
@@ -55,7 +59,8 @@ public class EBEyeOutputModule implements OutputModule
  private final Map<String,String> sourcesMap;
  
  private XMLFormatter ebeyeFmt;
-
+ private java.util.Date startTime;
+ 
  private static Logger log;
 
  
@@ -97,6 +102,9 @@ public class EBEyeOutputModule implements OutputModule
   genSamples = cfg.getGenerateSamples( true );
   genGroups = cfg.getGenerateGroups( true );
 
+  if( !genSamples && !genGroups )
+   throw new TaskConfigException("Output module '" + name + "': "+EBEyeConfig.GenGroupsParam+" and "+EBEyeConfig.GenSamplesParam+" parameters can't be both 'false' at the same time");
+  
   str = cfg.getEfoUrl( null );
     
   if(str == null)
@@ -118,6 +126,9 @@ public class EBEyeOutputModule implements OutputModule
 
   tmpGrpFile = new File(tmpDir, groupsFileName);
   tmpSmplFile = new File(tmpDir, samplesFileName);
+  
+  grpFile = new File(outDir, groupsFileName);
+  smplFile = new File(outDir, samplesFileName);
  }
 
  @Override
@@ -159,12 +170,20 @@ public class EBEyeOutputModule implements OutputModule
  @Override
  public void start() throws IOException
  {
-  grpFileOut = new PrintStream(tmpGrpFile, "UTF-8");
-  grpHdrFileOut = new PrintStream(tmpHdrGrpFile, "UTF-8");
+  startTime = new java.util.Date();
   
-  smplFileOut = new PrintStream(tmpSmplFile, "UTF-8");
-  smplHdrFileOut = new PrintStream(tmpHdrSmplFile, "UTF-8");
-
+  if( genGroups )
+  {
+   grpFileOut = new PrintStream(tmpGrpFile, "UTF-8");
+   grpHdrFileOut = new PrintStream(tmpHdrGrpFile, "UTF-8");
+  }
+  
+  if( genSamples )
+  {
+   smplFileOut = new PrintStream(tmpSmplFile, "UTF-8");
+   smplHdrFileOut = new PrintStream(tmpHdrSmplFile, "UTF-8");
+  }
+   
   ebeyeFmt = new EBeyeXMLFormatter(new OWLKeywordExpansion(efoURL), null, publicOnly, new Date());
 
   
@@ -173,65 +192,52 @@ public class EBEyeOutputModule implements OutputModule
  @Override
  public void finish(ExporterStat stat) throws IOException
  {
-  ebeyeFmt.exportGroupFooter( grpFileOut );
-
-  if( genSamples )
-   ebeyeFmt.exportSampleFooter( smplFileOut );
-  
-  
-  ebeyeFmt.exportGroupHeader(  grpHdrFileOut, true, stat.getGroupPublicCount() );
-
-  if( genSamples )
-   ebeyeFmt.exportSampleHeader( smplHdrFileOut, true, stat.getSamplePublicUniqCount() );
-  
-  if(auxFileOut != null )
-  {
-   auxFmt.exportGroupFooter(auxFileOut);
-   
-
-   if(auxFmt.isSamplesExport())
-   {
-    tmpAuxSampleOut.close();
-    
-    tmpAuxSampleOut = null;
-    
-    auxFmt.exportSampleHeader(auxFileOut, false, stat.getUniqSampleCount());
-    
-    appendFile(auxFileOut, tmpAuxSampleFile);
-    
-    auxFmt.exportSampleFooter(auxFileOut);
-    
-   }
-
-   if( auxConfig.getShowSources(ExportTask.DefaultShowSources))
-    auxFmt.exportSources(stat.getSourcesMap(), auxFileOut);
-
-   
-   auxFmt.exportFooter(auxFileOut);
-  }
-  
-  grpFileOut.close();
-  appendFile(grpHdrFileOut, tmpGrpFile);
-  
-  if( genSamples )
-  {
-   smplFileOut.close();
-   appendFile(smplHdrFileOut, tmpSmplFile);
-  }
-
   Date endTime = new java.util.Date();
   
-  String summary = stat.createReport(startTime, endTime , threads);
+  String summary = stat.createReport(startTime, endTime , stat.getThreads());
   
-  grpHdrFileOut.append(summary);
+  if( genGroups )
+  {
+   ebeyeFmt.exportGroupFooter( grpFileOut );
+   ebeyeFmt.exportGroupHeader( grpHdrFileOut, true, stat.getGroupPublicCount() );
 
+   grpFileOut.close();
+
+   FileUtils.appendFile(grpHdrFileOut, tmpGrpFile);
+
+   grpHdrFileOut.append(summary);
+  }
 
   if( genSamples )
-   smplHdrFileOut.append(summary);
+  {
+   ebeyeFmt.exportSampleFooter( smplFileOut );
+   ebeyeFmt.exportSampleHeader( smplHdrFileOut, true, stat.getSamplePublicUniqCount() );
   
-  if( auxFileOut != null )
-   auxFileOut.append(summary);
+   smplFileOut.close();
+   
+   FileUtils.appendFile(smplHdrFileOut, tmpSmplFile);
+   
+   smplHdrFileOut.append(summary);
+  }
 
+  if(grpFile.exists() && !grpFile.delete())
+   log.error("EBeye: Can't delete file: " + grpFile);
+
+  if(!tmpHdrGrpFile.renameTo(grpFile))
+   log.error("EBeye: Moving groups file failed. {} -> {} ", tmpHdrGrpFile.getAbsolutePath(), grpFile.getAbsolutePath());
+
+  if(genSamples)
+  {
+   File smpFile = new File(outDir, samplesFileName);
+
+   if(smpFile.exists() && !smpFile.delete())
+    log.error("EBeye: Can't delete file: " + smpFile);
+
+   if(!tmpHdrSmplFile.renameTo(smpFile))
+    log.error("EBeye: Moving samples file failed. {} -> {} ", tmpHdrSmplFile.getAbsolutePath(), smpFile.getAbsolutePath());
+  }
+
+  
   ebeyeFmt = null;
  }
 

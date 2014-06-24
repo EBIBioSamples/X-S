@@ -1,13 +1,8 @@
 package uk.ac.ebi.biosd.xs.output.xmldump;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.io.Reader;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
@@ -19,6 +14,7 @@ import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.mtexport.ExporterStat;
 import uk.ac.ebi.biosd.xs.output.OutputModule;
 import uk.ac.ebi.biosd.xs.task.TaskConfigException;
+import uk.ac.ebi.biosd.xs.util.FileUtils;
 import uk.ac.ebi.biosd.xs.util.MapParamPool;
 
 public class XMLDumpOutputModule implements OutputModule
@@ -167,7 +163,7 @@ public class XMLDumpOutputModule implements OutputModule
 
    formatter.exportSampleHeader(tmpGrpStream, false, stat.getUniqSampleCount());
 
-   appendFile(tmpGrpStream, tmpSmpFile);
+   FileUtils.appendFile(tmpGrpStream, tmpSmpFile);
 
    formatter.exportSampleFooter(tmpGrpStream);
   }
@@ -266,32 +262,6 @@ public class XMLDumpOutputModule implements OutputModule
   
   return true;
  }
-
- private void appendFile(Appendable out, File f) throws IOException
- {
-  Reader rd = new InputStreamReader(new FileInputStream(f), Charset.forName("utf-8"));
-  
-  try
-  {
-   
-   CharBuffer buf = CharBuffer.allocate(4096);
-   
-   while(rd.read(buf) != -1)
-   {
-    String str = new String(buf.array(), 0, buf.position());
-    
-    out.append(str);
-    
-    buf.clear();
-   }
-   
-  }
-  finally
-  {
-   rd.close();
-  }
- }
-
 
 
  @Override
