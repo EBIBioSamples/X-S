@@ -10,12 +10,11 @@ public class FormattingTask
  private final BlockingQueue<Object> groupQueue;
  private final BlockingQueue<Object> sampleQueue;
  
- private final boolean publicOnly;
  private final boolean groupedSamplesOnly;
  private final boolean sourcesByAcc;
  private final boolean sourcesByName;
  
- public FormattingTask(XMLFormatter formatter, boolean grpSmp, boolean collByAcc, boolean collByName, boolean pub, BlockingQueue<Object> groupQueue, BlockingQueue<Object> sampleQueue)
+ public FormattingTask(XMLFormatter formatter, boolean grpSmp, boolean collByAcc, boolean collByName, BlockingQueue<Object> groupQueue, BlockingQueue<Object> sampleQueue)
  {
   super();
   this.formatter = formatter;
@@ -25,7 +24,6 @@ public class FormattingTask
   groupedSamplesOnly=grpSmp;
   sourcesByAcc=collByAcc;
   sourcesByName = collByName;
-  publicOnly = pub;
  }
 
  public XMLFormatter getFormatter()
@@ -58,9 +56,5 @@ public class FormattingTask
   return sourcesByName;
  }
 
- public boolean isPublicOnly()
- {
-  return publicOnly;
- }
 
 }

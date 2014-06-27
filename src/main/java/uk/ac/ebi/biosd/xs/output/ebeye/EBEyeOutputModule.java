@@ -184,7 +184,7 @@ public class EBEyeOutputModule implements OutputModule
    smplHdrFileOut = new PrintStream(tmpHdrSmplFile, "UTF-8");
   }
    
-  ebeyeFmt = new EBeyeXMLFormatter(new OWLKeywordExpansion(efoURL), null, publicOnly, new Date());
+  ebeyeFmt = new EBeyeXMLFormatter(new OWLKeywordExpansion(efoURL), sourcesMap, publicOnly, new Date());
 
   
  }
@@ -206,6 +206,14 @@ public class EBEyeOutputModule implements OutputModule
    FileUtils.appendFile(grpHdrFileOut, tmpGrpFile);
 
    grpHdrFileOut.append(summary);
+
+  
+   if(grpFile.exists() && !grpFile.delete())
+    log.error("EBeye: Can't delete file: " + grpFile);
+
+   if(!tmpHdrGrpFile.renameTo(grpFile))
+    log.error("EBeye: Moving groups file failed. {} -> {} ", tmpHdrGrpFile.getAbsolutePath(), grpFile.getAbsolutePath());
+
   }
 
   if( genSamples )
@@ -218,16 +226,7 @@ public class EBEyeOutputModule implements OutputModule
    FileUtils.appendFile(smplHdrFileOut, tmpSmplFile);
    
    smplHdrFileOut.append(summary);
-  }
 
-  if(grpFile.exists() && !grpFile.delete())
-   log.error("EBeye: Can't delete file: " + grpFile);
-
-  if(!tmpHdrGrpFile.renameTo(grpFile))
-   log.error("EBeye: Moving groups file failed. {} -> {} ", tmpHdrGrpFile.getAbsolutePath(), grpFile.getAbsolutePath());
-
-  if(genSamples)
-  {
    File smpFile = new File(outDir, samplesFileName);
 
    if(smpFile.exists() && !smpFile.delete())
@@ -235,6 +234,7 @@ public class EBEyeOutputModule implements OutputModule
 
    if(!tmpHdrSmplFile.renameTo(smpFile))
     log.error("EBeye: Moving samples file failed. {} -> {} ", tmpHdrSmplFile.getAbsolutePath(), smpFile.getAbsolutePath());
+
   }
 
   

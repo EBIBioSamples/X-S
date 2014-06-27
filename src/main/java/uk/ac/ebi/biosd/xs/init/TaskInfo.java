@@ -6,23 +6,23 @@ import java.util.TimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import uk.ac.ebi.biosd.xs.task.ExportTask2;
+import uk.ac.ebi.biosd.xs.task.ExportTask;
 
 public class TaskInfo extends TimerTask
 {
  private final Logger log = LoggerFactory.getLogger(TaskInfo.class);
  
- private ExportTask2 task;
+ private ExportTask task;
  private long timerDelay=-1;
  private Timer timer;
 
  
- public ExportTask2 getTask()
+ public ExportTask getTask()
  {
   return task;
  }
 
- public void setTask(ExportTask2 task)
+ public void setTask(ExportTask task)
  {
   this.task = task;
  }

@@ -34,6 +34,8 @@
     <servlet-name>Group</servlet-name>
     <url-pattern>/group</url-pattern>
   </servlet-mapping>
+
+<!--
   <servlet>
     <description>
    </description>
@@ -45,6 +47,8 @@
     <servlet-name>Export</servlet-name>
     <url-pattern>/export</url-pattern>
   </servlet-mapping>
+-->  
+  
   <servlet>
     <description></description>
     <display-name>ControlServlet</display-name>

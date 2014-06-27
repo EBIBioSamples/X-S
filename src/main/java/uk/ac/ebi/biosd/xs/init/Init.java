@@ -1,17 +1,15 @@
 package uk.ac.ebi.biosd.xs.init;
 
-import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
 import java.util.Timer;
-import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -26,52 +24,57 @@ import javax.servlet.ServletContextListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import uk.ac.ebi.biosd.xs.ebeye.EBeyeExport;
 import uk.ac.ebi.biosd.xs.email.Email;
-import uk.ac.ebi.biosd.xs.service.RequestConfig;
+import uk.ac.ebi.biosd.xs.output.OutputModule;
+import uk.ac.ebi.biosd.xs.output.ebeye.EBEyeOutputModule;
+import uk.ac.ebi.biosd.xs.output.xmldump.XMLDumpOutputModule;
 import uk.ac.ebi.biosd.xs.task.ExportTask;
+import uk.ac.ebi.biosd.xs.task.TaskConfig;
+import uk.ac.ebi.biosd.xs.task.TaskConfigException;
 import uk.ac.ebi.biosd.xs.task.TaskInitError;
 import uk.ac.ebi.biosd.xs.task.TaskManager;
-import uk.ac.ebi.biosd.xs.util.MapParamPool;
 import uk.ac.ebi.biosd.xs.util.ParamPool;
 import uk.ac.ebi.biosd.xs.util.ResourceBundleParamPool;
 import uk.ac.ebi.biosd.xs.util.ServletContextParamPool;
 
 public class Init implements ServletContextListener
 {
- public static final String EBeyeRequestPrefix = "ebeye.request.";
 
- public static final String TaskRequestPrefix = "request.";
+// public static final String TaskRequestPrefix = "request.";
  
  public static final String EmailParamPrefix = "email.";
  
-// static String EBeyeConnectionProfileParam = "ebeye.connectionProfile";
-// static String EBeyeMyEqProfileParam = "ebeye.myeqProfile";
-// static String EBeyeThreads = "ebeye.threads";
+ public static final String DefaultName = "_default_";
 
- static String EBeyeOutputPathParam = "ebeye.outputDir";
- static String EBeyeTempPathParam = "ebeye.tempDir";
- static String EBeyeUpdateHourParam = "ebeye.updateTime";
- static String EBeyeEfoURLParam = "ebeye.efoURL";
- static String EBeyeGenSamplesParam = "ebeye.generateSamples";
- static String EBeyeSourcesParam = "ebeye.sources";
-
- static String TaskTmpDirParam = "tempDir";
- static String TaskTimeParam = "updateTime";
+// static String TaskTmpDirParam = "tempDir";
+// static String TaskTimeParam = "updateTime";
 
  
- static final String ebeyeSrcSeparator = ";";
- static final String ebeyeSrcSubstSeparator = ":";
+// static final String ebeyeSrcSeparator = ";";
+// static final String ebeyeSrcSubstSeparator = ":";
  
- static String BioSDDBParamPrefix = "biosddb";
- static String MyEQDBParamPrefix = "myeqdb";
- static String TaskParamPrefix = "task";
+ static final String OutputTypeParameter = "type";
+ static final String XMLDumpType = "xmldump";
+ static final String EBEyeType = "ebeye";
  
- static String DefaultProfileParam = BioSDDBParamPrefix+".defaultProfile";
+ static final String BioSDDBParamPrefix = "biosddb";
+ static final String MyEQDBParamPrefix = "myeqdb";
+ static final String TaskParamPrefix = "task";
+ static final String OutputParamPrefix = "output";
+ 
+// static String DefaultProfileParam = BioSDDBParamPrefix+".defaultProfile";
 
- private final Logger log = LoggerFactory.getLogger(Init.class);
+ private Logger log = null;
  private Timer timer;
 
+ private static final long dayInMills = TimeUnit.DAYS.toMillis(1);
+
+ public Init()
+ {
+  if( log == null )
+   log = LoggerFactory.getLogger(getClass());
+ }
+ 
  
  @Override
  public void contextInitialized(ServletContextEvent ctx)
@@ -81,14 +84,13 @@ public class Init implements ServletContextListener
   
   Map<String, Map<String,Object>> profMap = new HashMap<>();
   Map<String, Map<String,Object>> myEqMap = new HashMap<>();
-  Map<String, Map<String,Object>> tasksMap = new HashMap<>();
+  Map<String, TaskConfig> tasksMap = new HashMap<>();
 
-  Map<String,Object> defaultProfile=null;
-  String defProfName = null;
   
-  Matcher prstMtch = Pattern.compile("^"+BioSDDBParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
-  Matcher myeqMtch = Pattern.compile("^"+MyEQDBParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
-  Matcher taskMtch = Pattern.compile("^"+TaskParamPrefix+"(\\[\\s*(\\S+)\\s*\\])?\\.(\\S+)$").matcher("");
+  Matcher biodbMtch = Pattern.compile("^"+BioSDDBParamPrefix+"(\\[\\s*(\\S+?)\\s*\\])?\\.(\\S+)$").matcher("");
+  Matcher myeqMtch = Pattern.compile("^"+MyEQDBParamPrefix+"(\\[\\s*(\\S+?)\\s*\\])?\\.(\\S+)$").matcher("");
+  Matcher taskMtch = Pattern.compile("^"+TaskParamPrefix+"(\\[\\s*(\\S+?)\\s*\\])?\\.(\\S+)$").matcher("");
+  Matcher outMtch = Pattern.compile("^"+OutputParamPrefix+"(?:\\[\\s*(\\S+?)\\s*\\])?\\.(\\S+)$").matcher("");
   
   ParamPool config = null;
 
@@ -107,6 +109,8 @@ public class Init implements ServletContextListener
    config = new ServletContextParamPool(ctx.getServletContext());
   
   
+  boolean confOk = true;
+  
   Enumeration<String> pNames = config.getNames();
   
   while( pNames.hasMoreElements() )
@@ -114,27 +118,22 @@ public class Init implements ServletContextListener
    String key = pNames.nextElement();
    String val = config.getParameter(key);
 
-   if(key.equals(DefaultProfileParam))
-   {
-    defProfName = val;
-    continue;
-   }
 
-   prstMtch.reset(key);
+   biodbMtch.reset(key);
 
-   if(prstMtch.matches())
+   if(biodbMtch.matches())
    {
 
     String profile = null;
     String param = null;
 
-    if(prstMtch.groupCount() == 3)
+    if(biodbMtch.groupCount() == 3)
     {
-     profile = prstMtch.group(2);
-     param = prstMtch.group(3);
+     profile = biodbMtch.group(2);
+     param = biodbMtch.group(3);
     }
     else
-     param = prstMtch.group(prstMtch.groupCount());
+     param = biodbMtch.group(biodbMtch.groupCount());
 
     Map<String, Object> cm = profMap.get(profile);
 
@@ -175,45 +174,59 @@ public class Init implements ServletContextListener
      if(taskMtch.matches())
      {
 
-      String profile = null;
+      String taskName = null;
       String param = null;
 
       if(taskMtch.groupCount() == 3)
       {
-       profile = taskMtch.group(2);
+       taskName = taskMtch.group(2);
        param = taskMtch.group(3);
       }
       else
        log.warn("Invalid parameter {} will be ignored.", key);
+      
+      if( taskName == null )
+       taskName = DefaultName;
 
-      Map<String, Object> cm = tasksMap.get(profile);
+      TaskConfig cm = tasksMap.get(taskName);
 
       if(cm == null)
-       tasksMap.put(profile, cm = new TreeMap<>());
+       tasksMap.put(taskName, cm = new TaskConfig(taskName) );
 
-      cm.put(param, val);
+      outMtch.reset(param);
+      
+      if( outMtch.matches() )
+      {
+       String outName=outMtch.group(1);
+       String outParam = outMtch.group(2);
+       
+       if( outName == null )
+        outName = DefaultName;
+       
+       cm.addOutputParameter(outName, outParam, val);
+      }
+      else
+      {
+       try
+       {
+        if( ! cm.readParameter(param, val) )
+         log.warn("Unknown configuration parameter: "+key+" will be ignored");
+       }
+       catch( TaskConfigException e)
+       {
+        log.error("Invalid parameter value: "+key+"="+val);
+        confOk = false;
+       }
+      }
      }
     }
    }
   }
   
-  defaultProfile = profMap.get(null);
-  
-  if( defProfName != null )
+  if( ! confOk )
   {
-   Map<String,Object> namedDP = profMap.get(defProfName);
-   
-   if( defaultProfile != null )
-   {
-    if( namedDP != null )
-     defaultProfile.putAll(namedDP);
-   }
-   else
-    defaultProfile = namedDP;
+   throw new RuntimeException("X-S webapp initialization failed");
   }
-  
-  
-
   
   for( Map.Entry<String, Map<String,Object>> me : profMap.entrySet() )
   {
@@ -223,9 +236,13 @@ public class Init implements ServletContextListener
    EMFManager.addFactory( me.getKey(), Persistence.createEntityManagerFactory ( "X-S", me.getValue() )  );
   }
   
-  if( defaultProfile != null )
-   EMFManager.setDefaultFactory( Persistence.createEntityManagerFactory ( "X-S", defaultProfile ) );
-  
+  for( Map.Entry<String, Map<String,Object>> me : myEqMap.entrySet() )
+  {
+   if( me.getKey() == null )
+    continue;
+   
+   EMFManager.addMyEqFactory( me.getKey(), Persistence.createEntityManagerFactory ( "MyEq", me.getValue() ) );
+  }
  
   try
   {
@@ -237,168 +254,16 @@ public class Init implements ServletContextListener
   }
 
   
-  
-  RequestConfig reqCfg = new RequestConfig();
-  reqCfg.loadParameters(config, EBeyeRequestPrefix);
-  
-  EntityManagerFactory emf;
-
-  String connProf = reqCfg.getServer(null);
-  
-  if( connProf == null )
-   emf = EMFManager.getDefaultFactory();
-  else
-   emf = EMFManager.getFactory(connProf);
-  
-  if( emf == null )
-  {
-   log.warn("Invalid value for {} parameter. EBeye export will be disabled", EBeyeRequestPrefix+RequestConfig.ProfileParameter);
-   return;
-  }
-  
-  for( Map.Entry<String, Map<String,Object>> me : myEqMap.entrySet() )
-  {
-   if( me.getKey() == null )
-    continue;
-   
-   EMFManager.addMyEqFactory( me.getKey(), Persistence.createEntityManagerFactory ( "MyEq", me.getValue() )  );
-  }
-
-  
-  String str = reqCfg.getMyEq(null);
-  
-  EntityManagerFactory myEqFact = null;
-  
-  if( str != null )
-  {
-   myEqFact = EMFManager.getMyEqFactory(str);
-   
-   if( myEqFact == null )
-    log.warn("MyEq profile \""+str+"\" is not defined. MyEq support will be disabled");
-
-  }
-  
-  final boolean genSamples;
-
-  String gen = config.getParameter(EBeyeGenSamplesParam);
-  
-  genSamples = ( gen != null )? "1".equals(gen) || "yes".equalsIgnoreCase(gen) || "on".equalsIgnoreCase(gen) || "true".equalsIgnoreCase(gen) : true;
-
-  
-  String outPath = config.getParameter(EBeyeOutputPathParam);
-  
-  if( outPath == null )
-  {
-   log.warn("Parameter '{}' is missed. EBeye export will be disabled", EBeyeOutputPathParam);
-   return;
-  }
-  
-  String tempPath = config.getParameter(EBeyeTempPathParam);
-
-  if( tempPath == null )
-  {
-   log.warn("Parameter '{}' is missed. EBeye export will be disabled", EBeyeTempPathParam);
-   return;
-  }
- 
-
-  Map<String,String> ebeyeSrcMap = null;
-  str = config.getParameter( EBeyeSourcesParam );
-  
-  if( str != null )
-  {
-   ebeyeSrcMap = new HashMap<>();
-   
-   String[] srcs = str.split(ebeyeSrcSeparator);
-   
-   for( String s : srcs )
-   {
-    s=s.trim();
-    
-    String[] mp = s.split(ebeyeSrcSubstSeparator);
-    
-    if( mp.length > 1 )
-     ebeyeSrcMap.put(mp[0].trim(), mp[1].trim());
-    else
-     ebeyeSrcMap.put(s, s);
-   }
-   
-  }
-
-  String efoURLStr = config.getParameter( EBeyeEfoURLParam );
-  
-  if( efoURLStr == null )
-  {
-   log.warn("Parameter '{}' is missed. EBeye export will be disabled", EBeyeEfoURLParam);
-   return;
-  }
- 
-  URL efoURL = null;
-
   try
   {
-   efoURL = new URL(efoURLStr);
+   createTasks(tasksMap);
   }
-  catch(MalformedURLException e)
+  catch( TaskConfigException e )
   {
+   log.error("Configuration error : "+e.getMessage());
+   throw new RuntimeException("X-S webapp initialization failed");
   }
-  
-  if( efoURL == null )
-  {
-   log.warn("Invalid URL in parameter {}. EBeye export will be disabled", EBeyeEfoURLParam);
-   return;
-  }
-  
-  String invokeTime = config.getParameter(EBeyeUpdateHourParam);
-  long delay = getAdjustedDelay(invokeTime, "EBeye");
-  
-  
-  final int threads = reqCfg.getThreads(Runtime.getRuntime().availableProcessors());
 
-  
-  EBeyeExport.setInstance( new EBeyeExport(emf, myEqFact, new File(outPath), new File(tempPath), efoURL, reqCfg, ebeyeSrcMap ) );
-  
-  
-  long day = TimeUnit.DAYS.toMillis(1);
-  
-  if( delay > 0 )
-  {
-
-   TimerTask tt = new TimerTask()
-   {
-    @Override
-    public void run()
-    {
-     log.info("Starting scheduled EBeye export task");
-
-     new Thread(new Runnable()
-     {
-
-      @Override
-      public void run()
-      {
-       try
-       {
-        EBeyeExport.getInstance().export(-1, genSamples, true, threads);
-       }
-       catch(Throwable e)
-       {
-        log.error("Export error: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getName()));
-       }
-      }
-     }, "Scheduled EBeye export").start();
-
-//     log.info("Finishing scheduled task");
-    }
-   };
-
-   if(timer == null)
-    timer = new Timer("Timer", true);
-
-   timer.scheduleAtFixedRate(tt, delay, day);
-  }
-  
-  createTasks(tasksMap);
   
   for( TaskInfo tinf : TaskManager.getDefaultInstance().getTasks() )
   {
@@ -407,7 +272,7 @@ public class Init implements ServletContextListener
     if(timer == null)
      timer = new Timer("Timer", true);
     
-    timer.scheduleAtFixedRate(tinf, tinf.getTimerDelay(), day);
+    timer.scheduleAtFixedRate(tinf, tinf.getTimerDelay(), dayInMills);
    
     log.info("Task '"+tinf.getTask().getName()+"' is scheduled to run periodically");
    }
@@ -416,22 +281,19 @@ public class Init implements ServletContextListener
   
  }
 
- private void createTasks(Map<String, Map<String, Object>> tasksMap)
+ private void createTasks(Map<String, TaskConfig> tasksMap) throws TaskConfigException
  {
-  for( Map.Entry<String, Map<String, Object>> me : tasksMap.entrySet() )
+  for( TaskConfig tc : tasksMap.values() )
   {
    TaskInfo tinf = new TaskInfo();
    
-   ParamPool pp = new MapParamPool(me.getValue());
    
-   RequestConfig rc = new RequestConfig();
-   rc.loadParameters(pp, TaskRequestPrefix);
    
-   String str = rc.getServer(null);
+   String str = tc.getServer(null);
    
    if( str == null )
    {
-    log.warn("Task '"+me.getKey()+"' has not defined 'server' parameter and will be disabled");
+    log.warn("Task '"+tc.getName()+"' has not defined 'server' parameter and will be disabled");
     continue;
    }
    
@@ -439,55 +301,45 @@ public class Init implements ServletContextListener
    
    if( emf == null )
    {
-    log.warn("Task '"+me.getKey()+"': Server connection '"+str+"' is not defined. Task will be disabled");
+    log.warn("Task '"+tc.getName()+"': Server connection '"+str+"' is not defined. Task will be disabled");
     continue;
    }
    
    EntityManagerFactory myEqFact=null;
-   str = rc.getMyEq(null);
+   str = tc.getMyEq(null);
    
    if( str != null )
    {
     myEqFact = EMFManager.getMyEqFactory(str);
     
     if( myEqFact == null )
-     log.warn("Task '"+me.getKey()+"': MyEq connection '"+str+"' is not defined. MyEq support will be disabled");
+     log.warn("Task '"+tc.getName()+"': MyEq connection '"+str+"' is not defined. MyEq support will be disabled");
    }
    
-   Object val = me.getValue().get(TaskTmpDirParam);
+   if( tc.getInvokeHour() >= 0 )
+    tinf.setTimerDelay( getAdjustedDelay(tc.getInvokeHour(), tc.getInvokeMin() ) );
    
-   str = null;
+   List<OutputModule> mods = new ArrayList<>(tc.getOutputModulesConfig().size() );
    
-   if( val != null )
-    str = val.toString();
-   
-   File tmpDir = null;
-   
-   if( str != null )
+   for( Map.Entry<String, Map<String,String>> me : tc.getOutputModulesConfig().entrySet() )
    {
-    tmpDir = new File(str);
+    Map<String,String> cfg = me.getValue();
     
-    if(  ! ( tmpDir.isDirectory() && tmpDir.canWrite() ) )
-    {
-     tmpDir = null;
-     log.warn("Task '"+me.getKey()+"': Tmp dir '"+str+"' is not writable. Falling back to default tmp dir." );
-    }
+    String type = cfg.get(OutputTypeParameter);
+    
+    if( type == null )
+     throw new TaskConfigException("Task '"+tc.getName()+"' output '"+me.getKey()+"': missed 'type' parameter");
+    
+    if( XMLDumpType.equals(type) )
+     mods.add( new XMLDumpOutputModule(me.getKey(),cfg));
+    else if( EBEyeType.equals(type) )
+     mods.add( new EBEyeOutputModule(me.getKey(),cfg) );
+    
    }
    
-   
-   val = me.getValue().get(TaskTimeParam);
-   
-   str = null;
-   
-   if( val != null )
-    str = val.toString();
-
-   
-   tinf.setTimerDelay( getAdjustedDelay(str,me.getKey()) );
-
    try
    {
-    ExportTask tsk = new ExportTask(me.getKey(), emf, myEqFact, tmpDir, rc);
+    ExportTask tsk = new ExportTask(tc.getName(), emf, myEqFact, mods, tc);
     
     tinf.setTask(tsk);
     
@@ -495,81 +347,30 @@ public class Init implements ServletContextListener
    }
    catch(TaskInitError e)
    {
-    log.warn("Task '"+me.getKey()+"': Initialization error: "+e.getMessage() );
+    log.warn("Task '"+tc.getName()+"': Initialization error: "+e.getMessage() );
    }
    
   }
   
  }
  
- private long getAdjustedDelay( String invokeTime , String taskName)
+ private long getAdjustedDelay( int hour, int min )
  {
-
-  int hour = -1;
-  int min = 0;
-  
-  if( invokeTime == null )
-  {
+  if( hour < 0 )
    return -1;
-  }
-  else
-  {
-   int colPos = invokeTime.indexOf(':');
-   
-   String hourStr = invokeTime;
-   String minStr = null;
-   
-   if( colPos >= 0  )
-   {
-    hourStr = invokeTime.substring(0,colPos);
-    minStr = invokeTime.substring(colPos+1);
-   }
-   
-   try
-   {
-    hour = Integer.parseInt(hourStr);
-   }
-   catch( Exception e )
-   {}
-   
-   if( hour < 0 || hour > 23 )
-   {
-    log.error("Task '"+taskName+"': start time parameter has invalid value: '"+invokeTime+"'. Task will not run periodicaly");
-    return -1;
-   }
-   
-   if( minStr != null )
-   {
-    try
-    {
-     min = Integer.parseInt(minStr);
-    }
-    catch( Exception e )
-    {}
-    
-    if( min < 0 || min > 59 )
-    {
-     log.error("Task '"+taskName+"': start time parameter has invalid value: '"+invokeTime+"'. Task will not run periodicaly");
-     return -1;
-    }
-   }
-   
-  }
   
   
   Calendar cr = Calendar.getInstance(TimeZone.getDefault());
   cr.setTimeInMillis(System.currentTimeMillis());
-  long day = TimeUnit.DAYS.toMillis(1);
   
   cr.set(Calendar.HOUR_OF_DAY, hour);
   cr.set(Calendar.MINUTE, min);
   
   long delay = cr.getTimeInMillis() - System.currentTimeMillis();
   
-  long adjustedDelay = (delay > 0 ? delay : day + delay);
+  long adjustedDelay = (delay > 0 ? delay : dayInMills + delay);
   
   return adjustedDelay;
-
  }
  
 
@@ -586,9 +387,6 @@ public class Init implements ServletContextListener
    
    tinf.getTask().interrupt();
   }
-  
-  if( EBeyeExport.getInstance() != null )
-   EBeyeExport.getInstance().interrupt();
  
   EMFManager.destroy();
  }

@@ -67,18 +67,24 @@ public class ExporterMTControl
 
    for(OutputModule req : requests)
    {
-    BlockingQueue<Object> grQueue = new ArrayBlockingQueue<>(100);
-    outputs.add(new OutputTask(req.getGroupOut(), grQueue, controlMsgQueue));
-
+    BlockingQueue<Object> grQueue = null;
     BlockingQueue<Object> smQueue = null;
 
+    if(req.getGroupOut() != null)
+    {
+     grQueue = new ArrayBlockingQueue<>(100);
+     outputs.add(new OutputTask(req.getGroupOut(), grQueue, controlMsgQueue));
+    }
+    
     if(req.getSampleOut() != null)
     {
      smQueue = new ArrayBlockingQueue<>(100);
      outputs.add(new OutputTask(req.getSampleOut(), smQueue, controlMsgQueue));
     }
 
-    tasks.add(new FormattingTask(req.getFormatter(), req.isGroupedSamplesOnly(), req.isSourcesByAcc(), req.isSourcesByName(), grQueue, smQueue));
+
+    tasks.add(new FormattingTask(req.getFormatter(), req.isGroupedSamplesOnly(),
+      req.isSourcesByAcc(), req.isSourcesByName(), grQueue, smQueue));
     
     req.start();
    }

@@ -11,9 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import uk.ac.ebi.biosd.xs.ebeye.EBeyeExport;
 import uk.ac.ebi.biosd.xs.init.TaskInfo;
-import uk.ac.ebi.biosd.xs.starter.EBeyeStarter;
 import uk.ac.ebi.biosd.xs.starter.StarterLog;
 import uk.ac.ebi.biosd.xs.starter.TaskStarter;
 import uk.ac.ebi.biosd.xs.task.TaskManager;
@@ -24,9 +22,7 @@ public class ControlServlet extends HttpServlet
  static final String CommandParameter = "command";
 
 
- static final String CommandForceEBEye = "forceEBEye";
  static final String CommandForceTask = "forceTask";
- static final String CommandInterruptEBEye = "interruptEBEye";
  static final String CommandInterruptTask = "interruptTask";
 
  static final String TaskParameter = "task";
@@ -78,11 +74,7 @@ public class ControlServlet extends HttpServlet
    }
   };
   
-  if( CommandForceEBEye.equalsIgnoreCase(command) )
-  {
-   EBeyeStarter.start(new ServletRequestParamPool(req), "", stLog);
-  }
-  else if( CommandForceTask.equalsIgnoreCase(command) )
+  if( CommandForceTask.equalsIgnoreCase(command) )
   {
    String tNm = req.getParameter(TaskParameter);
    
@@ -93,15 +85,6 @@ public class ControlServlet extends HttpServlet
    }
    
    TaskStarter.start(tNm, new ServletRequestParamPool(req), "", stLog);
-  }
-  else if( CommandInterruptEBEye.equalsIgnoreCase(command) )
-  {
-   if( EBeyeExport.getInstance() == null )
-    sendMessageNoExp("EBeye service is not initialized", resp.getOutputStream(), "red");
-   else if( EBeyeExport.getInstance().interrupt() )
-    sendMessageNoExp("EBeye service was interrupted", resp.getOutputStream(), "black");
-   else
-    sendMessageNoExp("EBeye service is idle", resp.getOutputStream(), "black");
   }
   else if( CommandInterruptTask.equalsIgnoreCase(command) )
   {

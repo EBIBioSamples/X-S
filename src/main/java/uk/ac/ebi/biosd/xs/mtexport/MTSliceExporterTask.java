@@ -44,6 +44,7 @@ public class MTSliceExporterTask implements Runnable
  private boolean hasSourcesByAcc;
  private boolean hasGroupedSmp;
  private boolean hasUngroupedSmp;
+ private boolean needGroupLoop;
  private final AtomicLong limit;
 
  private final Double grpMul;
@@ -76,6 +77,7 @@ public class MTSliceExporterTask implements Runnable
   hasUngroupedSmp=false;
   hasSourcesByName = false;
   hasSourcesByAcc = false;
+  needGroupLoop = false;
   
   
 //  sourcesByName = tCfg.isSourcesByName();
@@ -85,6 +87,7 @@ public class MTSliceExporterTask implements Runnable
   
   for( FormattingTask ft : tasks )
   {
+   
    if( ft.getSampleQueue() != null )
    {
     if( ft.isGroupedSamplesOnly() )
@@ -93,6 +96,8 @@ public class MTSliceExporterTask implements Runnable
      hasUngroupedSmp = true;
    }
    
+   if( ft.getGroupQueue() != null || hasGroupedSmp )
+    needGroupLoop = true;
 
    
    if( ft.isSourcesByAcc() )
@@ -132,7 +137,7 @@ public class MTSliceExporterTask implements Runnable
 
    StringBuilder sb = new StringBuilder();
 
-   while(true)
+   while(needGroupLoop)
    {
     Slice sl = grpSliceMngr.getSlice();
 
@@ -234,12 +239,14 @@ public class MTSliceExporterTask implements Runnable
 
        for(FormattingTask ft : tasks)
        {
+        if(ft.getGroupQueue() == null )
+         continue;
+        
         sb.setLength(0);
         
         ft.getFormatter().exportGroup(ng, auxInf, sb, false);
 
         putIntoQueue(ft.getGroupQueue(), sb.toString());
-
        }
 
        if( hasGroupedSmp )
