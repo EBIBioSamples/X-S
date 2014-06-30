@@ -197,9 +197,12 @@ public class ExporterMTControl
 
      for(FormattingTask ft : tasks)
      {
-      ft.getGroupQueue().clear();
-      putIntoQueue(ft.getGroupQueue(), po);
-
+      if( ft.getGroupQueue() != null )
+      {
+       ft.getGroupQueue().clear();
+       putIntoQueue(ft.getGroupQueue(), po);
+      }
+      
       if(ft.getSampleQueue() != null)
       {
        ft.getSampleQueue().clear();

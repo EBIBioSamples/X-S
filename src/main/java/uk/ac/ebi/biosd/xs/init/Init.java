@@ -331,9 +331,9 @@ public class Init implements ServletContextListener
      throw new TaskConfigException("Task '"+tc.getName()+"' output '"+me.getKey()+"': missed 'type' parameter");
     
     if( XMLDumpType.equals(type) )
-     mods.add( new XMLDumpOutputModule(me.getKey(),cfg));
+     mods.add( new XMLDumpOutputModule(tc.getName()+":"+me.getKey(),cfg));
     else if( EBEyeType.equals(type) )
-     mods.add( new EBEyeOutputModule(me.getKey(),cfg) );
+     mods.add( new EBEyeOutputModule(tc.getName()+":"+me.getKey(),cfg) );
     
    }
    

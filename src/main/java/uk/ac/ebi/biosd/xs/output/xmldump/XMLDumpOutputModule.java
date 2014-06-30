@@ -10,24 +10,35 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import uk.ac.ebi.biosd.xs.export.AbstractXMLFormatter.SamplesFormat;
 import uk.ac.ebi.biosd.xs.export.XMLFormatter;
 import uk.ac.ebi.biosd.xs.mtexport.ExporterStat;
 import uk.ac.ebi.biosd.xs.output.OutputModule;
+import uk.ac.ebi.biosd.xs.service.SchemaManager;
 import uk.ac.ebi.biosd.xs.task.TaskConfigException;
 import uk.ac.ebi.biosd.xs.util.FileUtils;
 import uk.ac.ebi.biosd.xs.util.MapParamPool;
 
 public class XMLDumpOutputModule implements OutputModule
 {
+ static final String DefaultSamplesFormat = SamplesFormat.EMBED.name();
+ static final boolean DefaultShowNS = false;
+ static final boolean DefaultShowAC = true;
+
+ static final boolean DefaultShowSources = true;
+ static final boolean DefaultSourcesByName = false;
+ static final boolean DefaultGroupedSamplesOnly = false;
+ static final boolean DefaultShowAttributesSummary = true;
+ static final boolean DefaultPublicOnly = false;
  
  private final String name;
  
- private XMLFormatter formatter;
- private boolean groupedSamplesOnly;
+ private final XMLFormatter formatter;
+ final private boolean groupedSamplesOnly;
  
- private boolean showSourcesByName;
- private boolean showSourcesByAcc;
- private boolean showNS;
+ final private boolean showSourcesByName;
+ final private boolean showSourcesByAcc;
+ final private boolean showNS;
  
  private final File outFile;
  private final File tmpDir;
@@ -85,6 +96,44 @@ public class XMLDumpOutputModule implements OutputModule
   }
  
 
+  String schemaName = cfg.getSchema(null);
+  
+  if( schemaName == null )
+    throw new TaskConfigException("Output module '"+name+"': Schema is not specified");
+  
+  
+  SamplesFormat smpfmt = null;
+
+  try
+  {
+   smpfmt = SamplesFormat.valueOf(cfg.getSamplesFormat(DefaultSamplesFormat));
+  }
+  catch( Exception e )
+  {
+   throw new TaskConfigException("Output module '"+name+"': Invalid samples format parameter");
+  }
+  
+  try
+  {
+   formatter = SchemaManager.getFormatter(
+     schemaName, 
+     cfg.getShowAttributesSummary(DefaultShowAttributesSummary), 
+     cfg.getShowAccessControl(DefaultShowAC), 
+     smpfmt,
+     cfg.getPublicOnly(DefaultPublicOnly), new Date());
+  }
+  catch( Exception e)
+  {
+   throw new TaskConfigException("Output module '"+name+"': Invalid schema parameter");
+  }
+  
+  showSourcesByName = cfg.getSourcesByName(DefaultSourcesByName);
+  showSourcesByAcc = ! showSourcesByName;
+  
+  groupedSamplesOnly = cfg.getGroupedSamplesOnly(DefaultGroupedSamplesOnly);
+  
+  showNS = cfg.getShowNamespace(DefaultShowNS);
+  
 //  if(!checkDirs())
 //   return false;
   
