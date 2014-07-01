@@ -266,4 +266,10 @@ public class EBEyeOutputModule implements OutputModule
   ebeyeFmt = null;
  }
 
+ @Override
+ public String getName()
+ {
+  return name;
+ }
+
 }

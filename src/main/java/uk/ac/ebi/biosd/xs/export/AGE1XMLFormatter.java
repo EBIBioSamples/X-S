@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import uk.ac.ebi.biosd.xs.log.LoggerFactory;
 import uk.ac.ebi.biosd.xs.util.Counter;
@@ -40,10 +41,14 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  private static String nameSpace = "http://www.ebi.ac.uk/biosamples/SampleGroupExportV1";
 
  protected boolean nsShown=false;
+ private Pattern eqExclPattern;
  
- public AGE1XMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now)
+ public AGE1XMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now, String eqExcl)
  {
   super( showAttributes, showAC, smpfmt, pubOnly, now );
+  
+  if( eqExcl != null )
+   eqExclPattern = Pattern.compile(eqExcl);
  }
  
  protected String getNameSpace()
@@ -148,6 +153,9 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   
   for( EquivalenceRecord eq : eqs )
   {
+   if( eqExclPattern != null &&  eqExclPattern.matcher( eq.getUrl() ).find() )
+    continue;
+   
    mainout.append(" <ref id=\"");
    xmlEscaped(eq.getAccession(), mainout);
    mainout.append("\" title=\"");

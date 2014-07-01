@@ -34,13 +34,14 @@ public class GroupSliceQueryManager
  {
   Query listQuery = null;
   
-  if( em != null )
-  {
-   log.warn("Entity manager was not closed");
-   em.close();
-  }
+//  if( em != null )
+//  {
+//   log.warn("Entity manager was not closed");
+//   em.close();
+//  }
   
-  em = factory.createEntityManager();
+  if( em == null )
+   em = factory.createEntityManager();
   
   if( useTransaction )
    em.getTransaction().begin();
@@ -63,6 +64,33 @@ public class GroupSliceQueryManager
  }
  
  public void release()
+ {
+  if( em == null )
+   return;
+  
+  if( useTransaction )
+  {
+   EntityTransaction trn = em.getTransaction();
+
+   if( trn.isActive() && ! trn.getRollbackOnly() )
+   {
+    try
+    {
+     trn.commit();
+    }
+    catch(Exception e)
+    {
+     e.printStackTrace();
+    }
+   }
+  }
+  
+  em.clear();
+ }
+
+
+
+ public void close()
  {
   if( em == null )
    return;

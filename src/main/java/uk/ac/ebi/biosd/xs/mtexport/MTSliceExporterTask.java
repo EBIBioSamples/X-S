@@ -56,6 +56,7 @@ public class MTSliceExporterTask implements Runnable
  public MTSliceExporterTask( EntityManagerFactory emf, EntityManagerFactory myeqf, SliceManager grpSlMgr, SliceManager smpSlMgr, List<FormattingTask> tasks,
    ExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, AtomicLong lim, MTTaskConfig tCfg )
  {
+  
   emFactory = emf;
   myEqFactory = myeqf;
   
@@ -112,7 +113,12 @@ public class MTSliceExporterTask implements Runnable
  @Override
  public void run()
  {
-  GroupSliceQueryManager grpq = new GroupSliceQueryManager(emFactory);
+  Thread.currentThread().setName(Thread.currentThread().getName()+"-ExporterTask");
+  
+  
+  GroupSliceQueryManager grpq = null;
+  SampleSliceQueryManager smpq = null;
+
 
   AuxInfo auxInf = null;
 
@@ -123,14 +129,19 @@ public class MTSliceExporterTask implements Runnable
   
   try
   {
-
    int grpMulFloor = 1;
    double grpMulFrac = 0;
 
-   if(grpMul != null)
+   if( needGroupLoop )
    {
-    grpMulFloor = (int) Math.floor(grpMul);
-    grpMulFrac = grpMul - grpMulFloor;
+    grpq = new GroupSliceQueryManager(emFactory);
+
+    if(grpMul != null)
+    {
+     grpMulFloor = (int) Math.floor(grpMul);
+     grpMulFrac = grpMul - grpMulFloor;
+    }
+
    }
 
    Set<String> msiTags = new HashSet<String>();
@@ -314,7 +325,7 @@ public class MTSliceExporterTask implements Runnable
 
    if(hasUngroupedSmp)
    {
-    SampleSliceQueryManager smpq = new SampleSliceQueryManager(emFactory);
+    smpq = new SampleSliceQueryManager(emFactory);
 
     int smpCount = 0;
     
@@ -331,7 +342,7 @@ public class MTSliceExporterTask implements Runnable
     {
      Slice sl = smpSliceMngr.getSlice();
 
-     log.debug("(" + Thread.currentThread().getName() + ") Processing slice: " + sl);
+     log.debug("({0}) Processing slice: {1}" ,Thread.currentThread().getName(), sl);
 
      try
      {
@@ -368,7 +379,7 @@ public class MTSliceExporterTask implements Runnable
         
         BioSample ns = s;
 
-        if( smpMul != null)
+        if( smpMul != null )
          ns = GroupSampleUtil.cloneSample(ns, s.getAcc() + "00" + smpRep);
 
 
@@ -418,6 +429,12 @@ public class MTSliceExporterTask implements Runnable
   {
    if(auxInf != null)
     auxInf.destroy();
+  
+   if( grpq != null )
+    grpq.close();
+   
+   if( smpq != null )
+    smpq.close();
   }
  }
 

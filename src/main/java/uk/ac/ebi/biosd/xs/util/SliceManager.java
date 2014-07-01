@@ -2,8 +2,18 @@ package uk.ac.ebi.biosd.xs.util;
 
 public class SliceManager
 {
- private final int limit=5;
+ private int limit=5;
  private int start=0;
+ 
+ public SliceManager()
+ {
+ }
+ 
+ public SliceManager( int sz )
+ {
+  limit = sz;
+ }
+
  
  public synchronized Slice getSlice()
  {

@@ -120,7 +120,10 @@ public class XMLDumpOutputModule implements OutputModule
      cfg.getShowAttributesSummary(DefaultShowAttributesSummary), 
      cfg.getShowAccessControl(DefaultShowAC), 
      smpfmt,
-     cfg.getPublicOnly(DefaultPublicOnly), new Date());
+     cfg.getPublicOnly(DefaultPublicOnly), 
+     new Date(),
+     cfg.getEquvanceExclude( null )
+     );
   }
   catch( Exception e)
   {
@@ -173,7 +176,7 @@ public class XMLDumpOutputModule implements OutputModule
 
   formatter.setNowDate(startTime);
 
-  tmpGrpFile = new File(tmpDir, "grp_" + name.hashCode() + "_" + System.currentTimeMillis() + ".tmp");
+  tmpGrpFile = new File(tmpDir, "grp" + name.hashCode() + "_" + System.currentTimeMillis() + ".tmp");
 
   tmpGrpStream = new PrintStream(tmpGrpFile, "UTF-8");
 
@@ -191,7 +194,7 @@ public class XMLDumpOutputModule implements OutputModule
 
   if(formatter.isSamplesExport())
   {
-   tmpSmpFile = new File(tmpDir, "smp_" + name.hashCode() + "_" + System.currentTimeMillis() + ".tmp");
+   tmpSmpFile = new File(tmpDir, "smp" + name.hashCode() + "_" + System.currentTimeMillis() + ".tmp");
 
    tmpSmpStream = new PrintStream(tmpSmpFile, "utf-8");
   }
@@ -325,5 +328,12 @@ public class XMLDumpOutputModule implements OutputModule
  public boolean isSourcesByName()
  {
   return showSourcesByName;
+ }
+
+
+ @Override
+ public String getName()
+ {
+  return name;
  }
 }

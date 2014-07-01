@@ -67,33 +67,34 @@ public class ExporterMTControl
 
    for(OutputModule req : requests)
    {
+    req.start();
+    
     BlockingQueue<Object> grQueue = null;
     BlockingQueue<Object> smQueue = null;
 
     if(req.getGroupOut() != null)
     {
      grQueue = new ArrayBlockingQueue<>(100);
-     outputs.add(new OutputTask(req.getGroupOut(), grQueue, controlMsgQueue));
+     outputs.add(new OutputTask(req.getName()+"-grp",req.getGroupOut(), grQueue, controlMsgQueue));
     }
     
     if(req.getSampleOut() != null)
     {
      smQueue = new ArrayBlockingQueue<>(100);
-     outputs.add(new OutputTask(req.getSampleOut(), smQueue, controlMsgQueue));
+     outputs.add(new OutputTask(req.getName()+"-smp",req.getSampleOut(), smQueue, controlMsgQueue));
     }
 
 
     tasks.add(new FormattingTask(req.getFormatter(), req.isGroupedSamplesOnly(),
       req.isSourcesByAcc(), req.isSourcesByName(), grQueue, smQueue));
-    
-    req.start();
+
    }
 
    ExecutorService tPool = Executors.newFixedThreadPool(threads + outputs.size());
 
    //  RangeManager rm = new RangeManager(Long.MIN_VALUE,Long.MAX_VALUE,threads*2);
-   SliceManager gsm = new SliceManager();
-   SliceManager ssm = new SliceManager();
+   SliceManager gsm = new SliceManager(50);
+   SliceManager ssm = new SliceManager(50);
 
    AtomicBoolean stopFlag = new AtomicBoolean(false);
 
@@ -130,7 +131,7 @@ public class ExporterMTControl
 
    Throwable exception = null;
 
-   boolean termGoes = false;
+   boolean outputTermGoes = false;
 
    while(true)
    {
@@ -182,13 +183,14 @@ public class ExporterMTControl
      stopFlag.set(true);
      
      cleanFinish = false;
+     exception = o.getException();
     }
 
-    if(tproc == 0 && !termGoes)
+    if(tproc == 0 && !outputTermGoes)
     {
      log.debug("All processing thread finished. Initiating outputters shutdown");
 
-     termGoes = true;
+     outputTermGoes = true;
 
      if( exception == null )
       exception = o.getException();
@@ -342,7 +344,7 @@ public class ExporterMTControl
   busyLock.lock();
   busyLock.unlock();
   
-  log.info("MT exported has been interrupted");
+  log.info("MT exporter has been interrupted");
   
   return true;
  }

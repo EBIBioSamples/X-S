@@ -6,7 +6,7 @@ public class TerminationException extends Exception
 
  public TerminationException()
  {
-  super();
+  super("User termination request");
  }
  
  public TerminationException( String msg )

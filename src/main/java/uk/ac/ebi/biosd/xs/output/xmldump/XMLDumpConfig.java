@@ -14,6 +14,7 @@ public class XMLDumpConfig
  public static final String NamespaceParameter         = "showNS";
  public static final String OutputFileParameter        = "outfile";
  public static final String SchemaParameter            = "schema";
+ public static final String EqExclParam                = "eqURLExclude";
  public static final String TmpDirParam                = "tmpDir";
 
  private String      schema;
@@ -26,6 +27,7 @@ public class XMLDumpConfig
  private Boolean     showAccessControl;
  private String      outputFile;
  private String      tmpDir;
+ private String      eqExcl;
 
  private String      samplesFormat;
  
@@ -42,6 +44,8 @@ public class XMLDumpConfig
   outputFile = params.getParameter(pfx+OutputFileParameter);
   
   tmpDir = params.getParameter(pfx+TmpDirParam);
+  
+  eqExcl = params.getParameter(pfx+EqExclParam);
   
   String pv = params.getParameter(pfx+ShowSourcesParameter);
   
@@ -151,6 +155,12 @@ public class XMLDumpConfig
  public String getTmpDir(String def)
  {
   return tmpDir!=null?tmpDir:def;
+ }
+
+
+ public String getEquvanceExclude(String def)
+ {
+  return eqExcl!=null?eqExcl:def;
  }
 
 

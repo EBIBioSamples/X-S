@@ -9,18 +9,22 @@ public class OutputTask implements Runnable
  private final Appendable out;
  private final BlockingQueue<Object> inQueue;
  private final BlockingQueue<ControlMessage> controlQueue;
+ private final String name;
  
- public OutputTask( Appendable out, BlockingQueue<Object> inQueue, BlockingQueue<ControlMessage> controlQueue)
+ public OutputTask( String name, Appendable out, BlockingQueue<Object> inQueue, BlockingQueue<ControlMessage> controlQueue)
  {
   this.out = out;
   this.inQueue = inQueue;
   this.controlQueue = controlQueue;
+  this.name=name;
  }
  
  
  @Override
  public void run()
  {
+  
+  Thread.currentThread().setName(name);
   
   while( true )
   {
@@ -54,7 +58,7 @@ public class OutputTask implements Runnable
    {
     e.printStackTrace();
     
-    putIntoQueue(new ControlMessage(Type.OUTPUT_ERROR, this,e));
+    putIntoQueue(new ControlMessage( Type.OUTPUT_ERROR, this,e ));
     return;
    }
    

@@ -82,6 +82,8 @@ public class Init implements ServletContextListener
   java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.WARNING);
   java.util.logging.Logger.getLogger("com.mchange").setLevel(Level.WARNING);
   
+  log.info("Initializing X-S");
+  
   Map<String, Map<String,Object>> profMap = new HashMap<>();
   Map<String, Map<String,Object>> myEqMap = new HashMap<>();
   Map<String, TaskConfig> tasksMap = new HashMap<>();

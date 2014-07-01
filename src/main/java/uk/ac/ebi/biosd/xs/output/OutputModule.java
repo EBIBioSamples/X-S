@@ -23,4 +23,6 @@ public interface OutputModule
 
  void cancel() throws IOException;
  
+ String getName();
+ 
 }
