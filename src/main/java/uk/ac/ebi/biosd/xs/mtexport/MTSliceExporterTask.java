@@ -148,7 +148,7 @@ public class MTSliceExporterTask implements Runnable
 
    StringBuilder sb = new StringBuilder();
 
-   while(needGroupLoop)
+   groupLoop : while(needGroupLoop)
    {
     Slice sl = grpSliceMngr.getSlice();
 
@@ -183,11 +183,8 @@ public class MTSliceExporterTask implements Runnable
         long c = limit.decrementAndGet();
 
         if(c < 0)
-        {
-         putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
+         break groupLoop;
 
-         return;
-        }
        }
 
        grpCount++;
@@ -313,11 +310,11 @@ public class MTSliceExporterTask implements Runnable
      grpq.release();
     }
 
-    if(limit != null && limit.get() < 0)
-    {
-     putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
-     return;
-    }
+//    if(limit != null && limit.get() < 0)
+//    {
+//     putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
+//     return;
+//    }
 
    }
    
@@ -325,7 +322,7 @@ public class MTSliceExporterTask implements Runnable
 
    if(hasUngroupedSmp)
    {
-    smpq = new SampleSliceQueryManager(emFactory);
+    smpq = new SampleSliceQueryManager( emFactory, since );
 
     int smpCount = 0;
     
@@ -338,7 +335,7 @@ public class MTSliceExporterTask implements Runnable
      smpMulFrac = smpMul - smpMulFloor;
     }
     
-    while(true)
+    sampleLoop: while(true)
     {
      Slice sl = smpSliceMngr.getSlice();
 
@@ -347,7 +344,7 @@ public class MTSliceExporterTask implements Runnable
      try
      {
 
-      Collection<BioSample> smps = smpq.getSamples(since, sl);
+      Collection<BioSample> smps = smpq.getSamples(sl);
 
       if(smps.size() == 0)
        break;
@@ -371,11 +368,8 @@ public class MTSliceExporterTask implements Runnable
         smpCount++;
        
         if(limit != null && smpCount > grpCount )
-        {
-         putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
-
-         return;
-        }
+         break sampleLoop;
+        
         
         BioSample ns = s;
 
@@ -423,7 +417,6 @@ public class MTSliceExporterTask implements Runnable
    }
    
    putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
-   
   }
   finally
   {
@@ -436,6 +429,7 @@ public class MTSliceExporterTask implements Runnable
    if( smpq != null )
     smpq.close();
   }
+
  }
 
  public <T> void  putIntoQueue( BlockingQueue<T> queue, T o )

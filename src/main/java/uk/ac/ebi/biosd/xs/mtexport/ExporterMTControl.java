@@ -11,7 +11,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -58,7 +57,7 @@ public class ExporterMTControl
   try
   {
 
-   List<MTSliceExporterTask> exporters = new ArrayList<>(threads);
+   List<MTSliceMSIExporterTask> exporters = new ArrayList<>(threads);
    List<OutputTask> outputs = new ArrayList<>(requests.size() * 2);
 
    List<FormattingTask> tasks = new ArrayList<>(requests.size());
@@ -86,15 +85,14 @@ public class ExporterMTControl
 
 
     tasks.add(new FormattingTask(req.getFormatter(), req.isGroupedSamplesOnly(),
-      req.isSourcesByAcc(), req.isSourcesByName(), grQueue, smQueue));
+      req.isSourcesByAcc(), req.isSourcesByName(), grQueue, smQueue, limit));
 
    }
 
    ExecutorService tPool = Executors.newFixedThreadPool(threads + outputs.size());
 
    //  RangeManager rm = new RangeManager(Long.MIN_VALUE,Long.MAX_VALUE,threads*2);
-   SliceManager gsm = new SliceManager(50);
-   SliceManager ssm = new SliceManager(50);
+   SliceManager msism = new SliceManager(50);
 
    AtomicBoolean stopFlag = new AtomicBoolean(false);
 
@@ -104,10 +102,6 @@ public class ExporterMTControl
    for(OutputTask ot : outputs)
     tPool.submit(ot);
 
-   AtomicLong limitCnt = null;
-
-   if(limit > 0)
-    limitCnt = new AtomicLong(limit);
 
    MTTaskConfig tCnf = new MTTaskConfig();
    
@@ -117,7 +111,8 @@ public class ExporterMTControl
    
    for(int i = 0; i < threads; i++)
    {
-    MTSliceExporterTask et = new MTSliceExporterTask(emf, myEqFact, gsm, ssm, tasks, statistics, controlMsgQueue, stopFlag, limitCnt, tCnf);
+//    MTSliceExporterTask et = new MTSliceExporterTask(emf, myEqFact, gsm, ssm, tasks, statistics, controlMsgQueue, stopFlag, limitCnt, tCnf);
+    MTSliceMSIExporterTask et = new MTSliceMSIExporterTask(emf, myEqFact, msism, tasks, statistics, controlMsgQueue, stopFlag, tCnf);
 
     exporters.add(et);
 

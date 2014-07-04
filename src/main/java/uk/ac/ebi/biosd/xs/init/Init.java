@@ -81,6 +81,9 @@ public class Init implements ServletContextListener
  {
   java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.WARNING);
   java.util.logging.Logger.getLogger("com.mchange").setLevel(Level.WARNING);
+
+//  java.util.logging.Logger.getLogger("org.hibernate.SQL").setLevel(Level.FINEST);
+  
   
   log.info("Initializing X-S");
   

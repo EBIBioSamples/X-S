@@ -14,6 +14,7 @@ public class ExporterStat
 {
  private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
  
+ private int msiCount=0;
  private int groupCount=0;
  private int sampleCount=0;
  private int groupPublicCount=0;
@@ -85,6 +86,12 @@ public class ExporterStat
  {
   return sampleCount;
  }
+ 
+ public int getMSICount()
+ {
+  return msiCount;
+ }
+
 
  public int getUniqSampleCount()
  {
@@ -145,6 +152,11 @@ public class ExporterStat
  {
   groupPublicCount++;
  }
+
+ public synchronized void incMSICounter()
+ {
+  msiCount++;
+ }
  
  public synchronized void incSamplePublicUniqCounter()
  {
@@ -156,11 +168,16 @@ public class ExporterStat
   long startTs = startTime.getTime();
   long endTs = endTime.getTime();
   
-  long rate = getGroupCount()!=0? (endTs-startTs)/getGroupCount():0;
+  long rate = getMSICount()!=0? (endTs-startTs)/getMSICount():0;
+//  long grpRate = getGroupCount()!=0? (endTs-startTs)/getGroupCount():0;
+//  long smpRate = getSampleCount()!=0? (endTs-startTs)/getSampleCount():0;
   
   StringBuffer summaryBuf = new StringBuffer();
 
-  summaryBuf.append("\n<!-- Exported: ").append(getGroupCount()).append(" groups in ").append(threads).append(" threads. Rate: ").append(rate).append("ms per group -->");
+  summaryBuf.append("\n<!-- Exported: ").append(getMSICount()).append(" MSIs in ").append(threads).append(" threads. Rate: ").append(rate).append("ms per msi -->");
+
+  rate = getGroupCount()!=0? (endTs-startTs)/getGroupCount():0;
+  summaryBuf.append("\n<!-- All groups: ").append(getGroupCount()).append(". Rate: ").append(rate).append("ms per group -->");
   summaryBuf.append("\n<!-- Public groups: ").append(getGroupPublicCount()).append(" -->");
   
   rate = getSampleCount()!=0? (endTs-startTs)/getSampleCount():0;

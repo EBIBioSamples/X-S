@@ -12,24 +12,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.biosd.xs.util.Slice;
-import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
+import uk.ac.ebi.fg.biosd.model.organizational.MSI;
 
-public class SampleSliceQueryManager
+public class MSISliceQueryManager
 {
- static final int MAX_SAMPLES_PER_EM = 10000;
+ static final int MAX_MSI_PER_EM = 100;
  
  private static final boolean useTransaction = false;
- private static final Logger log = LoggerFactory.getLogger(SampleSliceQueryManager.class);
+ private static final Logger log = LoggerFactory.getLogger(MSISliceQueryManager.class);
 
  private final EntityManagerFactory factory;
  private EntityManager em;
  private Query listQuery = null;
  private final long since;
- private int smpCount;
+ private int msiCount;
 
- public SampleSliceQueryManager( EntityManagerFactory fact, long since )
+ public MSISliceQueryManager( EntityManagerFactory fact, long since )
  {
-  smpCount = 0;
+  msiCount = 0;
   
   factory = fact;
   this.since = since;
@@ -47,22 +47,22 @@ public class SampleSliceQueryManager
   
   if( since < 0 )
   {
-    listQuery = em.createQuery("SELECT a FROM " + BioSample.class.getCanonicalName () + " a");
+    listQuery = em.createQuery("SELECT a FROM " + MSI.class.getCanonicalName () + " a");
   }
   else
   {
-    listQuery = em.createQuery("SELECT smp FROM " + BioSample.class.getCanonicalName () + " smp JOIN smp.MSIs msi WHERE msi.updateDate > ?1");
+    listQuery = em.createQuery("SELECT msi FROM " + MSI.class.getCanonicalName () + " msi WHERE msi.updateDate > ?1");
   
    listQuery.setParameter(1, new Date(since));
   }
  }
  
  @SuppressWarnings("unchecked")
- public List<BioSample> getSamples(Slice slice)
+ public List<MSI> getMSIs(Slice slice)
  {
-  if( smpCount+slice.getLimit() > MAX_SAMPLES_PER_EM )
+  if( msiCount+slice.getLimit() > MAX_MSI_PER_EM )
   {
-   smpCount=0;
+   msiCount=0;
    initEM();
   }
   
@@ -73,9 +73,9 @@ public class SampleSliceQueryManager
   listQuery.setMaxResults ( slice.getLimit() );  
   listQuery.setFirstResult( slice.getStart() );
   
-  List<BioSample> res = listQuery.getResultList();
+  List<MSI> res = listQuery.getResultList();
   
-  smpCount += res.size();
+  msiCount += res.size();
   
   return res;
  }
