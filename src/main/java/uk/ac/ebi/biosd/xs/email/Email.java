@@ -113,13 +113,17 @@ public class Email
    MimeMessage message = new MimeMessage(session);
 
    message.setFrom(fromAddr);
+   message.addHeader("X-Priority", "1 (Highest)");
+   message.addHeader("X-MSMail-Priority", "High");
+   message.addHeader("Importance", "High");
+
 
    message.addRecipient(Message.RecipientType.TO, errorsToAddr);
 
    if( subj == null )
     subj = "X-S error message";
    
-   message.setSubject("X-S error message");
+   message.setSubject(subj);
 
    StringBuffer buf = new StringBuffer();
 
@@ -169,7 +173,7 @@ public class Email
    if( subj == null )
     subj = "X-S info message";
    
-   message.setSubject("X-S info message");
+   message.setSubject(subj);
 
   
    message.setText(msg);

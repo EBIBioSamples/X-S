@@ -170,6 +170,7 @@ public class ExporterMTControl
      stopFlag.set(true);
      
      cleanFinish = false;
+     exception = o.getException();
     }
     else if(o.getType() == Type.TERMINATE)
     {
@@ -178,8 +179,11 @@ public class ExporterMTControl
      stopFlag.set(true);
      
      cleanFinish = false;
-     exception = o.getException();
     }
+    
+    if( exception == null )
+     exception = o.getException();
+
 
     if(tproc == 0 && !outputTermGoes)
     {

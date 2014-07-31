@@ -163,7 +163,6 @@ public class MTSliceMSIExporterTask implements Runnable
       boolean needMoreData = false;
       
       stat.incMSICounter();
-      stat.addUniqSampleCounter(msi.getSamples().size());
 
       if(needGroupLoop)
       {

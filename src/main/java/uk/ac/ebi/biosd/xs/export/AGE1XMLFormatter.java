@@ -680,6 +680,59 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
   mainout.append("\">\n");
   
+  MSI msi = null;
+  
+  if( smp.getMSIs() != null )
+  {
+   Iterator<MSI> it = smp.getMSIs().iterator();
+   
+   if( it.hasNext() )
+    msi = it.next();
+  }
+
+
+  if( msi != null )
+  {
+   
+   mainout.append("<Submission>\n");
+
+   if( msi.getSubmissionDate() != null )
+   {
+    mainout.append("<attribute class=\"Submission Date\" classDefined=\"true\" dataType=\"DATETIME\">\n");
+    exportSimpleValuePefix(mainout);
+    exportSimpleValueStringPefix(mainout);
+    mainout.append( dateTimeFmt.format(msi.getSubmissionDate() ) );
+    exportSimpleValueStringPostfix(mainout);
+    exportSimpleValuePostfix(mainout);
+    mainout.append("</attribute>\n");
+   }
+   
+   if( msi.getReleaseDate() != null )
+   {
+    mainout.append("<attribute class=\"Submission Release Date\" classDefined=\"true\" dataType=\"DATETIME\">\n");
+    exportSimpleValuePefix(mainout);
+    exportSimpleValueStringPefix(mainout);
+    mainout.append( dateTimeFmt.format(msi.getReleaseDate() ) );
+    exportSimpleValueStringPostfix(mainout);
+    exportSimpleValuePostfix(mainout);
+    mainout.append("</attribute>\n");
+   }
+
+   if( msi.getUpdateDate() != null )
+   {
+    mainout.append("<attribute class=\"Submission Update Date\" classDefined=\"true\" dataType=\"DATETIME\">\n");
+    exportSimpleValuePefix(mainout);
+    exportSimpleValueStringPefix(mainout);
+    mainout.append( dateTimeFmt.format(msi.getUpdateDate() ) );
+    exportSimpleValueStringPostfix(mainout);
+    exportSimpleValuePostfix(mainout);
+    mainout.append("</attribute>\n");
+   }
+   
+   mainout.append("</Submission>\n");
+
+  }
+  
   if( aux != null )
   {
    Collection<EquivalenceRecord> eqs = aux.getSampleEquivalences(smp.getAcc());
