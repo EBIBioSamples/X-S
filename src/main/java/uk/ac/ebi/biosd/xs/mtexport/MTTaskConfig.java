@@ -5,6 +5,17 @@ public class MTTaskConfig
  private long    since;
  private Double  groupMultiplier;
  private Double  sampleMultiplier;
+ private int     maxItemsPerThread=-1;
+
+ public int getMaxItemsPerThread()
+ {
+  return maxItemsPerThread;
+ }
+
+ public void setMaxItemsPerThread(int maxItemsPerTread)
+ {
+  this.maxItemsPerThread = maxItemsPerTread;
+ }
 
  public long getSince()
  {

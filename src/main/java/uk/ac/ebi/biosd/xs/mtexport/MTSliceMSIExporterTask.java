@@ -43,11 +43,19 @@ public class MTSliceMSIExporterTask implements Runnable
  private boolean hasGroupedSmp;
  private boolean hasUngroupedSmp;
  private boolean needGroupLoop;
+ private final int maxMSIs;
 
+ private int genNo=0;
+ 
  private final Double grpMul;
  private final Double smpMul;
  
  private final Logger log = LoggerFactory.getLogger(Init.class);
+ 
+ private int laneNo;
+
+
+ private Thread procThread;
 
  
 
@@ -68,6 +76,8 @@ public class MTSliceMSIExporterTask implements Runnable
 
   this.grpMul = tCfg.getGroupMultiplier();
   this.smpMul = tCfg.getSampleMultiplier();
+  
+  maxMSIs = tCfg.getMaxItemsPerThread();
   
   stopFlag = stf;
   
@@ -106,12 +116,27 @@ public class MTSliceMSIExporterTask implements Runnable
   
  }
 
+ public Thread getProcessingThread()
+ {
+  return procThread;
+ }
 
+ public int getLaneNo()
+ {
+  return laneNo;
+ }
+
+ public void setLaneNo(int laneNo)
+ {
+  this.laneNo = laneNo;
+ }
+ 
  @Override
  public void run()
  {
-  Thread.currentThread().setName(Thread.currentThread().getName()+"-ExporterTask");
+  procThread = Thread.currentThread();
   
+  procThread.setName(procThread.getName()+"-ExporterTask-gen"+(++genNo)+"-lane"+laneNo);
   
   MSISliceQueryManager msiQM = null;
 
@@ -120,7 +145,7 @@ public class MTSliceMSIExporterTask implements Runnable
   if(myEqFactory != null)
    auxInf = new AuxInfoImpl(myEqFactory);
 
-  int grpCount=0;
+  int msiCount=0;
   
   try
   {
@@ -162,6 +187,14 @@ public class MTSliceMSIExporterTask implements Runnable
      {
       boolean needMoreData = false;
       
+      msiCount++;
+
+      long time = System.currentTimeMillis();
+      System.out.printf("+MSI (%d-%d-%d) %s  Samples: %d Groups: %d Mem: %.2fG%n"
+        ,laneNo,genNo,msiCount,msi.getAcc(),msi.getSamples().size(),msi.getSampleGroups().size(),(double)Runtime.getRuntime().freeMemory()/1024/1024/1024);
+     
+      
+      
       stat.incMSICounter();
 
       if(needGroupLoop)
@@ -169,6 +202,10 @@ public class MTSliceMSIExporterTask implements Runnable
 
        for(BioSampleGroup g : msi.getSampleGroups())
        {
+        if( ! stat.addGroup(g.getId()) )
+         continue;
+        
+        
         int nRep = grpMulFloor;
 
         if(grpMul != null && grpMulFrac > 0.005)
@@ -183,7 +220,7 @@ public class MTSliceMSIExporterTask implements Runnable
           return;
          }
 
-         grpCount++;
+//         grpCount++;
 
          BioSampleGroup ng = g;
 
@@ -262,7 +299,7 @@ public class MTSliceMSIExporterTask implements Runnable
          {
           for(BioSample s : ng.getSamples())
           {
-           if(!stat.addSample(s.getAcc()))
+           if(!stat.addSample(s.getId()))
             continue;
 
            if(!hasUngroupedSmp)
@@ -317,6 +354,9 @@ public class MTSliceMSIExporterTask implements Runnable
 
        for(BioSample s : msi.getSamples())
        {
+        if(!stat.addSample(s.getId()))
+         continue;
+
         int nSmpRep = smpMulFloor;
 
         if(smpMul != null && smpMulFrac > 0.005)
@@ -367,7 +407,18 @@ public class MTSliceMSIExporterTask implements Runnable
       if( ! needMoreData )
        break mainLoop;
      
+      System.out.printf("-MSI (%d-%d-%d) %s  Samples: %d Groups: %d Time: %d Mem: %.2fG%n"
+        ,laneNo,genNo,msiCount,msi.getAcc(),msi.getSamples().size(),msi.getSampleGroups().size(),System.currentTimeMillis()-time,(double)Runtime.getRuntime().freeMemory()/1024/1024/1024);
+      
+      
      }
+     
+     if( maxMSIs > 0 && msiCount >= maxMSIs )
+     {
+      putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_TTL, this));
+      return;
+     }
+
 
     }
     catch(Throwable e)
@@ -381,6 +432,9 @@ public class MTSliceMSIExporterTask implements Runnable
     finally
     {
      msiQM.release();
+     
+     if( auxInf != null )
+      auxInf.clear();
     }
 
    }

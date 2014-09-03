@@ -3,12 +3,12 @@ package uk.ac.ebi.biosd.xs.mtexport;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import uk.ac.ebi.biosd.xs.util.Counter;
 import uk.ac.ebi.biosd.xs.util.StringUtils;
+import uk.ac.ebi.biosd.xs.util.collection.LongHashSet;
+import uk.ac.ebi.biosd.xs.util.collection.LongSet;
 
 public class ExporterStat
 {
@@ -23,7 +23,11 @@ public class ExporterStat
  private final Date now;
  private int threads;
  
- private final Set<String> sampleSet = new HashSet<>();
+// private final Set<String> sampleSet = new HashSet<>();
+ 
+ private final LongSet sampleSet = new LongHashSet();
+ private final LongSet groupSet = new LongHashSet();
+ 
  private final Map<String, Counter> srcNmMap = new HashMap<String, Counter>();
  private final Map<String, Counter> srcAccMap = new HashMap<String, Counter>();
  
@@ -39,6 +43,7 @@ public class ExporterStat
   uniqSampleCount=0;
   
   sampleSet.clear();
+  groupSet.clear();
  }
  
  public Date getNowDate()
@@ -98,15 +103,36 @@ public class ExporterStat
   return uniqSampleCount;
  }
  
- public synchronized boolean addSample( String id )
+// public synchronized boolean addSample( String id )
+// {
+//  return sampleSet.add(id);
+// }
+// 
+// public synchronized boolean containsSample( String id )
+// {
+//  return sampleSet.contains(id);
+// }
+ 
+ public synchronized boolean addSample( long id )
  {
   return sampleSet.add(id);
  }
- 
- public synchronized boolean containsSample( String id )
+
+ public synchronized boolean containsSample( long id )
  {
   return sampleSet.contains(id);
  }
+ 
+ public synchronized boolean addGroup( long id )
+ {
+  return groupSet.add(id);
+ }
+
+ public synchronized boolean containsGroup( long id )
+ {
+  return groupSet.contains(id);
+ }
+
  
  public synchronized void addToSourceByName( String srcName, int cnt )
  {

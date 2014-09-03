@@ -9,6 +9,8 @@ public class TaskConfig
  public static final String ProfileParameter           = "server";
  public static final String MyEqProfileParameter       = "myeq";
  public static final String LimitParameter             = "limit";
+ public static final String SliceParameter             = "slice";
+ public static final String TTTLParameter              = "threadTTL";
  public static final String ThreadsParameter           = "threads";
  public static final String SinceParameter             = "since";
  public static final String GroupMultiplierParameter   = "groupMultiplier";
@@ -25,6 +27,8 @@ public class TaskConfig
  private String      server;
  private String      myeq;
  private Long        limit;
+ private Integer     slice;
+ private Integer     threadTTL;
  private Long        since;
  private Integer     threads;
  private Double      groupMultiplier;
@@ -65,6 +69,28 @@ public class TaskConfig
    try
    {
     limit = Long.parseLong(pVal);
+   }
+   catch(Exception e)
+   {
+    throw new TaskConfigException("Task '"+taskName+"' Invalid parameter value: "+pName+"="+pVal);
+   }
+  }
+  else if( SliceParameter.equals(pName) )
+  {
+   try
+   {
+    slice = Integer.parseInt(pVal);
+   }
+   catch(Exception e)
+   {
+    throw new TaskConfigException("Task '"+taskName+"' Invalid parameter value: "+pName+"="+pVal);
+   }
+  }
+  else if( TTTLParameter.equals(pName) )
+  {
+   try
+   {
+    threadTTL = Integer.parseInt(pVal);
    }
    catch(Exception e)
    {
@@ -194,6 +220,12 @@ public class TaskConfig
   return limit!=null?limit:def;
  }
  
+ public int getSliceSize(int def)
+ {
+  return slice!=null?slice:def;
+ }
+
+ 
  public Double getGroupMultiplier( Double def )
  {
   return groupMultiplier!=null?groupMultiplier:def;
@@ -217,6 +249,11 @@ public class TaskConfig
  public int getInvokeMin()
  {
   return min;
+ }
+
+ public int getThreadTTL(int def)
+ {
+  return threadTTL!=null?threadTTL:def;
  }
 
 

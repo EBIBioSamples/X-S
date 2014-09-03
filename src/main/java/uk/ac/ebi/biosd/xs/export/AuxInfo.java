@@ -5,6 +5,7 @@ import java.util.Collection;
 public interface AuxInfo
 {
 
+ void clear();
  void destroy();
 
  Collection<EquivalenceRecord> getSampleEquivalences(String acc);

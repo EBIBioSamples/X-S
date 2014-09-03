@@ -71,9 +71,27 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-entitymanager</artifactId>
+			<version>[4.3.0,)</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-validator</artifactId>
+			<version>[4.3.1,)</version>
+		</dependency>
+
+		<dependency>
 			<groupId>uk.ac.ebi.fg</groupId>
 			<artifactId>myequivalents-db</artifactId>
 			<version>0.3.1-SNAPSHOT</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>hibernate-jpa-2.0-api</artifactId>
+					<groupId>org.hibernate.javax.persistence</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
         
         <dependency>
@@ -123,17 +141,12 @@
 	 <version>1.4</version>
     </dependency>
 
-<!-- 
-	<dependency>
-		<groupId>c3p0</groupId>
-		<artifactId>c3p0</artifactId>
-		<version>[0.9,)</version>
-	</dependency>
--->	
+ 
+	
 	<dependency>
 		<groupId>org.hibernate</groupId>
 		<artifactId>hibernate-c3p0</artifactId>
-		<version>4.2.6.Final</version>
+		<version>[4.3.0,)</version>
 	</dependency>
 
 	</dependencies>

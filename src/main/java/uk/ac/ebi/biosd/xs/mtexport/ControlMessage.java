@@ -9,6 +9,7 @@ public class ControlMessage
   OUTPUT_FINISH,
   OUTPUT_ERROR,
   PROCESS_FINISH,
+  PROCESS_TTL,
   PROCESS_ERROR,
   TERMINATE
  }

@@ -261,7 +261,7 @@ public class MTSliceExporterTask implements Runnable
        {
         for(BioSample s : ng.getSamples())
         {
-         if(!stat.addSample(s.getAcc()))
+         if(!stat.addSample(s.getId()))
           continue;
 
          if( ! hasUngroupedSmp )

@@ -18,11 +18,11 @@ public class MSISliceQueryManager
 {
  static final int MAX_MSI_PER_EM = 100;
  
- private static final boolean useTransaction = false;
+ private static final boolean useTransaction = true;
  private static final Logger log = LoggerFactory.getLogger(MSISliceQueryManager.class);
 
  private final EntityManagerFactory factory;
- private EntityManager em;
+ private EntityManager em=null;
  private Query listQuery = null;
  private final long since;
  private int msiCount;
@@ -34,14 +34,11 @@ public class MSISliceQueryManager
   factory = fact;
   this.since = since;
 
-  initEM();
-  
  }
  
  private void initEM()
  {
-  if( em != null )
-   em.close();
+  release();
   
   em = factory.createEntityManager();
   
@@ -51,7 +48,7 @@ public class MSISliceQueryManager
   }
   else
   {
-    listQuery = em.createQuery("SELECT msi FROM " + MSI.class.getCanonicalName () + " msi WHERE msi.updateDate > ?1");
+   listQuery = em.createQuery("SELECT msi FROM " + MSI.class.getCanonicalName () + " msi WHERE msi.updateDate > ?1");
   
    listQuery.setParameter(1, new Date(since));
   }
@@ -60,7 +57,7 @@ public class MSISliceQueryManager
  @SuppressWarnings("unchecked")
  public List<MSI> getMSIs(Slice slice)
  {
-  if( msiCount+slice.getLimit() > MAX_MSI_PER_EM )
+  if( em == null || msiCount+slice.getLimit() > MAX_MSI_PER_EM )
   {
    msiCount=0;
    initEM();
@@ -103,34 +100,15 @@ public class MSISliceQueryManager
   }
   
   em.clear();
+  em.close();
+  em=null;
  }
 
 
 
  public void close()
  {
-  if( em == null )
-   return;
-  
-  if( useTransaction )
-  {
-   EntityTransaction trn = em.getTransaction();
-
-   if( trn.isActive() && ! trn.getRollbackOnly() )
-   {
-    try
-    {
-     trn.commit();
-    }
-    catch(Exception e)
-    {
-     e.printStackTrace();
-    }
-   }
-  }
-  
-  em.close();
-  em=null;
+  release();
  }
 
 }

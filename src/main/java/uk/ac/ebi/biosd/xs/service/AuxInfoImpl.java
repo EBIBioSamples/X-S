@@ -6,6 +6,7 @@ import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.EntityTransaction;
 
 import uk.ac.ebi.biosd.xs.export.AuxInfo;
 import uk.ac.ebi.biosd.xs.export.EquivalenceRecord;
@@ -19,7 +20,7 @@ public class AuxInfoImpl implements AuxInfo
  private final EntityManagerFactory myeqFactory;
  private EntityManager myeqManager;
  
- private final EntityMappingDAO entityMappingDAO;
+ private EntityMappingDAO entityMappingDAO;
  
  private int counter=0;
 
@@ -43,6 +44,22 @@ public class AuxInfoImpl implements AuxInfo
   return getEquivalences("ebi.biosamples.groups", acc);
  }
 
+ @Override
+ public void clear()
+ {
+  if( myeqManager == null )
+   return;
+  
+  destroy();
+  
+  myeqManager = myeqFactory.createEntityManager();
+  myeqManager.getTransaction().begin();
+  
+  entityMappingDAO = new EntityMappingDAO ( myeqManager );
+  
+  counter=0;
+
+ }
  
  private Collection<EquivalenceRecord> getEquivalences( String srvId, String acc )
  {
@@ -75,6 +92,21 @@ public class AuxInfoImpl implements AuxInfo
  {
   if( myeqManager != null )
   {
+   EntityTransaction trn = myeqManager.getTransaction();
+
+   if( trn.isActive() && ! trn.getRollbackOnly() )
+   {
+    try
+    {
+     trn.commit();
+    }
+    catch(Exception e)
+    {
+     e.printStackTrace();
+    }
+   }
+   
+   myeqManager.clear();
    myeqManager.close();
    myeqManager = null;
   }

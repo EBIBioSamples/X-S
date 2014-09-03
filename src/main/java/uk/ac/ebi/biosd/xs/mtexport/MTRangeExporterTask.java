@@ -170,7 +170,7 @@ public class MTRangeExporterTask implements Runnable
       {
        for(BioSample s : g.getSamples())
        {
-        if(!stat.addSample(s.getAcc()))
+        if(!stat.addSample(s.getId()))
          continue;
 
         stat.incUniqSampleCounter();

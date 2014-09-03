@@ -27,6 +27,8 @@ public class ExportTask
  public static final boolean               DefaultShowSources    = true;
  public static final boolean               DefaultSourcesByName  = false;
  public static final boolean               DefaultGroupedSamplesOnly  = false;
+ public static final int                   DefaultSliceSize      = 10;
+ public static final int                   DefaultThreadTTL      = 1000;
 
  private final String name;
  
@@ -90,7 +92,7 @@ public class ExportTask
    
    synchronized(this)
    {
-    exportControl = new ExporterMTControl(emf, myEqFact, modules, threads);
+    exportControl = new ExporterMTControl(emf, myEqFact, modules, threads, taskConfig.getSliceSize(DefaultSliceSize), taskConfig.getThreadTTL(DefaultThreadTTL));
    }
 
   

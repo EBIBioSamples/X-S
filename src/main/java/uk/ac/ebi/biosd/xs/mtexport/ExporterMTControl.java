@@ -4,12 +4,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -25,24 +24,31 @@ import uk.ac.ebi.biosd.xs.util.SliceManager;
 
 public class ExporterMTControl
 {
+ static final long THREAD_TERM_WT = 30000;
+ 
  private final Logger log = LoggerFactory.getLogger(ExporterMTControl.class);
  
  private final EntityManagerFactory emf;
  private final EntityManagerFactory myEqFact;
  final  Collection<OutputModule> requests;
+ 
+ private int sliceSz=10;
+ private int itemsLimit=1000;
 
  private final int threads;
  
  private final BlockingQueue<ControlMessage> controlMsgQueue;
  private final Lock busyLock = new ReentrantLock();
  
- public ExporterMTControl(EntityManagerFactory emf, EntityManagerFactory myEqFact, Collection<OutputModule> mods, int thN )
+ public ExporterMTControl(EntityManagerFactory emf, EntityManagerFactory myEqFact, Collection<OutputModule> mods, int thN, int slSz, int msiPerThr )
  {
   super();
   this.emf = emf;
   this.myEqFact=myEqFact;
   this.requests = mods;
-
+  sliceSz = slSz;
+  itemsLimit = msiPerThr;
+  
   threads = thN;
   
   controlMsgQueue = new ArrayBlockingQueue<>(requests.size()*3+1);
@@ -89,10 +95,12 @@ public class ExporterMTControl
 
    }
 
-   ExecutorService tPool = Executors.newFixedThreadPool(threads + outputs.size());
+//   ExecutorService tPool = Executors.newFixedThreadPool(threads + outputs.size());
 
+   Set<Thread> thrSet = new HashSet<>();
+   
    //  RangeManager rm = new RangeManager(Long.MIN_VALUE,Long.MAX_VALUE,threads*2);
-   SliceManager msism = new SliceManager(50);
+   SliceManager msism = new SliceManager(sliceSz);
 
    AtomicBoolean stopFlag = new AtomicBoolean(false);
 
@@ -100,24 +108,35 @@ public class ExporterMTControl
    statistics.setThreads(threads);
 
    for(OutputTask ot : outputs)
-    tPool.submit(ot);
-
+   {
+    thrSet.add( new Thread(ot) );
+    //tPool.submit(ot);
+   }
 
    MTTaskConfig tCnf = new MTTaskConfig();
    
    tCnf.setGroupMultiplier(grpMul);
    tCnf.setSampleMultiplier(smpMul);
    tCnf.setSince(since);
+   tCnf.setMaxItemsPerThread(itemsLimit);
    
    for(int i = 0; i < threads; i++)
    {
 //    MTSliceExporterTask et = new MTSliceExporterTask(emf, myEqFact, gsm, ssm, tasks, statistics, controlMsgQueue, stopFlag, limitCnt, tCnf);
     MTSliceMSIExporterTask et = new MTSliceMSIExporterTask(emf, myEqFact, msism, tasks, statistics, controlMsgQueue, stopFlag, tCnf);
 
+    et.setLaneNo(i+1);
+    
     exporters.add(et);
 
-    tPool.submit(et);
+    thrSet.add( new Thread(et) );
+    //tPool.submit(ot);
+
+//    tPool.submit(et);
    }
+   
+   for( Thread t : thrSet )
+    t.start();
 
    int tproc = threads;
    int tout = outputs.size();
@@ -180,6 +199,16 @@ public class ExporterMTControl
      
      cleanFinish = false;
     }
+    else if(o.getType() == Type.PROCESS_TTL )
+    {
+     MTSliceMSIExporterTask task = (MTSliceMSIExporterTask)o.getSubject();
+     
+     thrSet.remove( task.getProcessingThread() );
+     
+     Thread t = new Thread( task );
+     thrSet.add(t);
+     t.start();
+    }
     
     if( exception == null )
      exception = o.getException();
@@ -218,6 +247,35 @@ public class ExporterMTControl
 
    }
 
+   termLoop: for( Thread t : thrSet )
+   {
+    long sttm = System.currentTimeMillis();
+    
+    while(true)
+    {
+     try
+     {
+      t.join(THREAD_TERM_WT);
+      
+      break;
+     }
+     catch(InterruptedException e)
+     {
+      if( System.currentTimeMillis() - sttm >= THREAD_TERM_WT )
+      {
+       log.error("Can't terminate thread pool. Thread: "+t.getName());
+//       System.out.println("Can't terminate thread pool. Thread: "+t.getName());
+
+       cleanFinish = false;
+       break termLoop;
+      }
+     }
+     
+     
+    }   
+   }
+
+   /*
    tPool.shutdown();
 
    while(true)
@@ -233,7 +291,8 @@ public class ExporterMTControl
     {
     }
    }
-
+   */
+   
    if( cleanFinish )
    {
     for( OutputModule omod : requests )
