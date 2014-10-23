@@ -44,7 +44,7 @@ public class MSISliceQueryManager
   
   if( since < 0 )
   {
-    listQuery = em.createQuery("SELECT a FROM " + MSI.class.getCanonicalName () + " a");
+    listQuery = em.createQuery("SELECT a FROM " + MSI.class.getCanonicalName () + " a"); // WHERE a.id=50733809664
   }
   else
   {
@@ -104,7 +104,13 @@ public class MSISliceQueryManager
   em=null;
  }
 
+ public void detach(Object obj)
+ {
+  if( em == null )
+   return;
 
+  em.detach(obj);
+ }
 
  public void close()
  {

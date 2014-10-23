@@ -7,9 +7,9 @@ public class AGE2XMLFormatter extends AGE1XMLFormatter
 {
  private static String nameSpace = "http://www.ebi.ac.uk/biosamples/SampleGroupExportV2";
 
- public AGE2XMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now, String eqExcl)
+ public AGE2XMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now, String eqExcl, boolean myeqAsDb)
  {
-  super( showAttributes, showAC, smpfmt, pubOnly, now, eqExcl );
+  super( showAttributes, showAC, smpfmt, pubOnly, now, eqExcl, myeqAsDb );
  }
 
  

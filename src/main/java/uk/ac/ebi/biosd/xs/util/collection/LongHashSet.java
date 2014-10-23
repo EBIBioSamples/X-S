@@ -454,7 +454,7 @@ public class LongHashSet implements LongSet, Cloneable, Serializable
   *
   * Subclass overrides this to alter the behavior of put method.
   */
- void addEntry(int key,  int bucketIndex)
+ void addEntry(long key,  int bucketIndex)
  {
   Entry e = table[bucketIndex];
   table[bucketIndex] = new Entry(key, e);
@@ -836,7 +836,7 @@ private static int hugeCapacity(int minCapacity) {
   }
 
   modCount++;
-  addEntry(longHash(key), i);
+  addEntry(key, i);
   return true;
  }
 

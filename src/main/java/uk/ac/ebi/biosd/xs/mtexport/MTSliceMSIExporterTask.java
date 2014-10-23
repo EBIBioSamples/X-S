@@ -87,10 +87,7 @@ public class MTSliceMSIExporterTask implements Runnable
   hasSourcesByAcc = false;
   needGroupLoop = false;
   
-  
-//  sourcesByName = tCfg.isSourcesByName();
-//  groupedSmpOnly = tCfg.isGroupedSamplesOnly();
-  
+ 
   
   for( FormattingTask ft : tasks )
   {
@@ -173,27 +170,55 @@ public class MTSliceMSIExporterTask implements Runnable
    {
     Slice sl = msiSliceMngr.getSlice();
 
-    log.debug("({0}) Processing slice: {1}", Thread.currentThread().getName(), sl);
 
     try
     {
 
      Collection<MSI> msis = msiQM.getMSIs(sl);
 
+     if( log.isDebugEnabled() )
+      log.debug("({}) Processing slice: {}, size: {}", new Object[] { Thread.currentThread().getName(), sl, msis.size() });
+
      if(msis.size() == 0)
+     {
+      log.debug("({}) No more data to process", Thread.currentThread().getName());
       break;
+     }
 
      for(MSI msi : msis)
      {
-      boolean needMoreData = false;
+      if(stopFlag.get())
+      {
+       log.debug("({}) Stop flag set. Sending FINISH message", Thread.currentThread().getName());
+       putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
+       return;
+      }
+      
+      boolean didOutput=false;
       
       msiCount++;
 
-      long time = System.currentTimeMillis();
-      System.out.printf("+MSI (%d-%d-%d) %s  Samples: %d Groups: %d Mem: %.2fG%n"
-        ,laneNo,genNo,msiCount,msi.getAcc(),msi.getSamples().size(),msi.getSampleGroups().size(),(double)Runtime.getRuntime().freeMemory()/1024/1024/1024);
-     
-      
+            
+//      long time = System.currentTimeMillis();
+//      System.out.printf("+MSI (L%d-G%d-N%d) %s  Samples: %d Groups: %d Mem: %.2fG%n"
+//        ,laneNo,genNo,msiCount,msi.getAcc(),msi.getSamples().size(),msi.getSampleGroups().size(),(double)Runtime.getRuntime().freeMemory()/1024/1024/1024);
+//     
+//      int grpAnnt=0;
+//      int grpSmp=0;
+//      int smpAnnt=0;
+//      
+//      for( BioSampleGroup g : msi.getSampleGroups() )
+//      {
+//       grpAnnt += g.getPropertyValues().size();
+//       grpSmp += g.getSamples().size();
+//      }
+//      
+//      for( BioSample s : msi.getSamples() )
+//       smpAnnt += s.getPropertyValues().size();
+//      
+//      System.out.printf("=MSI (L%d-G%d-N%d) %s  Sample annts: %d Group annts: %d Group samples: %d %n"
+//        ,laneNo,genNo,msiCount,msi.getAcc(),smpAnnt, grpAnnt, grpSmp);
+
       
       stat.incMSICounter();
 
@@ -205,6 +230,9 @@ public class MTSliceMSIExporterTask implements Runnable
         if( ! stat.addGroup(g.getId()) )
          continue;
         
+//        System.out.printf("=MSI (L%d-G%d-N%d) %s  Processing group %s %n"
+//          ,laneNo,genNo,msiCount,msi.getAcc(), g.getAcc());
+
         
         int nRep = grpMulFloor;
 
@@ -216,6 +244,7 @@ public class MTSliceMSIExporterTask implements Runnable
 
          if(stopFlag.get())
          {
+          log.debug("({}) Stop flag set. Sending FINISH message", Thread.currentThread().getName());
           putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
           return;
          }
@@ -283,11 +312,11 @@ public class MTSliceMSIExporterTask implements Runnable
           if(ft.getGroupQueue() == null)
            continue;
           
-          if( ft.confirmOutput() )
-           needMoreData = true;
-          else
+          if( ! ft.confirmOutput() )
            continue;
 
+          didOutput = true;
+          
           sb.setLength(0);
 
           ft.getFormatter().exportGroup(ng, auxInf, sb, false);
@@ -315,10 +344,10 @@ public class MTSliceMSIExporterTask implements Runnable
             if(ft.getSampleQueue() == null || !ft.isGroupedSamplesOnly())
              continue;
             
-            if( ft.confirmOutput() )
-             needMoreData = true;
-            else
+            if(!ft.confirmOutput())
              continue;
+           
+            didOutput = true;
 
             sb.setLength(0);
 
@@ -327,16 +356,20 @@ public class MTSliceMSIExporterTask implements Runnable
             putIntoQueue(ft.getSampleQueue(), sb.toString());
            }
 
+//           msiQM.detach(s);
           }
          }
 
          if(stopFlag.get())
          {
+          log.debug("({}) Stop flag set. Sending FINISH message", Thread.currentThread().getName());
           putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
           return;
          }
 
         }
+       
+//        msiQM.detach(g);
        }
 
       }
@@ -367,6 +400,7 @@ public class MTSliceMSIExporterTask implements Runnable
 
          if(stopFlag.get())
          {
+          log.debug("({}) Stop flag set. Sending FINISH message", Thread.currentThread().getName());
           putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
           return;
          }
@@ -386,10 +420,10 @@ public class MTSliceMSIExporterTask implements Runnable
           if(ft.getSampleQueue() == null || ft.isGroupedSamplesOnly())
            continue;
 
-          if( ft.confirmOutput() )
-           needMoreData = true;
-          else
+          if( ! ft.confirmOutput() )
            continue;
+          
+          didOutput = true;
           
           sb.setLength(0);
 
@@ -400,21 +434,41 @@ public class MTSliceMSIExporterTask implements Runnable
 
         }
 
+//        msiQM.detach(s);
        }
 
       }
 
+      
+      if( ! didOutput )
+       log.warn("Suspicious MSI - no output: "+msi.getAcc()+" Groups: "+msi.getSampleGroups().size()+" Samples: "+msi.getSamples().size());
+      
+      boolean needMoreData = false;
+      
+      for(FormattingTask ft : tasks)
+      {
+       if( ft.confirmOutput() )
+       {
+        needMoreData = true;
+        break;
+       }
+      }
+      
       if( ! needMoreData )
+      {
+       log.debug("({}) Output tasks don't need more data. Breaking loop", Thread.currentThread().getName());
        break mainLoop;
-     
-      System.out.printf("-MSI (%d-%d-%d) %s  Samples: %d Groups: %d Time: %d Mem: %.2fG%n"
-        ,laneNo,genNo,msiCount,msi.getAcc(),msi.getSamples().size(),msi.getSampleGroups().size(),System.currentTimeMillis()-time,(double)Runtime.getRuntime().freeMemory()/1024/1024/1024);
+      }
+//      System.out.printf("-MSI (L%d-G%d-N%d) %s  Samples: %d Groups: %d Time: %d Mem: %.2fG%n"
+//        ,laneNo,genNo,msiCount,msi.getAcc(),msi.getSamples().size(),msi.getSampleGroups().size(),System.currentTimeMillis()-time,(double)Runtime.getRuntime().freeMemory()/1024/1024/1024);
       
       
+//      msiQM.detach(msi);
      }
      
      if( maxMSIs > 0 && msiCount >= maxMSIs )
      {
+      log.debug("({}) Thread TTL expared. Processed {} MSIs. Sending TTL message", Thread.currentThread().getName(), msiCount);
       putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_TTL, this));
       return;
      }
@@ -439,6 +493,7 @@ public class MTSliceMSIExporterTask implements Runnable
 
    }
    
+   log.debug("({}) Thread terminating. Sending FINISH message", Thread.currentThread().getName());
    putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_FINISH, this));
   }
   finally

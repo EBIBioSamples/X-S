@@ -272,12 +272,12 @@ public class Init implements ServletContextListener
   
   for( TaskInfo tinf : TaskManager.getDefaultInstance().getTasks() )
   {
-   if( tinf.getTimerDelay() > 0 )
+   if( tinf.getTimeZero() >= 0 )
    {
     if(timer == null)
      timer = new Timer("Timer", true);
     
-    timer.scheduleAtFixedRate(tinf, tinf.getTimerDelay(), dayInMills);
+    timer.scheduleAtFixedRate(tinf, tinf.getTimeZero(), dayInMills);
    
     log.info("Task '"+tinf.getTask().getName()+"' is scheduled to run periodically");
    }
@@ -288,11 +288,14 @@ public class Init implements ServletContextListener
 
  private void createTasks(Map<String, TaskConfig> tasksMap) throws TaskConfigException
  {
+  Calendar cal = Calendar.getInstance(TimeZone.getDefault());
+  long ctime = System.currentTimeMillis();
+  
   for( TaskConfig tc : tasksMap.values() )
   {
    TaskInfo tinf = new TaskInfo();
    
-   
+   cal.setTimeInMillis( ctime );
    
    String str = tc.getServer(null);
    
@@ -321,8 +324,27 @@ public class Init implements ServletContextListener
      log.warn("Task '"+tc.getName()+"': MyEq connection '"+str+"' is not defined. MyEq support will be disabled");
    }
    
+//   if( tc.getInvokeHour() >= 0 )
+//   {
+//    cal.set( Calendar.HOUR_OF_DAY, tc.getInvokeHour() );
+//    cal.set( Calendar.MINUTE, tc.getInvokeMin() );
+//    
+//    long delta = cal.getTimeInMillis() - ctime;
+//    
+//    long perdInMills = tc.getPeriodHours()*60*60*1000; 
+//    
+//    if( delta > 0 )
+//     tinf.setTimeZero(ctime+(delta/perdInMills)*perdInMills+perdInMills);
+//    else
+//     tinf.setTimeZero(cal.getTimeInMillis()+(-delta/perdInMills)*perdInMills+perdInMills);
+//     
+//    
+//   } 
+    
    if( tc.getInvokeHour() >= 0 )
-    tinf.setTimerDelay( getAdjustedDelay(tc.getInvokeHour(), tc.getInvokeMin() ) );
+    tinf.setTimeZero( getAdjustedDelay(tc.getInvokeHour(), tc.getInvokeMin() ) );
+   else
+    tinf.setTimeZero(-1);
    
    List<OutputModule> mods = new ArrayList<>(tc.getOutputModulesConfig().size() );
    

@@ -24,6 +24,7 @@ public class RequestConfig
  public static final String PublicOnlyParameter        = "publicOnly";
  public static final String GroupMultiplierParameter   = "groupMultiplier";
  public static final String SampleMultiplierParameter  = "sampleMultiplier";
+ public static final String MyEqAsDbrParameter         = "myEqAsDb";
 
  private Boolean     publicOnly;
  private Boolean     groupedSamplesOnly;
@@ -32,6 +33,7 @@ public class RequestConfig
  private Boolean     sourcesByName;
  private Boolean     showAttributesSummary;
  private Boolean     showAccessControl;
+ private Boolean     showMyEqAsDb;
  private String      output;
  private String      schema;
  private String      server;
@@ -146,6 +148,13 @@ public class RequestConfig
   if( pv != null  )
   {
    showAccessControl = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
+  }
+  
+  pv = params.getParameter(pfx+MyEqAsDbrParameter);
+  
+  if( pv != null  )
+  {
+   showMyEqAsDb = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
   }
 
   pv = params.getParameter(pfx+GroupMultiplierParameter);
@@ -263,6 +272,11 @@ public class RequestConfig
  public Double getSampleMultiplier( Double def )
  {
   return sampleMultiplier!=null?sampleMultiplier:def;
+ }
+
+ public boolean getShowMyEqAsDb(boolean b)
+ {
+  return showMyEqAsDb!=null?showMyEqAsDb:b;
  }
 
 }

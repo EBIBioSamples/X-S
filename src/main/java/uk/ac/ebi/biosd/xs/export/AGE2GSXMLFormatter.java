@@ -13,9 +13,9 @@ import uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef;
 public class AGE2GSXMLFormatter extends AGE2XMLFormatter
 {
  
- public AGE2GSXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now, String eqExcl)
+ public AGE2GSXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now, String eqExcl, boolean myeqAsDb)
  {
-  super( showAttributes, showAC, smpfmt, pubOnly, now, eqExcl );
+  super( showAttributes, showAC, smpfmt, pubOnly, now, eqExcl, myeqAsDb );
  }
  
  @Override

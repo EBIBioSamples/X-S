@@ -12,10 +12,45 @@ public class TaskInfo extends TimerTask
 {
  private final Logger log = LoggerFactory.getLogger(TaskInfo.class);
  
- private ExportTask task;
- private long timerDelay=-1;
  private Timer timer;
 
+ private ExportTask task;
+ private long timeZero =-1;
+ private int enqueueTimeMoD =-1;
+
+ private int periodMin =-1;
+
+ private boolean enqueued;
+ 
+ public boolean isEnqueued()
+ {
+  return enqueued;
+ }
+
+ public void setEnqueued(boolean enqueued)
+ {
+  this.enqueued = enqueued;
+ }
+ 
+ public long getEnqueueTime()
+ {
+  return enqueueTimeMoD;
+ }
+ 
+ public void setEnqueueTime(int enqueueTime)
+ {
+  this.enqueueTimeMoD = enqueueTime;
+ }
+ 
+ public int getPeriod()
+ {
+  return periodMin;
+ }
+ 
+ public void setPeriod(int period)
+ {
+  this.periodMin = period;
+ }
  
  public ExportTask getTask()
  {
@@ -27,14 +62,14 @@ public class TaskInfo extends TimerTask
   this.task = task;
  }
 
- public long getTimerDelay()
+ public long getTimeZero()
  {
-  return timerDelay;
+  return timeZero;
  }
 
- public void setTimerDelay(long timerDelay)
+ public void setTimeZero(long tz)
  {
-  this.timerDelay = timerDelay;
+  this.timeZero = tz;
  }
 
 

@@ -41,14 +41,17 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  private static String nameSpace = "http://www.ebi.ac.uk/biosamples/SampleGroupExportV1";
 
  protected boolean nsShown=false;
+ protected boolean showMyEQAsDb=false;
  private Pattern eqExclPattern;
  
- public AGE1XMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now, String eqExcl)
+ public AGE1XMLFormatter(boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now, String eqExcl, boolean myeqAsDb )
  {
   super( showAttributes, showAC, smpfmt, pubOnly, now );
   
   if( eqExcl != null )
    eqExclPattern = Pattern.compile(eqExcl);
+  
+  showMyEQAsDb = myeqAsDb;
  }
  
  protected String getNameSpace()
@@ -209,13 +212,14 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   xmlEscaped(ao.getAcc(), mainout);
   mainout.append("\">\n");
 
+  Collection<EquivalenceRecord> eqs = null;
+
   if( aux != null )
-  {
-   Collection<EquivalenceRecord> eqs = aux.getGroupEquivalences(ao.getAcc());
-   
-   if( eqs != null && eqs.size() > 0 )
-    showReferences(eqs, mainout);
-  }
+   eqs = aux.getGroupEquivalences(ao.getAcc());
+  
+  if( eqs != null && eqs.size() > 0 && ! showMyEQAsDb )
+   showReferences(eqs, mainout);
+
 
   MSI msi = null;
   
@@ -346,13 +350,25 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     mainout.append("</attribute>\n");
    }
    
-   if( msi.getDatabaseRecordRefs() != null && msi.getDatabaseRecordRefs().size() > 0 )
+   if( msi.getDatabaseRecordRefs() != null && msi.getDatabaseRecordRefs().size() > 0 || ( eqs != null && eqs.size() > 0 && showMyEQAsDb ) )
    {
     mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
     for( DatabaseRecordRef c : msi.getDatabaseRecordRefs() )
      exportDatabase(c, mainout);
 
+    if( eqs != null && eqs.size() > 0 && showMyEQAsDb )
+    {
+     for( EquivalenceRecord eqr : eqs )
+     {
+      if( eqExclPattern != null &&  eqExclPattern.matcher( eqr.getUrl() ).find() )
+       continue;
+      
+      DatabaseRecordRef dbr = new DatabaseRecordRef(eqr.getTitle(), eqr.getAccession(), null, eqr.getUrl(), null);
+      exportDatabase(dbr, mainout);
+     }
+    }
+    
     mainout.append("</attribute>\n");
    }
    
@@ -643,7 +659,9 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  protected boolean exportSample(final BioSample smp, AuxInfo aux, Appendable mainout, boolean showNS, boolean showAnnt,
    boolean showGrpId, AttributesSummary attrset, boolean showAC) throws IOException
  {
-  if( isPublicOnly() && ! isSamplePublic(smp) )
+  final boolean smpPublic = isSamplePublic(smp);
+  
+  if( isPublicOnly() && ! smpPublic )
    return false;
 
   
@@ -664,7 +682,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     @Override
     public boolean isPublic()
     {
-     return smp.isPublic();
+     return smpPublic;
     }
     
     @Override
@@ -694,7 +712,10 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   if( msi != null )
   {
    
-   mainout.append("<Submission>\n");
+   mainout.append("<Submission id=\"");
+   xmlEscaped(msi.getAcc(), mainout);
+   mainout.append("\" >\n");
+   
 
    if( msi.getSubmissionDate() != null )
    {
@@ -733,13 +754,15 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
 
   }
   
+  Collection<EquivalenceRecord> eqs = null;
+  
   if( aux != null )
-  {
-   Collection<EquivalenceRecord> eqs = aux.getSampleEquivalences(smp.getAcc());
-   
-   if( eqs != null && eqs.size() > 0 )
-    showReferences(eqs, mainout);
-  }
+   eqs = aux.getSampleEquivalences(smp.getAcc());
+  
+  if( eqs != null && eqs.size() > 0 && ! showMyEQAsDb )
+   showReferences(eqs, mainout);
+  
+
   
   Collection<DatabaseRecordRef> dbs = smp.getDatabaseRecordRefs();
   
@@ -761,16 +784,28 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    exportPropertyValues(smp.getPropertyValues(), mainout, attrset, false);
   }
 
-  if( dbs != null && dbs.size() > 0 )
+  
+  if( dbs != null && dbs.size() > 0 || ( eqs != null && eqs.size() > 0 && showMyEQAsDb ) )
   {
    mainout.append("<attribute class=\"Databases\" classDefined=\"true\" dataType=\"OBJECT\">\n");
 
    for( DatabaseRecordRef c : dbs )
     exportDatabase(c, mainout);
-
+   
+   if( eqs != null && eqs.size() > 0 && showMyEQAsDb )
+   {
+    for( EquivalenceRecord eqr : eqs )
+    {
+     if( eqExclPattern != null &&  eqExclPattern.matcher( eqr.getUrl() ).find() )
+      continue;
+     
+     DatabaseRecordRef dbr = new DatabaseRecordRef(eqr.getTitle(), eqr.getAccession(), null, eqr.getUrl(), null);
+     exportDatabase(dbr, mainout);
+    }
+   }
+   
    mainout.append("</attribute>\n");
   }
-
   
   
 

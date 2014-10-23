@@ -39,9 +39,9 @@ public class STXMLFormatter extends AGE1XMLFormatter
 // public static final String refLayer = "Reference Layer";
  
  
- public STXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now, String eqExcl)
+ public STXMLFormatter( boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now, String eqExcl, boolean myeqAsDb)
  {
-  super( showAttributes, showAC, smpfmt, pubOnly, now, eqExcl);
+  super( showAttributes, showAC, smpfmt, pubOnly, now, eqExcl, myeqAsDb);
  }
 
 

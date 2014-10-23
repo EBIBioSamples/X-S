@@ -35,8 +35,19 @@ public class TaskConfig
  private Double      sampleMultiplier;
  private int         hour=-1;
  private int         min=0;
+ private int         period=24;
 
 
+
+ public int getPeriodHours()
+ {
+  return period;
+ }
+
+ public void setPeriodHours(int period)
+ {
+  this.period = period;
+ }
 
  public TaskConfig( String nm )
  {

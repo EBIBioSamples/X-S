@@ -17,17 +17,17 @@ public class SchemaManager
  public static final String AGEXML2 = "AGE2";
  
 
- public static AbstractXMLFormatter getFormatter( String name, boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now, String exExcl )
+ public static AbstractXMLFormatter getFormatter( String name, boolean showAttributes, boolean showAC, SamplesFormat smpfmt, boolean pubOnly, Date now, String exExcl, boolean myeqAsDb )
  {
   
   if( STXML.equals(name) )
-   return new STXMLFormatter( showAttributes, showAC, smpfmt, pubOnly, now, exExcl);
+   return new STXMLFormatter( showAttributes, showAC, smpfmt, pubOnly, now, exExcl, myeqAsDb);
   else if( AGEXML1.equals(name) )
-   return new AGE1XMLFormatter( showAttributes, showAC, smpfmt, pubOnly, now, exExcl);
+   return new AGE1XMLFormatter( showAttributes, showAC, smpfmt, pubOnly, now, exExcl, myeqAsDb);
   else if( AGEXML2.equals(name) )
-   return new AGE2XMLFormatter( showAttributes, showAC, smpfmt, pubOnly, now, exExcl);
+   return new AGE2XMLFormatter( showAttributes, showAC, smpfmt, pubOnly, now, exExcl, myeqAsDb);
   else if( AGEXML2GS.equals(name) )
-   return new AGE2GSXMLFormatter( showAttributes, showAC, smpfmt, pubOnly, now, exExcl);
+   return new AGE2GSXMLFormatter( showAttributes, showAC, smpfmt, pubOnly, now, exExcl, myeqAsDb);
   
   return null;
  }

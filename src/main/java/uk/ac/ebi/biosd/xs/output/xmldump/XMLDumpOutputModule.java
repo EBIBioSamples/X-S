@@ -122,7 +122,8 @@ public class XMLDumpOutputModule implements OutputModule
      smpfmt,
      cfg.getPublicOnly(DefaultPublicOnly), 
      new Date(),
-     cfg.getEquvanceExclude( null )
+     cfg.getEquvanceExclude( null ),
+     cfg.getShowMyEqAsDb( false )
      );
   }
   catch( Exception e)

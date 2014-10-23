@@ -14,8 +14,9 @@ public class XMLDumpConfig
  public static final String NamespaceParameter         = "showNS";
  public static final String OutputFileParameter        = "outfile";
  public static final String SchemaParameter            = "schema";
- public static final String EqExclParam                = "eqURLExclude";
- public static final String TmpDirParam                = "tmpDir";
+ public static final String EqExclParameter            = "eqURLExclude";
+ public static final String TmpDirParameter            = "tmpDir";
+ public static final String MyEqAsDbrParameter         = "myEqAsDb";
 
  private String      schema;
  private Boolean     publicOnly;
@@ -25,6 +26,7 @@ public class XMLDumpConfig
  private Boolean     sourcesByName;
  private Boolean     showAttributesSummary;
  private Boolean     showAccessControl;
+ private Boolean     showMyEqAsDb;
  private String      outputFile;
  private String      tmpDir;
  private String      eqExcl;
@@ -43,9 +45,9 @@ public class XMLDumpConfig
   
   outputFile = params.getParameter(pfx+OutputFileParameter);
   
-  tmpDir = params.getParameter(pfx+TmpDirParam);
+  tmpDir = params.getParameter(pfx+TmpDirParameter);
   
-  eqExcl = params.getParameter(pfx+EqExclParam);
+  eqExcl = params.getParameter(pfx+EqExclParameter);
   
   String pv = params.getParameter(pfx+ShowSourcesParameter);
   
@@ -95,6 +97,13 @@ public class XMLDumpConfig
   if( pv != null  )
   {
    showAccessControl = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
+  }
+
+  pv = params.getParameter(pfx+MyEqAsDbrParameter);
+  
+  if( pv != null  )
+  {
+   showMyEqAsDb = pv.equalsIgnoreCase("true") || pv.equalsIgnoreCase("yes") || pv.equals("1");
   }
 
  }
@@ -161,6 +170,12 @@ public class XMLDumpConfig
  public String getEquvanceExclude(String def)
  {
   return eqExcl!=null?eqExcl:def;
+ }
+
+
+ public boolean getShowMyEqAsDb(boolean b)
+ {
+  return showMyEqAsDb!=null?showMyEqAsDb:b;
  }
 
 
