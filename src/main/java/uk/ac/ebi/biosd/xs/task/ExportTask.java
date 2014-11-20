@@ -105,7 +105,8 @@ public class ExportTask
     Date endTime = new Date();
 
     if( Email.getDefaultInstance() != null )
-     if( ! Email.getDefaultInstance().sendAnnouncement("X-S task '"+name+"' success "+StringUtils.millisToString(endTime.getTime()-startTime.getTime()),
+     if( ! Email.getDefaultInstance().sendAnnouncement(
+       "X-S task '"+name+"' success "+StringUtils.millisToString(endTime.getTime()-startTime.getTime())+(stat.getRecoverAttempt()>0?" I/O errors recovered: "+stat.getRecoverAttempt():""),
        "Task '"+name+"' has finished successfully\n\n"+stat.createReport(startTime, endTime, threads)) )
       log.error("Can't send an info announcement by email");
 

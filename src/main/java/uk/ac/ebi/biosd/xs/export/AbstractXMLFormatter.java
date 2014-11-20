@@ -46,22 +46,22 @@ public abstract class AbstractXMLFormatter implements XMLFormatter
 
  public static boolean isSamplePublic( BioSample smp, Date now )
  {
-  if( smp.getPublicFlag() != null )
-   return smp.getPublicFlag();
+  if( smp.getPublicFlag() != null && ! smp.getPublicFlag() )
+   return false;
   
-  if( smp.getReleaseDate() != null )
-   return smp.getReleaseDate().before(now);
+  if( smp.getReleaseDate() != null && smp.getReleaseDate().after(now) )
+   return false;
   
   if( smp.getMSIs() == null )
-   return false;
+   return true;
   
   for( MSI msi : smp.getMSIs() )
   {
-   if( msi.getReleaseDate() != null && msi.getReleaseDate().before(now) )
-    return true;
+   if( ( msi.getReleaseDate() != null && msi.getReleaseDate().after(now) ) || ( msi.getPublicFlag() != null && ! msi.getPublicFlag() ) )
+    return false;
   }
   
-  return false;
+  return true;
  }
  
  protected boolean isSamplePublic( BioSample smp )
@@ -72,22 +72,22 @@ public abstract class AbstractXMLFormatter implements XMLFormatter
  
  public static boolean isGroupPublic( BioSampleGroup grp, Date now )
  {
-  if( grp.getPublicFlag() != null )
-   return grp.getPublicFlag();
+  if( grp.getPublicFlag() != null && ! grp.getPublicFlag() )
+   return false;
   
-  if( grp.getReleaseDate() != null )
-   return grp.getReleaseDate().before(now);
+  if( grp.getReleaseDate() != null && grp.getReleaseDate().after(now) )
+   return false;
   
   if( grp.getMSIs() == null )
-   return false;
+   return true;
   
   for( MSI msi : grp.getMSIs() )
   {
-   if( msi.getReleaseDate() != null && msi.getReleaseDate().before(now) )
-    return true;
+   if( ( msi.getReleaseDate() != null && msi.getReleaseDate().after(now) ) || ( msi.getPublicFlag() != null && ! msi.getPublicFlag() ) )
+    return false;
   }
   
-  return false;
+  return true;
  }
  
  @Override

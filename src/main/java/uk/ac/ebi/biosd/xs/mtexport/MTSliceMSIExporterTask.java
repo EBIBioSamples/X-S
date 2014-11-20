@@ -8,6 +8,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,8 @@ public class MTSliceMSIExporterTask implements Runnable
  /**
   * 
   */
+ public static final int MaxErrorRecoverAttempts=3;
+ 
  private final EntityManagerFactory emFactory;
  private final EntityManagerFactory myEqFactory;
  private final SliceManager msiSliceMngr;
@@ -173,9 +176,32 @@ public class MTSliceMSIExporterTask implements Runnable
 
     try
     {
+     Collection<MSI> msis = null;
+     
+     int restart=0;
+     
+     while( true )
+     {
+      try
+      {
+       msis = msiQM.getMSIs(sl);
+       break;
+      }
+      catch( PersistenceException e )
+      {
+       msiQM.release();
 
-     Collection<MSI> msis = msiQM.getMSIs(sl);
-
+       restart++;
+       
+       stat.incRecoverAttempt();
+       
+       if( restart > MaxErrorRecoverAttempts)
+        throw e;
+      }
+      
+     }
+     
+     
      if( log.isDebugEnabled() )
       log.debug("({}) Processing slice: {}, size: {}", new Object[] { Thread.currentThread().getName(), sl, msis.size() });
 
@@ -441,7 +467,7 @@ public class MTSliceMSIExporterTask implements Runnable
 
       
       if( ! didOutput )
-       log.warn("Suspicious MSI - no output: "+msi.getAcc()+" Groups: "+msi.getSampleGroups().size()+" Samples: "+msi.getSamples().size());
+       log.info("Suspicious MSI - no output: "+msi.getAcc()+" Groups: "+msi.getSampleGroups().size()+" Samples: "+msi.getSamples().size());
       
       boolean needMoreData = false;
       

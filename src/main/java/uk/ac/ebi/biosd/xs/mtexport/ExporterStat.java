@@ -22,6 +22,7 @@ public class ExporterStat
  private  int uniqSampleCount=0;
  private final Date now;
  private int threads;
+ private int errorRecoverCount=0;
  
 // private final Set<String> sampleSet = new HashSet<>();
  
@@ -66,6 +67,16 @@ public class ExporterStat
   uniqSampleCount+=n;
  }
 
+
+ public synchronized void incRecoverAttempt()
+ {
+  errorRecoverCount++;
+ }
+ 
+ public synchronized int getRecoverAttempt()
+ {
+  return errorRecoverCount;
+ }
 
  public synchronized void incGroupCounter()
  {
@@ -216,6 +227,7 @@ public class ExporterStat
   
   summaryBuf.append("\n<!-- Start time: ").append(simpleDateFormat.format(startTime)).append(" -->");
   summaryBuf.append("\n<!-- End time: ").append(simpleDateFormat.format(endTime)).append(". Time spent: "+StringUtils.millisToString(endTs-startTs)).append(" -->");
+  summaryBuf.append("\n<!-- I/O error recovered: ").append(getRecoverAttempt()).append(" -->");
   summaryBuf.append("\n<!-- Thank you. Good bye. -->\n");
   
   return summaryBuf.toString();
@@ -231,5 +243,6 @@ public class ExporterStat
  {
   this.threads = threads;
  }
+
 
 }
