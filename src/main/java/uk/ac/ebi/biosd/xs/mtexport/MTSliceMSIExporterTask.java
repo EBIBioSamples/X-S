@@ -467,7 +467,7 @@ public class MTSliceMSIExporterTask implements Runnable
 
       
       if( ! didOutput )
-       log.info("Suspicious MSI - no output: "+msi.getAcc()+" Groups: "+msi.getSampleGroups().size()+" Samples: "+msi.getSamples().size());
+       log.debug("Suspicious MSI - no output: "+msi.getAcc()+" Groups: "+msi.getSampleGroups().size()+" Samples: "+msi.getSamples().size());
       
       boolean needMoreData = false;
       
