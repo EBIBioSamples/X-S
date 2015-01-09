@@ -1,78 +1,48 @@
 package uk.ac.ebi.biosd.xs.util;
 
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 
 public class RangeManager
 {
- public static class Range
+ 
+ private static class TopicQueue
  {
-  long min;
-  long max;
-  boolean locked;
-  
-  public Range(long min, long max)
-  {
-   this.min = min;
-   this.max = max;
-  }
-
-  public long getMin()
-  {
-   return min;
-  }
-
-  public void setMin(long min)
-  {
-   this.min = min;
-  }
-
-  public long getMax()
-  {
-   return max;
-  }
-
-  public void setMax(long max)
-  {
-   this.max = max;
-  }
-
-  public boolean isLocked()
-  {
-   return locked;
-  }
-
-  public void setLocked(boolean locked)
-  {
-   this.locked = locked;
-  }
-  
-  @Override
-  public String toString()
-  {
-   return "["+min+","+max+"]";
-  }
+  Queue<Range> ranges = new LinkedList<>();
+  int requested=0;
  }
- 
- 
 
 
- Queue<Range> ranges;
- RangeManager subMngr;
- int requested=0;
- int nWays;
+ private final Map<String, TopicQueue> topicMap = new HashMap<String, RangeManager.TopicQueue>();
+ 
+ private final int nWays;
+ private final long initMin;
+ private final long initMax;
+ 
 
  public RangeManager( long min, long max, int ways)
  {
-  ranges = new LinkedList<>();
   nWays=ways;
   
-  fillQueue(min, max);
-  
+  initMin = min;
+  initMax = max;
  }
  
- private void fillQueue( long min, long max )
+ private void fillQueue( TopicQueue tc, long min, long max )
  {
+  int nWaysx2 =nWays*2;
+
+  int smx = Long.signum(max);
+  
+  if(  tc.ranges.size() > nWaysx2 || ( ( smx != 0 && Long.signum(min) == smx || max <= nWaysx2 && -min <= nWaysx2 ) && max - min <= nWaysx2 ) )
+  {
+   tc.ranges.add( new Range(min, max) );
+   return;
+  }
+  
+  
   long step = max/nWays-min/nWays;
   long start = min;
   
@@ -81,7 +51,7 @@ public class RangeManager
    Range r = new Range(start, start+step);
    start=start+step+1;
    
-   ranges.add(r);
+   tc.ranges.add(r);
    
 //   System.out.println("("+Thread.currentThread().getName()+") Added to the range queue "+r+", requested: "+requested+" Queue:"+ranges.size());
 
@@ -91,92 +61,147 @@ public class RangeManager
 
 //  System.out.println("("+Thread.currentThread().getName()+") Added to the range queue "+r+", requested: "+requested+" Queue:"+ranges.size());
   
-  ranges.add( r );
+  tc.ranges.add( r );
  }
 
- public synchronized Range getRange()
+ public Range getRange( String tpc )
  {
 
+  TopicQueue tc = null;
   
-  if(ranges.size() == 0)
+  synchronized(this)
   {
-   if(requested == 0)
-   {
-//    System.out.println("("+Thread.currentThread().getName()+") No more ranges, requested: "+requested+" Queue:"+ranges.size());
-
-    return null;
-   }
+   tc = topicMap.get(tpc);
    
-//   System.out.println("("+Thread.currentThread().getName()+") Waiting for free ranges");
-
-   
-   while(ranges.size() == 0)
+   if( tc == null )
    {
-    
-    try
-    {
-     wait();
-    }
-    catch(InterruptedException e)
-    {
-    }
-    
-    if(requested == 0)
-     return null;
-
+    topicMap.put( tpc, tc=new TopicQueue() );
+    fillQueue(tc, initMin, initMax);
    }
    
   }
+    
   
-  requested++;
-  
-  Range r = ranges.poll();
-  
-//  System.out.println("("+Thread.currentThread().getName()+") Getting range "+r+", requested: "+requested+" Queue:"+ranges.size());
+  synchronized(tc)
+  {
+   return getRange(tc);
+  }
+
+ }
+ 
+ private Range getRange( TopicQueue tc )
+ {
+
+  while(tc.ranges.size() == 0)
+  {
+   if(tc.requested == 0)
+    return null;
+
+   try
+   {
+    tc.wait();
+   }
+   catch(InterruptedException e)
+   {
+   }
+
+  }
+
+  tc.requested++;
+
+  Range r = tc.ranges.poll();
+
+  //  System.out.println("("+Thread.currentThread().getName()+") Getting range "+r+", requested: "+requested+" Queue:"+ranges.size());
 
   return r;
+ }
+ 
+ public void returnRange(String tpc, Range r)
+ {
+  TopicQueue tc = null;
+  
+  synchronized(this)
+  {
+   tc = topicMap.get(tpc);
+   
+   if( tc == null )
+    return;   
+  }
+
+  synchronized(tc)
+  {
+   tc.requested--;
+
+   if( r != null && r.getMin() <= r.getMax() )
+    fillQueue(tc, r.getMin(), r.getMax());
+   
+   tc.notifyAll();
+  }
+
   
  }
  
- public synchronized Range returnAndGetRange( Range r )
+ 
+ public synchronized Range returnAndGetRange(String tpc, Range r)
  {
-  if( r == null || r.getMin() > r.getMax() )
+  
+  TopicQueue tc = null;
+  
+  synchronized(this)
   {
-   requested--;
+   tc = topicMap.get(tpc);
    
-   r = getRange();
-   
-   if( r == null )
-    notifyAll();
-   
-   return r;
-  }
-
-  if( ranges.size() != 0 || r.getMax()-r.getMin() < nWays )
-  {
-//   System.out.println("("+Thread.currentThread().getName()+") Continue range "+r+", requested: "+requested+" Queue:"+ranges.size());
-
-   return r;
+   if( tc == null )
+    return null;   
   }
   
   
-  System.out.println("("+Thread.currentThread().getName()+") Splitting range "+r+", requested: "+requested+" Queue:"+ranges.size());
+  synchronized(tc)
+  {
+   if( r == null || r.getMin() > r.getMax() )
+   {
+    tc.requested--;
+    
+    r = getRange( tc );
+    
+    if( r == null )
+     notifyAll();
+    
+    return r;
+   }
 
-  
-  fillQueue(r.getMin(), r.getMax());
-  
-  r = ranges.poll();
-  
-  notifyAll();
-  
-  return r;
+   if( tc.ranges.size() != 0 || r.getMax()-r.getMin() < nWays )
+   {
+//    System.out.println("("+Thread.currentThread().getName()+") Continue range "+r+", requested: "+requested+" Queue:"+ranges.size());
+
+    return r;
+   }
+   
+   tc.requested--;
+
+   fillQueue(tc, r.getMin(), r.getMax());
+   
+   r = tc.ranges.poll();
+   
+   notifyAll();
+   
+   return r;
+   
+  }
+
  }
 
  public synchronized void shutdown()
  {
-  ranges.clear();
-  requested=0;
-  notifyAll();
+  for( TopicQueue tc : topicMap.values() )
+  {
+   tc.ranges.clear();
+   tc.requested=0;
+   tc.notifyAll();
+  }
+
  }
+
+
  
 }

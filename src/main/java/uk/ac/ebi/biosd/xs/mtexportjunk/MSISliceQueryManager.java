@@ -1,4 +1,4 @@
-package uk.ac.ebi.biosd.xs.mtexport;
+package uk.ac.ebi.biosd.xs.mtexportjunk;
 
 import java.sql.Date;
 import java.util.List;
@@ -16,7 +16,7 @@ import uk.ac.ebi.fg.biosd.model.organizational.MSI;
 
 public class MSISliceQueryManager
 {
- static final int MAX_MSI_PER_EM = 100;
+ static final int MAX_MSI_PER_EM = -1;
  
  private static final boolean useTransaction = true;
  private static final Logger log = LoggerFactory.getLogger(MSISliceQueryManager.class);
@@ -54,17 +54,17 @@ public class MSISliceQueryManager
   }
  }
  
- @SuppressWarnings("unchecked")
+ @SuppressWarnings({ "unchecked", "unused" })
  public List<MSI> getMSIs(Slice slice)
  {
-  if( em == null || msiCount+slice.getLimit() > MAX_MSI_PER_EM )
+  if( em == null || (MAX_MSI_PER_EM > 0 && msiCount+slice.getLimit() > MAX_MSI_PER_EM ) )
   {
    msiCount=0;
    initEM();
   }
   
   
-  if( useTransaction )
+  if( useTransaction && ! em.getTransaction().isActive() )
    em.getTransaction().begin();
   
   listQuery.setMaxResults ( slice.getLimit() );  

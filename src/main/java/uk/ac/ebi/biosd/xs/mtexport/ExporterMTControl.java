@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.biosd.xs.mtexport.ControlMessage.Type;
 import uk.ac.ebi.biosd.xs.output.OutputModule;
-import uk.ac.ebi.biosd.xs.util.SliceManager;
 
 public class ExporterMTControl
 {
@@ -33,21 +32,23 @@ public class ExporterMTControl
  final  Collection<OutputModule> requests;
  
  private int sliceSz=10;
- private int itemsLimit=1000;
+ private int itemsPerThreadHardLimit=4000;
+ private int itemsPerThreadSoftLimit=5000;
 
  private final int threads;
  
  private final BlockingQueue<ControlMessage> controlMsgQueue;
  private final Lock busyLock = new ReentrantLock();
  
- public ExporterMTControl(EntityManagerFactory emf, EntityManagerFactory myEqFact, Collection<OutputModule> mods, int thN, int slSz, int msiPerThr )
+ public ExporterMTControl(EntityManagerFactory emf, EntityManagerFactory myEqFact, Collection<OutputModule> mods, int thN, int slSz, int stfTTL, int hrdThr )
  {
   super();
   this.emf = emf;
   this.myEqFact=myEqFact;
   this.requests = mods;
   sliceSz = slSz;
-  itemsLimit = msiPerThr;
+  itemsPerThreadSoftLimit = stfTTL;
+  itemsPerThreadHardLimit = hrdThr;
   
   threads = thN;
   
@@ -63,7 +64,7 @@ public class ExporterMTControl
   try
   {
 
-   List<MTSliceMSIExporterTask> exporters = new ArrayList<>(threads);
+   List<Runnable> exporters = new ArrayList<>(threads);
    List<OutputTask> outputs = new ArrayList<>(requests.size() * 2);
 
    List<FormattingTask> tasks = new ArrayList<>(requests.size());
@@ -99,8 +100,6 @@ public class ExporterMTControl
 
    Set<Thread> thrSet = new HashSet<>();
    
-   //  RangeManager rm = new RangeManager(Long.MIN_VALUE,Long.MAX_VALUE,threads*2);
-   SliceManager msism = new SliceManager(sliceSz);
 
    AtomicBoolean stopFlag = new AtomicBoolean(false);
 
@@ -118,12 +117,24 @@ public class ExporterMTControl
    tCnf.setGroupMultiplier(grpMul);
    tCnf.setSampleMultiplier(smpMul);
    tCnf.setSince(since);
-   tCnf.setMaxItemsPerThread(itemsLimit);
+   tCnf.setItemsPerThreadHardLimit(itemsPerThreadHardLimit);
+   tCnf.setItemsPerThreadSoftLimit(itemsPerThreadSoftLimit);
    
+   //RangeManager rm = new RangeManager(Long.MIN_VALUE,Long.MAX_VALUE,threads*2);
+   //SliceManager slmnrg = new SliceManager(sliceSz);
+   //SGIDSliceManager slmngr = new SGIDSliceManager(emf, sliceSz, since);
+   SGIDBagManager slmngr = new SGIDBagManager(emf, sliceSz, since);
+
    for(int i = 0; i < threads; i++)
    {
-//    MTSliceExporterTask et = new MTSliceExporterTask(emf, myEqFact, gsm, ssm, tasks, statistics, controlMsgQueue, stopFlag, limitCnt, tCnf);
-    MTSliceMSIExporterTask et = new MTSliceMSIExporterTask(emf, myEqFact, msism, tasks, statistics, controlMsgQueue, stopFlag, tCnf);
+//    QueryManager qm = new RangeQueryManager(emf, rm, sliceSz, tCnf.getSince());
+//    MTSGExporterTask et = new SGExporterTask(myEqFact, qm, tasks, statistics, controlMsgQueue, stopFlag, tCnf);
+
+//    QueryManager qm = new SliceQueryManager(emf, slmnrg,  tCnf.getSince());
+//    MTSliceMSIExporterTask et = new MTSliceMSIExporterTask(emf, myEqFact, msism, tasks, statistics, controlMsgQueue, stopFlag, tCnf);
+
+    IDPrefetchQueryManager idqm = new IDBagQueryManager(emf, slmngr);
+    IDPrefetchExporterTask et = new IDPrefetchExporterTask(myEqFact, idqm, tasks, statistics, controlMsgQueue, stopFlag, tCnf);
 
     et.setLaneNo(i+1);
     
@@ -201,7 +212,19 @@ public class ExporterMTControl
     }
     else if(o.getType() == Type.PROCESS_TTL )
     {
-     MTSliceMSIExporterTask task = (MTSliceMSIExporterTask)o.getSubject();
+     MTExportTask task = (MTExportTask)o.getSubject();
+     
+     Thread oldThrd = task.getProcessingThread();
+     
+     try
+     {
+      oldThrd.join(30000);
+     }
+     catch( Exception e )
+     {}
+     
+     if( oldThrd.isAlive() )
+      log.error("Can't join terminated thread ({}). Possible thread leak",oldThrd.getName());
      
      thrSet.remove( task.getProcessingThread() );
      

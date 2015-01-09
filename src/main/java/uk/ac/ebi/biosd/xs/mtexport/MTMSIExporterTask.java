@@ -19,23 +19,20 @@ import uk.ac.ebi.biosd.xs.init.Init;
 import uk.ac.ebi.biosd.xs.mtexport.ControlMessage.Type;
 import uk.ac.ebi.biosd.xs.service.AuxInfoImpl;
 import uk.ac.ebi.biosd.xs.util.GroupSampleUtil;
-import uk.ac.ebi.biosd.xs.util.Slice;
-import uk.ac.ebi.biosd.xs.util.SliceManager;
 import uk.ac.ebi.fg.biosd.model.expgraph.BioSample;
 import uk.ac.ebi.fg.biosd.model.organizational.BioSampleGroup;
 import uk.ac.ebi.fg.biosd.model.organizational.MSI;
 import uk.ac.ebi.fg.biosd.model.xref.DatabaseRecordRef;
 
-public class MTSliceMSIExporterTask implements Runnable
+public class MTMSIExporterTask implements MTExportTask
 {
  /**
   * 
   */
  public static final int MaxErrorRecoverAttempts=3;
  
- private final EntityManagerFactory emFactory;
  private final EntityManagerFactory myEqFactory;
- private final SliceManager msiSliceMngr;
+ private final QueryManager queryManager;
  private final long since;
  private final List<FormattingTask> tasks;
  private final ExporterStat stat;
@@ -46,7 +43,7 @@ public class MTSliceMSIExporterTask implements Runnable
  private boolean hasGroupedSmp;
  private boolean hasUngroupedSmp;
  private boolean needGroupLoop;
- private final int maxMSIs;
+ private final int maxObjsPerEM;
 
  private int genNo=0;
  
@@ -56,20 +53,17 @@ public class MTSliceMSIExporterTask implements Runnable
  private final Logger log = LoggerFactory.getLogger(Init.class);
  
  private int laneNo;
-
-
  private Thread procThread;
 
  
 
- public MTSliceMSIExporterTask( EntityManagerFactory emf, EntityManagerFactory myeqf, SliceManager msiSlMgr, List<FormattingTask> tasks,
+ public MTMSIExporterTask( EntityManagerFactory myeqf, QueryManager qm, List<FormattingTask> tasks,
    ExporterStat stat, BlockingQueue<ControlMessage> controlQueue, AtomicBoolean stf, MTTaskConfig tCfg )
  {
   
-  emFactory = emf;
   myEqFactory = myeqf;
   
-  msiSliceMngr = msiSlMgr;
+  queryManager = qm;
   
   this.since = tCfg.getSince();
   
@@ -80,7 +74,7 @@ public class MTSliceMSIExporterTask implements Runnable
   this.grpMul = tCfg.getGroupMultiplier();
   this.smpMul = tCfg.getSampleMultiplier();
   
-  maxMSIs = tCfg.getMaxItemsPerThread();
+  maxObjsPerEM = tCfg.getItemsPerThreadHardLimit();
   
   stopFlag = stf;
   
@@ -116,6 +110,7 @@ public class MTSliceMSIExporterTask implements Runnable
   
  }
 
+ @Override
  public Thread getProcessingThread()
  {
   return procThread;
@@ -138,8 +133,6 @@ public class MTSliceMSIExporterTask implements Runnable
   
   procThread.setName(procThread.getName()+"-ExporterTask-gen"+(++genNo)+"-lane"+laneNo);
   
-  MSISliceQueryManager msiQM = null;
-
   AuxInfo auxInf = null;
 
   if(myEqFactory != null)
@@ -147,12 +140,13 @@ public class MTSliceMSIExporterTask implements Runnable
 
   int msiCount=0;
   
+  int objCount=0;
+  
   try
   {
    int grpMulFloor = 1;
    double grpMulFrac = 0;
 
-   msiQM = new MSISliceQueryManager(emFactory, since);
 
    if( needGroupLoop )
    {
@@ -171,8 +165,6 @@ public class MTSliceMSIExporterTask implements Runnable
 
    mainLoop: while(true)
    {
-    Slice sl = msiSliceMngr.getSlice();
-
 
     try
     {
@@ -184,12 +176,12 @@ public class MTSliceMSIExporterTask implements Runnable
      {
       try
       {
-       msis = msiQM.getMSIs(sl);
+       msis = queryManager.getMSIs();
        break;
       }
       catch( PersistenceException e )
       {
-       msiQM.release();
+       queryManager.close();
 
        restart++;
        
@@ -201,10 +193,6 @@ public class MTSliceMSIExporterTask implements Runnable
       
      }
      
-     
-     if( log.isDebugEnabled() )
-      log.debug("({}) Processing slice: {}, size: {}", new Object[] { Thread.currentThread().getName(), sl, msis.size() });
-
      if(msis.size() == 0)
      {
       log.debug("({}) No more data to process", Thread.currentThread().getName());
@@ -223,6 +211,7 @@ public class MTSliceMSIExporterTask implements Runnable
       boolean didOutput=false;
       
       msiCount++;
+      objCount++;
 
             
 //      long time = System.currentTimeMillis();
@@ -259,6 +248,7 @@ public class MTSliceMSIExporterTask implements Runnable
 //        System.out.printf("=MSI (L%d-G%d-N%d) %s  Processing group %s %n"
 //          ,laneNo,genNo,msiCount,msi.getAcc(), g.getAcc());
 
+        objCount++;
         
         int nRep = grpMulFloor;
 
@@ -357,6 +347,8 @@ public class MTSliceMSIExporterTask implements Runnable
            if(!stat.addSample(s.getId()))
             continue;
 
+           objCount++;
+           
            if(!hasUngroupedSmp)
            {
             stat.incUniqSampleCounter();
@@ -416,6 +408,8 @@ public class MTSliceMSIExporterTask implements Runnable
         if(!stat.addSample(s.getId()))
          continue;
 
+        objCount++;
+        
         int nSmpRep = smpMulFloor;
 
         if(smpMul != null && smpMulFrac > 0.005)
@@ -492,9 +486,9 @@ public class MTSliceMSIExporterTask implements Runnable
 //      msiQM.detach(msi);
      }
      
-     if( maxMSIs > 0 && msiCount >= maxMSIs )
+     if( maxObjsPerEM > 0 && objCount >= maxObjsPerEM )
      {
-      log.debug("({}) Thread TTL expared. Processed {} MSIs. Sending TTL message", Thread.currentThread().getName(), msiCount);
+      log.debug("({}) Thread TTL expared. Processed {} objects. Sending TTL message", Thread.currentThread().getName(), objCount);
       putIntoQueue(controlQueue, new ControlMessage(Type.PROCESS_TTL, this));
       return;
      }
@@ -511,7 +505,7 @@ public class MTSliceMSIExporterTask implements Runnable
     }
     finally
     {
-     msiQM.release();
+//     msiQM.release();
      
      if( auxInf != null )
       auxInf.clear();
@@ -527,8 +521,8 @@ public class MTSliceMSIExporterTask implements Runnable
    if(auxInf != null)
     auxInf.destroy();
   
-   if( msiQM != null )
-    msiQM.close();
+   if( queryManager != null )
+    queryManager.close();
    
   }
 

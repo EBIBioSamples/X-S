@@ -73,6 +73,12 @@ public class ExporterStat
   errorRecoverCount++;
  }
  
+
+ public synchronized void addRecoverAttempt(int recovers)
+ {
+  errorRecoverCount+=recovers;
+ }
+ 
  public synchronized int getRecoverAttempt()
  {
   return errorRecoverCount;
@@ -243,6 +249,7 @@ public class ExporterStat
  {
   this.threads = threads;
  }
+
 
 
 }

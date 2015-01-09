@@ -171,6 +171,9 @@ public class EBEyeOutputModule implements OutputModule
  public void start() throws IOException
  {
   startTime = new java.util.Date();
+
+  log.debug("Starting EBEye export module for task '" + name + "'");
+
   
   if( genGroups )
   {

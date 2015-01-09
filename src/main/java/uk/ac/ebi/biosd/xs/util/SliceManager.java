@@ -1,9 +1,20 @@
 package uk.ac.ebi.biosd.xs.util;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Stack;
+
 public class SliceManager
 {
+ private static class SliceTopic
+ {
+  int offset=0;
+  Stack<Slice> returns = new Stack<Slice>();
+ }
+ 
+ private final Map<String, SliceTopic> topicMap = new HashMap<>();
+ 
  private int limit=5;
- private int start=0;
  
  public SliceManager()
  {
@@ -15,12 +26,52 @@ public class SliceManager
  }
 
  
- public synchronized Slice getSlice()
+ public Slice getSlice(String topic)
  {
-  Slice sl = new Slice(start, limit);
+  SliceTopic tpc = null;
   
-  start+=limit;
+  synchronized(topicMap)
+  {
+   tpc = topicMap.get(topic);
+   
+   if( tpc == null )
+    topicMap.put(topic, tpc = new SliceTopic() );
+  }
   
-  return sl;
+
+  synchronized(tpc)
+  {
+   if( tpc.returns.size() > 0 )
+    return tpc.returns.pop();
+   
+   Slice newsl = new Slice(tpc.offset, limit);
+   tpc.offset += limit;
+   return newsl;
+  }
+  
+ }
+
+ public int getSliceSize()
+ {
+  return limit;
+ }
+ 
+ public void returnSlice( String topic, Slice s )
+ {
+  SliceTopic tpc = null;
+  
+  synchronized(topicMap)
+  {
+   tpc = topicMap.get(topic);
+   
+   if( tpc == null )
+    topicMap.put(topic, tpc = new SliceTopic() );
+  }
+  
+
+  synchronized(tpc)
+  {
+   tpc.returns.push(s);
+  }
  }
 }

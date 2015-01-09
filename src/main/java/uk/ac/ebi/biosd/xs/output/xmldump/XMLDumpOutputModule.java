@@ -181,7 +181,7 @@ public class XMLDumpOutputModule implements OutputModule
 
   tmpGrpStream = new PrintStream(tmpGrpFile, "UTF-8");
 
-  log.debug("Start exporting XML files for task '" + name + "'");
+  log.debug("Starting XML export module for task '" + name + "'");
 
   SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 

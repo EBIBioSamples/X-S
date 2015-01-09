@@ -10,7 +10,8 @@ public class TaskConfig
  public static final String MyEqProfileParameter       = "myeq";
  public static final String LimitParameter             = "limit";
  public static final String SliceParameter             = "slice";
- public static final String TTTLParameter              = "threadTTL";
+ public static final String SoftTTLParameter           = "threadTTLSoft";
+ public static final String TTLParameter               = "threadTTLHard";
  public static final String ThreadsParameter           = "threads";
  public static final String SinceParameter             = "since";
  public static final String GroupMultiplierParameter   = "groupMultiplier";
@@ -28,6 +29,7 @@ public class TaskConfig
  private String      myeq;
  private Long        limit;
  private Integer     slice;
+ private Integer     threadSoftTTL;
  private Integer     threadTTL;
  private Long        since;
  private Integer     threads;
@@ -97,11 +99,22 @@ public class TaskConfig
     throw new TaskConfigException("Task '"+taskName+"' Invalid parameter value: "+pName+"="+pVal);
    }
   }
-  else if( TTTLParameter.equals(pName) )
+  else if( TTLParameter.equals(pName) )
   {
    try
    {
     threadTTL = Integer.parseInt(pVal);
+   }
+   catch(Exception e)
+   {
+    throw new TaskConfigException("Task '"+taskName+"' Invalid parameter value: "+pName+"="+pVal);
+   }
+  }
+  else if( SoftTTLParameter.equals(pName) )
+  {
+   try
+   {
+    threadSoftTTL = Integer.parseInt(pVal);
    }
    catch(Exception e)
    {
@@ -265,6 +278,11 @@ public class TaskConfig
  public int getThreadTTL(int def)
  {
   return threadTTL!=null?threadTTL:def;
+ }
+ 
+ public int getThreadSoftTTL(int def)
+ {
+  return threadSoftTTL!=null?threadSoftTTL:def;
  }
 
 
