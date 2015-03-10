@@ -45,10 +45,12 @@ public class EMFManager
  public static void destroy()
  {
   for( EntityManagerFactory emf : mngrMap.values() )
-   emf.close();
+   if( emf.isOpen() )
+    emf.close();
   
   for( EntityManagerFactory emf : myeqMngrMap.values() )
-   emf.close();
+   if( emf.isOpen() )
+    emf.close();
  }
 
 }

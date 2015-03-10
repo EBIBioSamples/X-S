@@ -25,8 +25,9 @@ import uk.ac.ebi.fg.core_model.organizational.ContactRole;
 import uk.ac.ebi.fg.core_model.organizational.Organization;
 import uk.ac.ebi.fg.core_model.organizational.Publication;
 import uk.ac.ebi.fg.core_model.terms.OntologyEntry;
+import uk.ac.ebi.fg.core_model.toplevel.Annotatable;
 import uk.ac.ebi.fg.core_model.toplevel.Annotation;
-import uk.ac.ebi.fg.core_model.toplevel.DefaultAccessibleAnnotatable;
+import uk.ac.ebi.fg.core_model.toplevel.TextAnnotation;
 import uk.ac.ebi.fg.core_model.xref.ReferenceSource;
 
 
@@ -406,17 +407,20 @@ public class STXMLFormatter extends AGE1XMLFormatter
   return true;
  }
  
- private static void exportAnnotations( DefaultAccessibleAnnotatable obj, Appendable out ) throws IOException
+ private static void exportAnnotations( Annotatable obj, Appendable out ) throws IOException
  {
   if(obj.getAnnotations() == null)
    return;
   
   for(Annotation annt : obj.getAnnotations())
   {
+   if( ! ( annt instanceof TextAnnotation ) )
+    continue;
+   
    out.append("<Annotation type=\"");
    xmlEscaped(annt.getType().getName(), out);
-   out.append("\">");
-   xmlEscaped(annt.getText(), out);
+   out.append("\">\n");
+   xmlEscaped( ((TextAnnotation)annt).getText(), out);
    out.append("\n</Annotation>\n");
   }
  }

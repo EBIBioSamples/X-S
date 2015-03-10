@@ -36,6 +36,7 @@ import uk.ac.ebi.biosd.xs.task.TaskManager;
 import uk.ac.ebi.biosd.xs.util.ParamPool;
 import uk.ac.ebi.biosd.xs.util.ResourceBundleParamPool;
 import uk.ac.ebi.biosd.xs.util.ServletContextParamPool;
+import uk.ac.ebi.fg.core_model.resources.Resources;
 
 public class Init implements ServletContextListener
 {
@@ -87,7 +88,7 @@ public class Init implements ServletContextListener
   
   log.info("Initializing X-S");
   
-  Map<String, Map<String,Object>> profMap = new HashMap<>();
+  Map<String, Map<String,String>> profMap = new HashMap<>();
   Map<String, Map<String,Object>> myEqMap = new HashMap<>();
   Map<String, TaskConfig> tasksMap = new HashMap<>();
 
@@ -140,7 +141,7 @@ public class Init implements ServletContextListener
     else
      param = biodbMtch.group(biodbMtch.groupCount());
 
-    Map<String, Object> cm = profMap.get(profile);
+    Map<String, String> cm = profMap.get(profile);
 
     if(cm == null)
      profMap.put(profile, cm = new TreeMap<>());
@@ -233,12 +234,13 @@ public class Init implements ServletContextListener
    throw new RuntimeException("X-S webapp initialization failed");
   }
   
-  for( Map.Entry<String, Map<String,Object>> me : profMap.entrySet() )
+  for( Map.Entry<String, Map<String,String>> me : profMap.entrySet() )
   {
    if( me.getKey() == null )
     continue;
-   
-   EMFManager.addFactory( me.getKey(), Persistence.createEntityManagerFactory ( "X-S", me.getValue() )  );
+  
+   EMFManager.addFactory( me.getKey(), Resources.getInstance().getEntityManagerFactory(me.getValue())  );
+//   EMFManager.addFactory( me.getKey(), Persistence.createEntityManagerFactory ( "X-S", me.getValue() )  );
   }
   
   for( Map.Entry<String, Map<String,Object>> me : myEqMap.entrySet() )

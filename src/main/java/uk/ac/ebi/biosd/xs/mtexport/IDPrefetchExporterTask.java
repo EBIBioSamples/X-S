@@ -7,7 +7,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.PersistenceException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,7 +134,7 @@ public class IDPrefetchExporterTask implements MTExportTask
      ft.getFormatter().exportSample(s, auxInf, sb, false);
      break;
     }
-    catch(PersistenceException e)
+    catch(Exception e)
     {
      restart++;
 
@@ -178,7 +177,7 @@ public class IDPrefetchExporterTask implements MTExportTask
      ft.getFormatter().exportGroup(grp, auxInf, sb, false);
      break;
     }
-    catch(PersistenceException e)
+    catch(Exception e)
     {
      restart++;
 
