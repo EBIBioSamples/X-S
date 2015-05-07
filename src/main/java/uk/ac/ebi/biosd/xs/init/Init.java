@@ -36,7 +36,6 @@ import uk.ac.ebi.biosd.xs.task.TaskManager;
 import uk.ac.ebi.biosd.xs.util.ParamPool;
 import uk.ac.ebi.biosd.xs.util.ResourceBundleParamPool;
 import uk.ac.ebi.biosd.xs.util.ServletContextParamPool;
-import uk.ac.ebi.fg.core_model.resources.Resources;
 
 public class Init implements ServletContextListener
 {
@@ -239,8 +238,8 @@ public class Init implements ServletContextListener
    if( me.getKey() == null )
     continue;
   
-   EMFManager.addFactory( me.getKey(), Resources.getInstance().getEntityManagerFactory(me.getValue())  );
-//   EMFManager.addFactory( me.getKey(), Persistence.createEntityManagerFactory ( "X-S", me.getValue() )  );
+//   EMFManager.addFactory( me.getKey(), Resources.getInstance().getEntityManagerFactory(me.getValue())  );
+   EMFManager.addFactory( me.getKey(), Persistence.createEntityManagerFactory ( "X-S", me.getValue() )  );
   }
   
   for( Map.Entry<String, Map<String,Object>> me : myEqMap.entrySet() )

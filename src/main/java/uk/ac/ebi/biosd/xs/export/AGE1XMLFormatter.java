@@ -1190,20 +1190,39 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  {
   ReferenceSource src = val.getSource();
 
+  String srcName=null;
+  String srcUrl=val.getAcc();
+  String srcVer=null;
+  String srcId=val.getAcc();
+  
+  if( src == null )
+  {
+   if( ! (srcUrl != null && srcUrl.length() > 10 && srcUrl.substring(0,4).equalsIgnoreCase("http") ) )
+    return;
+  }
+  else
+  {
+   srcName=src.getName();
+   srcUrl=src.getUrl();
+   srcVer=src.getVersion();
+   srcId=src.getAcc();
+  }
+  
   out.append("<attribute class=\"Term Source REF\" classDefined=\"true\" dataType=\"OBJECT\">\n");
   exportObjectValuePrefix(out);
-  out.append("\n<object id=\""+src.getName()+"\" class=\"Term Source\" classDefined=\"true\">\n");
-  
+
+  out.append("\n<object id=\""+srcId+"\" class=\"Term Source\" classDefined=\"true\">\n");
   
   if( src != null )
   {
-   if( src.getName() != null )
+
+   if( srcName != null )
    {
     out.append("<attribute class=\"Term Source Name\" classDefined=\"true\" dataType=\"STRING\">\n");
 
     exportSimpleValuePefix(out);
     exportSimpleValueStringPefix(out);
-    xmlEscaped(src.getName(),out);
+    xmlEscaped(srcName,out);
     exportSimpleValueStringPostfix(out);
     exportSimpleValuePostfix(out);
 
@@ -1211,26 +1230,26 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    }
    
   
-   if( src.getUrl() != null )
+   if( srcUrl != null )
    {
     out.append("<attribute class=\"Term Source URI\" classDefined=\"true\" dataType=\"STRING\">\n");
 
     exportSimpleValuePefix(out);
     exportSimpleValueStringPefix(out);
-    xmlEscaped(src.getUrl(),out);
+    xmlEscaped(srcUrl,out);
     exportSimpleValueStringPostfix(out);
     exportSimpleValuePostfix(out);
 
     out.append("</attribute>\n");
    }
 
-   if( src.getVersion() != null )
+   if( srcVer != null )
    {
     out.append("<attribute class=\"Term Source Version\" classDefined=\"true\" dataType=\"STRING\">\n");
 
     exportSimpleValuePefix(out);
     exportSimpleValueStringPefix(out);
-    xmlEscaped(src.getVersion(),out);
+    xmlEscaped(srcVer,out);
     exportSimpleValueStringPostfix(out);
     exportSimpleValuePostfix(out);
 
