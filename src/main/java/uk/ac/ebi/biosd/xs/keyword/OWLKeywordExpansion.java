@@ -239,12 +239,14 @@ public class OWLKeywordExpansion
     if( ! term.startsWith("http://") )
      termSet.add( term.toLowerCase() );
     
+    int len = value.length();
+    
     pos++;
     
-    while( value.charAt(pos) == ' ' )
+    while( pos < len && value.charAt(pos) == ' ' )
      pos++;
     
-    if( pos == value.length() )
+    if( pos == len )
      break;
     
     bpos=pos;

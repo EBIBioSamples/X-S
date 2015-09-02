@@ -125,6 +125,8 @@ public class ExporterMTControl
    //SGIDSliceManager slmngr = new SGIDSliceManager(emf, sliceSz, since);
    SGIDBagManager slmngr = new SGIDBagManager(emf, sliceSz, since);
 
+//   slmngr.dumpSGids("/tmp");
+   
    for(int i = 0; i < threads; i++)
    {
 //    QueryManager qm = new RangeQueryManager(emf, rm, sliceSz, tCnf.getSince());

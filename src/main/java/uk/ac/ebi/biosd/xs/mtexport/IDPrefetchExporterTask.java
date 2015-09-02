@@ -277,7 +277,6 @@ public class IDPrefetchExporterTask implements MTExportTask
      if(!needMoreData)
       break groupLoop;
 
-
      for(BioSample s : grp.getSamples())
      {
       if( checkStopFlag() )
@@ -310,7 +309,6 @@ public class IDPrefetchExporterTask implements MTExportTask
 
    }
 
-   
    
    sampleLoop: while( needMoreData )
    {

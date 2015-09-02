@@ -1,5 +1,8 @@
 package uk.ac.ebi.biosd.xs.mtexport;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,6 +91,42 @@ public class SGIDBagManager
   log.debug("Retrieved {} group IDs",groupIds.length);
 
   em.close();
+ }
+ 
+ public void dumpSGids(String path)
+ {
+  File dir = new File( path );
+  
+  PrintStream fos = null;
+  try
+  {
+   fos = new PrintStream(new File(dir,"sampleIDdump.txt"));
+   
+   for( long id : sampleIds )
+   {
+    fos.print(id);
+    fos.print('\n');
+   }
+   
+   fos.print("--END--");
+   fos.close();
+   
+   fos = new PrintStream(new File(dir,"groupIDdump.txt"));
+   
+   for( long id : groupIds )
+   {
+    fos.print(id);
+    fos.print('\n');
+   }
+   
+   fos.print("--END--");
+   fos.close();
+
+  }
+  catch(FileNotFoundException e)
+  {
+   e.printStackTrace();
+  }
  }
  
  public boolean checkInSample( long sid )
