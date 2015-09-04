@@ -156,7 +156,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
   
   for( EquivalenceRecord eq : eqs )
   {
-   if( eqExclPattern != null &&  eqExclPattern.matcher( eq.getUrl() ).find() )
+   if( eq.getUrl() != null && eqExclPattern != null &&  eqExclPattern.matcher( eq.getUrl() ).find()  )
     continue;
    
    mainout.append(" <ref id=\"");
@@ -361,7 +361,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
     {
      for( EquivalenceRecord eqr : eqs )
      {
-      if( eqr.getUrl() == null || ( eqExclPattern != null &&  eqExclPattern.matcher( eqr.getUrl() ).find() ) )
+      if( eqr.getUrl() != null && eqExclPattern != null &&  eqExclPattern.matcher( eqr.getUrl() ).find()  )
        continue;
       
       DatabaseRecordRef dbr = new DatabaseRecordRef(eqr.getTitle(), eqr.getAccession(), null, eqr.getUrl(), null);
@@ -796,7 +796,7 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
    {
     for( EquivalenceRecord eqr : eqs )
     {
-     if( eqExclPattern != null &&  eqExclPattern.matcher( eqr.getUrl() ).find() )
+     if( eqr.getUrl() != null && eqExclPattern != null &&  eqExclPattern.matcher( eqr.getUrl() ).find()  )
       continue;
      
      DatabaseRecordRef dbr = new DatabaseRecordRef(eqr.getTitle(), eqr.getAccession(), null, eqr.getUrl(), null);
