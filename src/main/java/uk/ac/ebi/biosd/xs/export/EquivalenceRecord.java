@@ -19,8 +19,7 @@ public class EquivalenceRecord
    
    if( pos < 0 )
     url = uriPattern;
-   
-   if( pos + placeHolder.length() == uriPattern.length() )
+   else if( pos + placeHolder.length() == uriPattern.length() )
     url = uriPattern.substring(0,pos)+accession;
    else
     url = uriPattern.substring(0,pos)+accession+uriPattern.substring(pos+uriPattern.length());
