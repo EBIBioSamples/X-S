@@ -8,7 +8,7 @@ import uk.ac.ebi.biosd.xs.util.StringUtils;
 
 public class StreamLogger implements TimeLogger
 {
- private final PrintStream out = System.out;
+ private PrintStream out = System.out;
  private long initTime;
  
  private final Map<String, TagStat> stat=new HashMap<>();
@@ -17,6 +17,13 @@ public class StreamLogger implements TimeLogger
  {
   init();
  }
+ 
+ public StreamLogger( PrintStream ps )
+ {
+  out = ps;
+  init();
+ }
+
  
  @Override
  public boolean init()

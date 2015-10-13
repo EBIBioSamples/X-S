@@ -1,5 +1,7 @@
 package uk.ac.ebi.biosd.xs.mtexport;
 
+import java.io.File;
+
 public class MTTaskConfig
 {
  private long    since;
@@ -7,6 +9,7 @@ public class MTTaskConfig
  private Double  sampleMultiplier;
  private int     maxItemsPerThread=-1;
  private int     maxItemsPerThreadSoft=-1;
+ private File    threadLog;
 
  public int getItemsPerThreadHardLimit()
  {
@@ -58,5 +61,15 @@ public class MTTaskConfig
  public void setSampleMultiplier(Double sampleMultiplier)
  {
   this.sampleMultiplier = sampleMultiplier;
+ }
+
+ public File getThreadLogDir()
+ {
+  return threadLog;
+ }
+
+ public void setThreadLogDir(File threadLog)
+ {
+  this.threadLog = threadLog;
  }
 }

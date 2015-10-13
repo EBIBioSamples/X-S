@@ -110,7 +110,10 @@ public class AGE1XMLFormatter extends AbstractXMLFormatter
  protected void exportAC(ACObj ao, Appendable out) throws IOException
  {
   if(ao.isPublic())
+  {
+   out.append("public=\"true\" ");
    return;
+  }
   
   out.append("public=\"false\" access=\"");
 

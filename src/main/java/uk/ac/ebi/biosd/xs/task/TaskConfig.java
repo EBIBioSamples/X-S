@@ -1,7 +1,9 @@
 package uk.ac.ebi.biosd.xs.task;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+
 
 public class TaskConfig
 {
@@ -17,6 +19,7 @@ public class TaskConfig
  public static final String GroupMultiplierParameter   = "groupMultiplier";
  public static final String SampleMultiplierParameter  = "sampleMultiplier";
  public static final String TaskInvokeTimeParameter    = "invokeTime";
+ public static final String LogDirParameter            = "logDir";
  
 
 
@@ -38,6 +41,7 @@ public class TaskConfig
  private int         hour=-1;
  private int         min=0;
  private int         period=24;
+ private File        logDirectory;
 
 
 
@@ -87,6 +91,18 @@ public class TaskConfig
    {
     throw new TaskConfigException("Task '"+taskName+"' Invalid parameter value: "+pName+"="+pVal);
    }
+  }
+  else if( LogDirParameter.equals(pName) )
+  {
+   assert (logDirectory = new File( pVal ) ) != null;
+   
+   if(logDirectory != null)
+   {
+    if(logDirectory.isDirectory())
+     throw new TaskConfigException("Task '" + taskName + "' " + LogDirParameter + " should point to writable directory");
+   }
+   else
+    System.out.println("To use "+LogDirParameter+" enable Java assertions (java -ea ...)");
   }
   else if( SliceParameter.equals(pName) )
   {
@@ -285,5 +301,12 @@ public class TaskConfig
   return threadSoftTTL!=null?threadSoftTTL:def;
  }
 
+ public File getLogDirectory( File f )
+ {
+  if( logDirectory != null )
+   return logDirectory;
+  
+  return f;
+ }
 
 }

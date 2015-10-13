@@ -93,9 +93,8 @@ public class SGIDBagManager
   em.close();
  }
  
- public void dumpSGids(String path)
+ public void dumpSGids(File dir)
  {
-  File dir = new File( path );
   
   PrintStream fos = null;
   try

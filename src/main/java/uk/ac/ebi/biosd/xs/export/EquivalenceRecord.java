@@ -1,8 +1,10 @@
 package uk.ac.ebi.biosd.xs.export;
 
+import uk.ac.ebi.fg.myequivalents.utils.EntityIdResolver;
+
 public class EquivalenceRecord
 {
- public static final String placeHolder = "${accession}";
+// public static final String placeHolder = "${accession}";
  
  private String accession;
  private String title;
@@ -12,21 +14,8 @@ public class EquivalenceRecord
  {
   this.accession = accession;
   this.title = title;
-  
-  if( uriPattern != null )
-  {
-   int pos = uriPattern.indexOf(placeHolder);
-   
-   if( pos < 0 )
-    url = uriPattern;
-   else if( pos + placeHolder.length() == uriPattern.length() )
-    url = uriPattern.substring(0,pos)+accession;
-   else
-    url = uriPattern.substring(0,pos)+accession+uriPattern.substring(pos+uriPattern.length());
-  }
+  url = EntityIdResolver.buildUriFromAcc(accession, uriPattern);
 
-  
-  
  }
 
  public String getAccession()

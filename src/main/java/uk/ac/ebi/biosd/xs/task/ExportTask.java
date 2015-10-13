@@ -96,7 +96,8 @@ public class ExportTask
     exportControl = new ExporterMTControl(emf, myEqFact, modules, threads,
       taskConfig.getSliceSize(DefaultSliceSize),
       taskConfig.getThreadSoftTTL(DefaultThreadSoftTTL),
-      taskConfig.getThreadTTL(DefaultThreadTTL));
+      taskConfig.getThreadTTL(DefaultThreadTTL),
+      taskConfig.getLogDirectory(null));
    }
 
   

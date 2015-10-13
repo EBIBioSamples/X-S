@@ -2,7 +2,7 @@ package uk.ac.ebi.biosd.xs.log;
 
 public class LoggerFactory
 {
- private static TimeLogger logger;
+ private static TimeLogger logger = new NullLogger();
 
  public static TimeLogger getLogger()
  {

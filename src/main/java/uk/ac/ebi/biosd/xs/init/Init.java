@@ -219,7 +219,7 @@ public class Init implements ServletContextListener
        }
        catch( TaskConfigException e)
        {
-        log.error("Invalid parameter value: "+key+"="+val);
+        log.error("Invalid parameter value: "+key+"="+val+" "+e.getMessage());
         confOk = false;
        }
       }

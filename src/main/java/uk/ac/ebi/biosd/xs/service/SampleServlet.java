@@ -129,7 +129,7 @@ public class SampleServlet extends HttpServlet
   
   String sch = reqCfg.getSchema(DefaultSchema);
   
-  formatter = SchemaManager.getFormatter(sch, true, false, samplesFormat, false, new Date(), null, reqCfg.getShowMyEqAsDb(false));
+  formatter = SchemaManager.getFormatter(sch, true, reqCfg.getShowAccessControl(false), samplesFormat, false, new Date(), null, reqCfg.getShowMyEqAsDb(false));
   
   if( formatter == null )
   {

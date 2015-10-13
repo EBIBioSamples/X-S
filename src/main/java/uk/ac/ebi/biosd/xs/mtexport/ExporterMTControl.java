@@ -1,5 +1,6 @@
 package uk.ac.ebi.biosd.xs.mtexport;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,7 +41,9 @@ public class ExporterMTControl
  private final BlockingQueue<ControlMessage> controlMsgQueue;
  private final Lock busyLock = new ReentrantLock();
  
- public ExporterMTControl(EntityManagerFactory emf, EntityManagerFactory myEqFact, Collection<OutputModule> mods, int thN, int slSz, int stfTTL, int hrdThr )
+ private File logDir;
+ 
+ public ExporterMTControl(EntityManagerFactory emf, EntityManagerFactory myEqFact, Collection<OutputModule> mods, int thN, int slSz, int stfTTL, int hrdThr, File logDir  )
  {
   super();
   this.emf = emf;
@@ -53,6 +56,8 @@ public class ExporterMTControl
   threads = thN;
   
   controlMsgQueue = new ArrayBlockingQueue<>(requests.size()*3+1);
+  
+  this.logDir = logDir;
  }
 
  
@@ -119,13 +124,21 @@ public class ExporterMTControl
    tCnf.setSince(since);
    tCnf.setItemsPerThreadHardLimit(itemsPerThreadHardLimit);
    tCnf.setItemsPerThreadSoftLimit(itemsPerThreadSoftLimit);
+   tCnf.setThreadLogDir(logDir);
+   
+   if( logDir != null )
+   {
+    for( File f : logDir.listFiles() )
+     f.delete();
+   }
    
    //RangeManager rm = new RangeManager(Long.MIN_VALUE,Long.MAX_VALUE,threads*2);
    //SliceManager slmnrg = new SliceManager(sliceSz);
    //SGIDSliceManager slmngr = new SGIDSliceManager(emf, sliceSz, since);
    SGIDBagManager slmngr = new SGIDBagManager(emf, sliceSz, since);
 
-//   slmngr.dumpSGids("/tmp");
+   if( logDir != null )
+    slmngr.dumpSGids(logDir);
    
    for(int i = 0; i < threads; i++)
    {
